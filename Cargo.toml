@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "rust-eloquent",
+    "rust-eloquent-macros",
+]
+resolver = "2"

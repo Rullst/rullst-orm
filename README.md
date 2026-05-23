@@ -1,1 +1,78 @@
-# rust-eloquent
+# Rust Eloquent 🌟
+
+![Crates.io](https://img.shields.io/crates/v/rust-eloquent?style=flat-square&color=orange)
+![Docs.rs](https://img.shields.io/docsrs/rust-eloquent?style=flat-square&color=blue)
+![License](https://img.shields.io/crates/l/rust-eloquent?style=flat-square&color=green)
+![Databases](https://img.shields.io/badge/Databases-PostgreSQL%20%7C%20MySQL%20%7C%20SQLite-lightgrey?style=flat-square)
+
+An Active Record ORM for Rust, inspired by Laravel's Eloquent.
+
+Built on top of `sqlx` and procedural macros, **rust-eloquent** aims to bring the delightful and simplistic syntax of Laravel directly to the high-performance Rust ecosystem. It supports **PostgreSQL**, **MySQL**, and **SQLite** universally out of the box using dynamic driver loading!
+
+## 🚀 Why Rust Eloquent?
+
+In traditional Rust database handling, you have to write raw SQL queries, manage connection pools manually across every function, and bind variables repetitively. Rust Eloquent solves this by abstracting the heavy lifting behind a single `#[derive(Eloquent)]` macro.
+
+## 🛠️ Installation
+
+Add the library to your `Cargo.toml`:
+
+```toml
+[dependencies]
+rust-eloquent = "0.1.0"
+tokio = { version = "1.0", features = ["full"] }
+```
+
+## 📖 Quick Start
+
+```rust
+use rust_eloquent::{Eloquent, EloquentModel, sqlx::FromRow};
+
+// 1. Just add the Eloquent macro to your struct!
+#[derive(Debug, Clone, FromRow, rust_eloquent::Eloquent)]
+pub struct User {
+    pub id: i32, // ID = 0 means it hasn't been saved yet
+    pub name: String,
+    pub email: String,
+}
+
+#[tokio::main]
+async fn main() -> Result<(), rust_eloquent::sqlx::Error> {
+    // 2. Initialize the global connection pool
+    Eloquent::init("sqlite::memory:").await?;
+
+    // 3. Create a new user magically
+    let mut user = User {
+        id: 0,
+        name: "Vene Louis".to_string(),
+        email: "vene@cosmos.com".to_string(),
+    };
+    
+    user.save().await?; // Runs INSERT and updates the ID automatically!
+
+    // 4. Update the user
+    user.name = "John Doe".to_string();
+    user.save().await?; // Detects ID > 0 and runs UPDATE automatically!
+
+    // 5. Fetch from database
+    let found = User::find(1).await?;
+    println!("Found: {:?}", found);
+
+    // 6. Delete
+    found.delete().await?;
+
+    Ok(())
+}
+```
+
+## ✨ Available Methods
+
+The `#[derive(Eloquent)]` macro currently injects the following asynchronous methods directly into your struct:
+
+- `Model::find(id: i32)` -> Find a single record by its Primary Key.
+- `Model::all()` -> Retrieve an array containing all records.
+- `Model::where_eq(column: &str, value: &str)` -> Retrieve records matching a specific column.
+- `model.save()` -> Automatically decides whether to run an `INSERT` or `UPDATE` depending on if the `id` is `0`.
+- `model.insert()` -> Forces an `INSERT` query and updates the struct's `id`.
+- `model.update()` -> Forces an `UPDATE` query.
+- `model.delete()` -> Deletes the record from the database.
