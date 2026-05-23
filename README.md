@@ -67,12 +67,39 @@ async fn main() -> Result<(), rust_eloquent::sqlx::Error> {
 
 ## ✨ Available Methods
 
-The `#[derive(Eloquent)]` macro currently injects the following asynchronous methods directly into your struct:
+The `#[derive(Eloquent)]` macro injects an entire Query Builder into your model, allowing you to chain methods endlessly.
 
+### 🔍 Active Record Methods
+These methods are called directly on your model instance or struct:
+- `Model::query()` -> Starts a new Query Builder instance.
 - `Model::find(id: i32)` -> Find a single record by its Primary Key.
 - `Model::all()` -> Retrieve an array containing all records.
-- `Model::where_eq(column: &str, value: &str)` -> Retrieve records matching a specific column.
-- `model.save()` -> Automatically decides whether to run an `INSERT` or `UPDATE` depending on if the `id` is `0`.
+- `model.save()` -> Automatically runs an `INSERT` or `UPDATE` depending on if the `id` is `0`.
 - `model.insert()` -> Forces an `INSERT` query and updates the struct's `id`.
-- `model.update()` -> Forces an `UPDATE` query.
+- `model.update()` -> Forces an `UPDATE` query based on the current `id`.
 - `model.delete()` -> Deletes the record from the database.
+
+### ⛓️ Query Builder Filters (Chainable)
+You can chain these methods after calling `Model::query()` to filter your data. All values are automatically bound to prevent SQL Injection:
+- `.where_eq(column, value)`
+- `.where_not_eq(column, value)`
+- `.where_gt(column, value)` *(Greater than)*
+- `.where_lt(column, value)` *(Less than)*
+- `.where_gte(column, value)` *(Greater than or equal)*
+- `.where_lte(column, value)` *(Less than or equal)*
+- `.where_like(column, value)`
+- `.where_not_like(column, value)`
+- `.where_null(column)`
+- `.where_not_null(column)`
+
+### 🔢 Sorting & Pagination (Chainable)
+- `.order_by(column)` -> Ascending order
+- `.order_by_desc(column)` -> Descending order
+- `.limit(value: usize)` -> Limit the number of results
+- `.offset(value: usize)` -> Skip a number of results
+
+### ⚡ Executors (Terminal Methods)
+End your Query Builder chain with one of these to execute the SQL query asynchronously:
+- `.get().await?` -> Returns a `Vec<Model>` matching your filters.
+- `.first().await?` -> Returns a single `Model` (automatically applies `LIMIT 1`). Throws `RowNotFound` if empty.
+- `.count().await?` -> Returns an `i64` representing the number of rows matching your filters.
