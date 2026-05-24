@@ -116,6 +116,8 @@ pub fn eloquent_macro(input: TokenStream) -> TokenStream {
         }
     }
 
+    let relation_field_idents: Vec<_> = relations.iter().map(|(field_name, _, _, _, _, _, _, _)| field_name).collect();
+
     let mut insert_columns_vec = vec![];
     let mut insert_placeholders_vec = vec![];
     let mut update_sets_vec = vec![];
@@ -525,6 +527,7 @@ pub fn eloquent_macro(input: TokenStream) -> TokenStream {
             pub offset: Option<usize>,
             pub with_trashed: bool,
             pub only_trashed: bool,
+            pub remember_ttl: Option<u32>,
             #(#relation_flags)*
         }
 
@@ -543,6 +546,7 @@ pub fn eloquent_macro(input: TokenStream) -> TokenStream {
                     offset: None,
                     with_trashed: false,
                     only_trashed: false,
+                    remember_ttl: None,
                     #(#relation_inits)*
                 };
                 #global_scope_logic
@@ -556,6 +560,12 @@ pub fn eloquent_macro(input: TokenStream) -> TokenStream {
             }
             pub fn only_trashed(mut self) -> Self {
                 self.only_trashed = true;
+                self
+            }
+
+            // --- Cache integration ---
+            pub fn remember(mut self, seconds: u32) -> Self {
+                self.remember_ttl = Some(seconds);
                 self
             }
 
@@ -917,7 +927,7 @@ pub fn eloquent_macro(input: TokenStream) -> TokenStream {
 
             // --- Execution ---
             pub async fn get(&self) -> Result<Vec<#name>, rust_eloquent::sqlx::Error> {
-                let pool = rust_eloquent::Eloquent::pool();
+                let pool = rust_eloquent::Eloquent::read_pool();
                 self.get_with_tx_internal(pool).await
             }
 
@@ -929,6 +939,25 @@ pub fn eloquent_macro(input: TokenStream) -> TokenStream {
             where E: rust_eloquent::sqlx::Executor<'e, Database = rust_eloquent::sqlx::Any>
             {
                 let query_str = self.to_sql();
+
+                #[cfg(feature = "redis")]
+                {
+                    if let Some(ttl) = self.remember_ttl {
+                        use rust_eloquent::redis::AsyncCommands;
+                        let cache_key = format!("eloquent:cache:{}:{:?}", #table_name, (&query_str, &self.bindings));
+                        let mut conn = rust_eloquent::Eloquent::redis_manager();
+                        if let Ok(cached_data) = conn.get::<_, String>(&cache_key).await {
+                            if !cached_data.is_empty() {
+                                if let Ok(mut results) = #name::from_cache_json_array(&cached_data) {
+                                    #hook_after_fetch
+                                    #eager_loads
+                                    return Ok(results);
+                                }
+                            }
+                        }
+                    }
+                }
+
                 if rust_eloquent::schema::is_query_log_enabled() {
                     println!("[SQL Debug] {} | Bindings: {:?}", query_str, self.bindings);
                 }
@@ -944,6 +973,17 @@ pub fn eloquent_macro(input: TokenStream) -> TokenStream {
 
                 let mut results: Vec<#name> = rust_eloquent::sqlx::query_as_with(&query_str, args).fetch_all(executor).await?;
                 
+                #[cfg(feature = "redis")]
+                {
+                    if let Some(ttl) = self.remember_ttl {
+                        use rust_eloquent::redis::AsyncCommands;
+                        let cache_key = format!("eloquent:cache:{}:{:?}", #table_name, (&query_str, &self.bindings));
+                        let serialized = #name::to_cache_json_array(&results);
+                        let mut conn = rust_eloquent::Eloquent::redis_manager();
+                        let _: Result<(), rust_eloquent::redis::RedisError> = conn.set_ex(&cache_key, serialized, ttl as u64).await;
+                    }
+                }
+
                 #hook_after_fetch
 
                 #eager_loads
@@ -996,7 +1036,7 @@ pub fn eloquent_macro(input: TokenStream) -> TokenStream {
                     }
                 }
                 
-                let pool = rust_eloquent::Eloquent::pool();
+                let pool = rust_eloquent::Eloquent::read_pool();
                 let total_row: (i64,) = rust_eloquent::sqlx::query_as_with(&query_str, args).fetch_one(pool).await?;
                 let total = total_row.0;
                 
@@ -1019,7 +1059,7 @@ pub fn eloquent_macro(input: TokenStream) -> TokenStream {
             }
 
             pub async fn count(&self) -> Result<i64, rust_eloquent::sqlx::Error> {
-                let pool = rust_eloquent::Eloquent::pool();
+                let pool = rust_eloquent::Eloquent::read_pool();
                 let mut builder = self.clone();
                 builder.selects = Some("COUNT(*)".to_string());
                 builder.limit = None;
@@ -1042,6 +1082,54 @@ pub fn eloquent_macro(input: TokenStream) -> TokenStream {
 
                 let row: (i64,) = rust_eloquent::sqlx::query_as_with(&query_str, args).fetch_one(pool).await?;
                 Ok(row.0)
+            }
+
+            pub async fn chunk<F, Fut>(&self, size: usize, mut handler: F) -> Result<(), rust_eloquent::sqlx::Error>
+            where
+                F: FnMut(Vec<#name>) -> Fut + Send,
+                Fut: std::future::Future<Output = ()> + Send,
+            {
+                let mut page = 1;
+                loop {
+                    let mut builder = self.clone();
+                    builder.limit = Some(size);
+                    builder.offset = Some((page - 1) * size);
+                    let results = builder.get().await?;
+                    let count = results.len();
+                    if count == 0 {
+                        break;
+                    }
+                    handler(results).await;
+                    if count < size {
+                        break;
+                    }
+                    page += 1;
+                }
+                Ok(())
+            }
+
+            pub async fn chunk_with_tx<F, Fut>(&self, size: usize, tx: &mut rust_eloquent::sqlx::Transaction<'static, rust_eloquent::sqlx::Any>, mut handler: F) -> Result<(), rust_eloquent::sqlx::Error>
+            where
+                F: FnMut(Vec<#name>) -> Fut + Send,
+                Fut: std::future::Future<Output = ()> + Send,
+            {
+                let mut page = 1;
+                loop {
+                    let mut builder = self.clone();
+                    builder.limit = Some(size);
+                    builder.offset = Some((page - 1) * size);
+                    let results = builder.get_with_tx(tx).await?;
+                    let count = results.len();
+                    if count == 0 {
+                        break;
+                    }
+                    handler(results).await;
+                    if count < size {
+                        break;
+                    }
+                    page += 1;
+                }
+                Ok(())
             }
 
             pub async fn delete_all(&self) -> Result<u64, rust_eloquent::sqlx::Error> {
@@ -1089,7 +1177,7 @@ pub fn eloquent_macro(input: TokenStream) -> TokenStream {
             }
 
             pub async fn pluck_string(&self, column: &str) -> Result<Vec<String>, rust_eloquent::sqlx::Error> {
-                let pool = rust_eloquent::Eloquent::pool();
+                let pool = rust_eloquent::Eloquent::read_pool();
                 let mut builder = self.clone();
                 builder.selects = Some(column.to_string());
                 let query_str = builder.to_sql();
@@ -1107,7 +1195,7 @@ pub fn eloquent_macro(input: TokenStream) -> TokenStream {
             }
 
             pub async fn pluck_i32(&self, column: &str) -> Result<Vec<i32>, rust_eloquent::sqlx::Error> {
-                let pool = rust_eloquent::Eloquent::pool();
+                let pool = rust_eloquent::Eloquent::read_pool();
                 let mut builder = self.clone();
                 builder.selects = Some(column.to_string());
                 let query_str = builder.to_sql();
@@ -1133,6 +1221,60 @@ pub fn eloquent_macro(input: TokenStream) -> TokenStream {
         // ==========================================
         impl #name {
             #(#relationship_methods)*
+
+            pub fn from_json(json_str: &str) -> Result<Self, rust_eloquent::serde_json::Error> {
+                let value: rust_eloquent::serde_json::Value = rust_eloquent::serde_json::from_str(json_str)?;
+                Self::from_json_value(value)
+            }
+
+            pub fn from_json_value(value: rust_eloquent::serde_json::Value) -> Result<Self, rust_eloquent::serde_json::Error> {
+                Ok(Self {
+                    #(
+                        #normal_fields: rust_eloquent::serde_json::from_value(value[stringify!(#normal_fields)].clone()).unwrap(),
+                    )*
+                    #(
+                        #relation_field_idents: None,
+                    )*
+                })
+            }
+
+            pub fn from_json_array(json_str: &str) -> Result<Vec<Self>, rust_eloquent::serde_json::Error> {
+                let value: rust_eloquent::serde_json::Value = rust_eloquent::serde_json::from_str(json_str)?;
+                let mut results = vec![];
+                if let Some(arr) = value.as_array() {
+                    for item in arr {
+                        results.push(Self::from_json_value(item.clone())?);
+                    }
+                }
+                Ok(results)
+            }
+
+            pub fn to_cache_json(&self) -> String {
+                let mut map = rust_eloquent::serde_json::Map::new();
+                #(
+                    map.insert(stringify!(#normal_fields).to_string(), rust_eloquent::serde_json::json!(self.#normal_fields));
+                )*
+                rust_eloquent::serde_json::Value::Object(map).to_string()
+            }
+
+            pub fn to_cache_json_array(models: &[Self]) -> String {
+                let json_values: Vec<rust_eloquent::serde_json::Value> = models.iter().map(|m| {
+                    let mut map = rust_eloquent::serde_json::Map::new();
+                    #(
+                        map.insert(stringify!(#normal_fields).to_string(), rust_eloquent::serde_json::json!(m.#normal_fields));
+                    )*
+                    rust_eloquent::serde_json::Value::Object(map)
+                }).collect();
+                rust_eloquent::serde_json::Value::Array(json_values).to_string()
+            }
+
+            pub fn from_cache_json(json_str: &str) -> Result<Self, rust_eloquent::serde_json::Error> {
+                Self::from_json(json_str)
+            }
+
+            pub fn from_cache_json_array(json_str: &str) -> Result<Vec<Self>, rust_eloquent::serde_json::Error> {
+                Self::from_json_array(json_str)
+            }
 
             pub fn observe(observer: std::sync::Arc<dyn #observer_trait_name + Send + Sync>) {
                 let list = Self::observers();
@@ -1179,6 +1321,7 @@ pub fn eloquent_macro(input: TokenStream) -> TokenStream {
             async fn save_with_tx_internal<'e, E>(&mut self, executor: E) -> Result<(), rust_eloquent::sqlx::Error> 
             where E: rust_eloquent::sqlx::Executor<'e, Database = rust_eloquent::sqlx::Any>
             {
+                let is_new = self.id == 0;
                 #hook_before_save
                 {
                     let observers = {
@@ -1268,6 +1411,21 @@ pub fn eloquent_macro(input: TokenStream) -> TokenStream {
                         obs.saved(self).await?;
                     }
                 }
+                #[cfg(feature = "redis")]
+                {
+                    use rust_eloquent::redis::AsyncCommands;
+                    let mut conn = rust_eloquent::Eloquent::redis_manager();
+                    let payload = self.to_json();
+                    if is_new {
+                        let topic = format!("eloquent:events:{}:created", #table_name);
+                        let _: Result<(), rust_eloquent::redis::RedisError> = conn.publish(&topic, &payload).await;
+                    } else {
+                        let topic = format!("eloquent:events:{}:updated", #table_name);
+                        let _: Result<(), rust_eloquent::redis::RedisError> = conn.publish(&topic, &payload).await;
+                    }
+                    let topic = format!("eloquent:events:{}:saved", #table_name);
+                    let _: Result<(), rust_eloquent::redis::RedisError> = conn.publish(&topic, &payload).await;
+                }
                 #hook_after_save
                 Ok(())
             }
@@ -1307,6 +1465,14 @@ pub fn eloquent_macro(input: TokenStream) -> TokenStream {
                     for obs in observers.iter() {
                         obs.deleted(self).await?;
                     }
+                }
+                #[cfg(feature = "redis")]
+                {
+                    use rust_eloquent::redis::AsyncCommands;
+                    let mut conn = rust_eloquent::Eloquent::redis_manager();
+                    let payload = self.to_json();
+                    let topic = format!("eloquent:events:{}:deleted", #table_name);
+                    let _: Result<(), rust_eloquent::redis::RedisError> = conn.publish(&topic, &payload).await;
                 }
                 #hook_after_delete
                 Ok(())

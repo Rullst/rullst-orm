@@ -1,5 +1,6 @@
 use sqlx::{AnyPool, any::install_default_drivers};
 use std::sync::OnceLock;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 // Re-export the procedural macro so users only need to import `rust-eloquent`
 pub use rust_eloquent_macros::*;
@@ -7,6 +8,9 @@ pub use sqlx;
 pub use futures;
 pub use serde;
 pub use serde_json;
+
+#[cfg(feature = "redis")]
+pub use redis;
 pub mod schema;
 pub mod collection;
 pub mod types;
@@ -25,6 +29,18 @@ static DB_POOL: OnceLock<AnyPool> = OnceLock::new();
 
 /// The driver identifier (postgres, mysql, sqlite) to help macro syntax formatting
 static DB_DRIVER: OnceLock<String> = OnceLock::new();
+
+/// The replica connection pools for read operations
+static REPLICA_POOLS: OnceLock<Vec<AnyPool>> = OnceLock::new();
+
+/// Atomic index for replica round-robin selection
+static REPLICA_INDEX: AtomicUsize = AtomicUsize::new(0);
+
+#[cfg(feature = "redis")]
+static REDIS_CLIENT: OnceLock<redis::Client> = OnceLock::new();
+
+#[cfg(feature = "redis")]
+static REDIS_MANAGER: OnceLock<redis::aio::ConnectionManager> = OnceLock::new();
 
 /// Enum dinâmico para encapsular qualquer tipo que possa ser associado ao banco de dados pelo Macro
 #[derive(Clone, Debug)]
@@ -73,13 +89,55 @@ impl Eloquent {
         };
         
         let _ = DB_DRIVER.set(driver.to_string());
+        let _ = REPLICA_POOLS.set(vec![]);
         
         Ok(())
     }
 
-    /// Retrieve the global database connection pool
+    /// Initialize the global database connection pool and its read replicas
+    pub async fn init_with_replicas(primary_url: &str, replica_urls: Vec<&str>) -> Result<(), sqlx::Error> {
+        install_default_drivers();
+        let pool = AnyPool::connect(primary_url).await?;
+        
+        if DB_POOL.set(pool).is_err() {
+            panic!("Eloquent has already been initialized");
+        }
+
+        let driver = if primary_url.starts_with("postgres") {
+            "postgres"
+        } else if primary_url.starts_with("mysql") {
+            "mysql"
+        } else {
+            "sqlite"
+        };
+        
+        let _ = DB_DRIVER.set(driver.to_string());
+
+        let mut replicas = vec![];
+        for url in replica_urls {
+            let p = AnyPool::connect(url).await?;
+            replicas.push(p);
+        }
+        let _ = REPLICA_POOLS.set(replicas);
+        
+        Ok(())
+    }
+
+    /// Retrieve the global database connection pool (strictly for writes)
     pub fn pool() -> &'static AnyPool {
         DB_POOL.get().expect("Eloquent must be initialized before querying")
+    }
+
+    /// Retrieve the connection pool for read operations.
+    /// Performs a round-robin load balancing over replicas if configured.
+    pub fn read_pool() -> &'static AnyPool {
+        if let Some(replicas) = REPLICA_POOLS.get() {
+            if !replicas.is_empty() {
+                let idx = REPLICA_INDEX.fetch_add(1, Ordering::Relaxed);
+                return &replicas[idx % replicas.len()];
+            }
+        }
+        Self::pool()
     }
 
     /// Retrieve the active driver string
@@ -109,6 +167,28 @@ impl Eloquent {
     /// Disable query logging
     pub fn disable_query_log() {
         crate::schema::disable_query_log();
+    }
+
+    /// Initialize Redis connection and connection manager for caching and events
+    #[cfg(feature = "redis")]
+    pub async fn init_redis(redis_url: &str) -> Result<(), redis::RedisError> {
+        let client = redis::Client::open(redis_url)?;
+        let manager = redis::aio::ConnectionManager::new(client.clone()).await?;
+        let _ = REDIS_CLIENT.set(client);
+        let _ = REDIS_MANAGER.set(manager);
+        Ok(())
+    }
+
+    /// Get reference to the global Redis client
+    #[cfg(feature = "redis")]
+    pub fn redis_client() -> &'static redis::Client {
+        REDIS_CLIENT.get().expect("Redis must be initialized before using cache features")
+    }
+
+    /// Get clone of the thread-safe connection manager for async Redis queries
+    #[cfg(feature = "redis")]
+    pub fn redis_manager() -> redis::aio::ConnectionManager {
+        REDIS_MANAGER.get().expect("Redis must be initialized before using cache features").clone()
     }
 }
 

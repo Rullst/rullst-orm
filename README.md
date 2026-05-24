@@ -13,7 +13,11 @@ Built on top of `sqlx` and procedural macros, **rust-eloquent** aims to bring th
 
 In traditional Rust database handling, you have to write raw SQL queries, manage connection pools manually across every function, and bind variables repetitively. Rust Eloquent solves this by abstracting the heavy lifting behind a single `#[derive(Eloquent)]` macro. 
 
-**Rust Eloquent v0.2** brings a massive array of enterprise-grade features:
+**Rust Eloquent v1.0.0** brings a massive array of enterprise-grade features:
+- **Read/Write Connection Splitting** for automatic scaling.
+- **Integrated Redis Caching** to speed up repeating queries natively.
+- **Query Chunking** for memory-safe large dataset processing.
+- **Background Event Broadcasting** via Redis Pub/Sub hooks.
 - **Constrained Eager Loading** for fetching deep relationships safely.
 - **Global Lifecycle Observers** to intercept operations before/after they happen.
 - **Subqueries & Advanced Joins** with multi-constraint `ON` clauses.
@@ -29,7 +33,7 @@ Add the library to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-rust-eloquent = "0.2.0"
+rust-eloquent = "1.0.0"
 tokio = { version = "1.0", features = ["full"] }
 ```
 
@@ -178,6 +182,67 @@ impl UserObserver for UserObserverImpl {
 User::observe(Arc::new(UserObserverImpl));
 ```
 **Supported Events**: `saving`, `saved`, `creating`, `created`, `updating`, `updated`, `deleting`, `deleted`.
+
+---
+
+## 🏢 Enterprise Scaling (v1.0.0)
+
+For high-traffic applications, Rust Eloquent provides built-in enterprise features to scale your data layer.
+
+### Read/Write Connection Splitting
+Automatically route `SELECT` queries to read replicas while keeping `INSERT`/`UPDATE`/`DELETE` operations on your primary node!
+
+```rust
+// Initialize primary node
+Eloquent::init("postgres://primary_db_url").await?;
+
+// Initialize array of read replicas
+Eloquent::init_replicas(&[
+    "postgres://replica_1_url",
+    "postgres://replica_2_url"
+]).await?;
+
+// This uses a read replica automatically (round-robin)
+let users = User::all().await?;
+
+// This uses the primary node automatically
+let mut user = User::find(1).await?.unwrap();
+user.name = "Updated".to_string();
+user.save().await?;
+```
+
+### Redis Caching Layer
+Instantly cache heavy database queries by enabling the `redis` feature flag and calling `.remember()`. 
+
+```rust
+// Initialize Redis
+Eloquent::init_redis("redis://127.0.0.1/").await?;
+
+// The first call hits the database. Subsequent calls hit Redis until the 3600 seconds expire!
+let active_users = User::query()
+    .where_eq("status", "active")
+    .remember(3600) // Cache for 1 hour
+    .get()
+    .await?;
+```
+
+### Query Chunking
+Process millions of records seamlessly without running out of memory using `.chunk()`.
+
+```rust
+User::query()
+    .where_eq("status", "active")
+    .chunk(1000, |mut batch| Box::pin(async move {
+        for user in batch.iter_mut() {
+            println!("Processing user: {}", user.name);
+        }
+        Ok(())
+    }))
+    .await?;
+```
+
+### Background Event Broadcasting
+When you enable the `redis` feature, Rust Eloquent automatically broadcasts Pub/Sub events for model lifecycles. If you update a user, an event is emitted to Redis: `eloquent:User:updated`, carrying the updated JSON data. This is perfect for syncing external search engines or triggering background workers!
 
 ---
 

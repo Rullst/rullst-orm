@@ -37,7 +37,13 @@ All core features of Laravel Eloquent have been successfully ported to Rust.
 - [x] **Constrained Eager Loading**: Passing closures to relationships like `.with_posts_constrained(|q| q...)`.
 - [x] **Rust Artisan (Migrations CLI)**: Command-line tool to generate, run, and rollback database migrations.
 - [x] **Observers & Lifecycle Events**: Global observer pattern to listen to model events (`creating`, `saved`, `deleted`) externally.
-- [ ] **Subqueries & Advanced Joins**: Allowing closures for complex SQL joins and subqueries.
-- [ ] **Artisan Seeding (db:seed)**: Populate tables via Artisan CLI using Seeders and Factories.
-- [ ] **Query Logging & Debugging**: Inspect the executed SQL directly in terminal for optimization.
-- [ ] **Model Serialization (Hiding Fields)**: Attribute `#[eloquent(hidden)]` to automatically skip sensitive columns during JSON serialization.
+- [x] **Subqueries & Advanced Joins**: Allowing closures for complex SQL joins and subqueries.
+- [x] **Artisan Seeding (db:seed)**: Populate tables via Artisan CLI using Seeders and Factories.
+- [x] **Query Logging & Debugging**: Inspect the executed SQL directly in terminal for optimization.
+- [x] **Model Serialization (Hiding Fields)**: Attribute `#[eloquent(hidden)]` to automatically skip sensitive columns during JSON serialization.
+
+## 🏭 Phase 4: Enterprise Scale (v1.0.0)
+- [x] **Read/Write Connections Split**: Automatic routing of `SELECT` queries to database replicas and `INSERT/UPDATE/DELETE` to the primary node.
+- [x] **Query Chunking & Cursors**: Methods like `.chunk(1000, |batch| ...)` to process millions of records safely without high memory usage.
+- [x] **Integrated Caching Layer**: Add `.remember(seconds)` using an optional Redis feature flag to automatically cache repetitive queries.
+- [x] **Background Event Hooks**: Optional pub/sub event broadcasting when models change, allowing seamless integration with external worker queues.

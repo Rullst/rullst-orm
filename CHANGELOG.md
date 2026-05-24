@@ -5,9 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.2.0] - 2026-05-24
+## [1.0.0] - 2026-05-24
 
-### Added (The Phase 3 Masterpiece Expansion)
+### Added (The Phase 3 & 4 Enterprise Expansion)
 - **Constrained Eager Loading:** Added closure-constrained eager loading support (`with_posts_constrained(|q| ...)`), allowing filtering and ordering nested relations before they are mapped.
 - **Global Lifecycle Observers:** Introduced a global type-safe observer pattern (`User::observe(Arc::new(UserObserverImpl))`) supporting `saving`, `saved`, `creating`, `created`, `updating`, `updated`, `deleting`, and `deleted` hooks.
 - **Rust Artisan CLI:** Engineered a transaction-safe database migration and seeding CLI architecture (`run_artisan` mapping `make:migration`, `migrate`, `migrate:rollback`, and `db:seed`).
@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Query Logging & Debugging:** Added internal `Eloquent::enable_query_log()` and `Eloquent::disable_query_log()` to instantly intercept and print generated SQL logic to STDOUT.
 - **Model Serialization & Field Hiding:** Enabled robust model JSON serialization natively compatible with `serde_json`. Added `#[eloquent(hidden)]` struct attribute to prevent sensitive columns from being exported inside `to_json()`.
 - **`Json<T>` Transparency:** Extended internal wrapper `Json<T>` to natively implement `serde::Serialize` and `serde::Deserialize` for any inner struct `T`.
+- **Read/Write Connection Splitting:** Added support for dedicated read replicas (`Eloquent::init_replicas`) and automatic query routing: read queries go to replicas, write operations go to the primary node.
+- **Query Chunking & Cursors:** Implemented `.chunk(size, callback)` and `.chunk_with_tx(size, callback)` to process massive datasets efficiently in batches without loading everything into memory.
+- **Integrated Caching Layer:** Introduced the `redis` feature flag and the `.remember(seconds)` query method to instantly cache expensive database lookups natively.
+- **Background Event Hooks:** Added Redis Pub/Sub broadcasting for model lifecycle events. When models are saved or deleted, events are automatically broadcasted for external worker consumption.
 
 ### Changed
 - Refactored core macro procedural code for faster compilation checks.
