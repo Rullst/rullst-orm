@@ -1,4 +1,5 @@
 use rust_eloquent::{Eloquent, sqlx::FromRow};
+use std::time::Duration;
 
 #[derive(Debug, Clone, FromRow, rust_eloquent::Eloquent)]
 #[eloquent(table = "products")]
