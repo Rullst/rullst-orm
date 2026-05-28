@@ -44,8 +44,16 @@ Add the library to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-rust-eloquent = "1.1.7"
-tokio = { version = "1.0", features = ["full"] }
+rust-eloquent = "1.1.8"
+tokio = { version = "1.43", features = ["full"] }
+```
+
+If you plan to use Redis caching or Pub/Sub events, enable the `redis` feature:
+
+```toml
+[dependencies]
+rust-eloquent = { version = "1.1.8", features = ["redis"] }
+tokio = { version = "1.43", features = ["full"] }
 ```
 
 ## 📖 Quick Start

@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.8] - 2026-05-28
+
+### Fixed
+- **SQLx 0.9 QueryBuilder Compatibility:** Switched generated reads to typed `build_query_as()` calls so model queries, counts, and plucks compile cleanly with sqlx 0.9.
+- **Redis Publish Inference:** Added explicit `publish()` return typing to avoid `FromRedisValue` inference errors in lifecycle hooks.
+- **Many-to-Many Pivot Joins:** Fixed pivot related-key generation in the relationship macro so eager loading no longer references an undeclared `_pivot_rk` identifier.
+- **Factory Example Compatibility:** Updated the factories example to the current `rand` 0.10 API.
+
+---
+
 ## [1.1.7] - 2026-05-28
 
 ### Fixed
