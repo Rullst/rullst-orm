@@ -1,4 +1,6 @@
 use rust_eloquent::{Eloquent, sqlx::FromRow};
+#[cfg(feature = "redis")]
+use std::time::Duration;
 #[derive(Debug, Clone, FromRow, rust_eloquent::Eloquent)]
 #[eloquent(table = "products")]
 pub struct Product {
