@@ -68,23 +68,11 @@ pub fn generate(
 
     let delete_logic = if has_soft_deletes {
         quote! {
-            use rust_eloquent::sqlx::query_builder::QueryBuilder;
-            use rust_eloquent::sqlx::Execute;
-            let mut query_builder = QueryBuilder::new("UPDATE ");
-            query_builder.push(#table_name);
-            query_builder.push(" SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?");
-            let query = query_builder.build();
-            query.bind(self.id).execute(pool).await?;
+            let query = format!("UPDATE {} SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?", #table_name);
         }
     } else {
         quote! {
-            use rust_eloquent::sqlx::query_builder::QueryBuilder;
-            use rust_eloquent::sqlx::Execute;
-            let mut query_builder = QueryBuilder::new("DELETE FROM ");
-            query_builder.push(#table_name);
-            query_builder.push(" WHERE id = ?");
-            let query = query_builder.build();
-            query.bind(self.id).execute(pool).await?;
+            let query = format!("DELETE FROM {} WHERE id = ?", #table_name);
         }
     };
 
@@ -271,10 +259,10 @@ pub fn generate(
                         query_builder.push(") VALUES (");
                         query_builder.push(#insert_placeholders_str);
                         query_builder.push(") RETURNING id");
-                        let query = query_builder.build();
                         if rust_eloquent::schema::is_query_log_enabled() {
-                            println!("[SQL Debug] {}", query.sql());
+                            println!("[SQL Debug] {:?}", query_builder.sql());
                         }
+                        let query = query_builder.build();
                         let row = query
                             #(#bind_inserts)*
                             .fetch_one(executor)
@@ -290,10 +278,10 @@ pub fn generate(
                         query_builder.push(") VALUES (");
                         query_builder.push(#insert_placeholders_str);
                         query_builder.push(")");
-                        let query = query_builder.build();
                         if rust_eloquent::schema::is_query_log_enabled() {
-                            println!("[SQL Debug] {}", query.sql());
+                            println!("[SQL Debug] {:?}", query_builder.sql());
                         }
+                        let query = query_builder.build();
                         let result = query
                             #(#bind_inserts)*
                             .execute(executor)
@@ -326,10 +314,10 @@ pub fn generate(
                     query_builder.push(" SET ");
                     query_builder.push(#update_sets_str);
                     query_builder.push(" WHERE id = ?");
-                    let query = query_builder.build();
                     if rust_eloquent::schema::is_query_log_enabled() {
-                        println!("[SQL Debug] {} | ID: {}", query.sql(), self.id);
+                        println!("[SQL Debug] {:?} | ID: {}", query_builder.sql(), self.id);
                     }
+                    let query = query_builder.build();
                     query
                         #(#bind_updates)*
                         .bind(self.id)
@@ -403,9 +391,14 @@ pub fn generate(
                 }
                 #delete_logic
                 if rust_eloquent::schema::is_query_log_enabled() {
-                    println!("[SQL Debug] {} | ID: {}", query, self.id);
+                    println!("[SQL Debug] {:?} | ID: {}", query, self.id);
                 }
-                rust_eloquent::sqlx::query(&query).bind(self.id).execute(executor).await?;
+                use rust_eloquent::sqlx::query_builder::QueryBuilder;
+                use rust_eloquent::sqlx::Execute;
+                let mut query_builder = QueryBuilder::new(&query);
+                query_builder.push_bind(self.id);
+                let query = query_builder.build();
+                query.execute(executor).await?;
                 {
                     let observers = {
                         let list = Self::observers().read().expect("Failed to acquire read lock on observers - possible poisoning");

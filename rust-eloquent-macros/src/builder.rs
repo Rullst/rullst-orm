@@ -530,21 +530,20 @@ pub fn generate(
                 }
 
                 if rust_eloquent::schema::is_query_log_enabled() {
-                    println!("[SQL Debug] {} | Bindings: {:?}", query_str, self.bindings);
+                    println!("[SQL Debug] {:?} | Bindings: {:?}", query_str, self.bindings);
                 }
                 let mut results: Vec<#name> = {
                     use rust_eloquent::sqlx::query_builder::QueryBuilder;
                     let mut query_builder = QueryBuilder::new(&query_str);
-                    let mut query = query_builder.build();
                     for binding in &self.bindings {
                         match binding {
-                            rust_eloquent::EloquentValue::String(s) => rust_eloquent::sqlx::Arguments::add(&mut query, s.clone()).expect("Failed to add String argument to query"),
-                            rust_eloquent::EloquentValue::Int(i) => rust_eloquent::sqlx::Arguments::add(&mut query, *i).expect("Failed to add Int argument to query"),
-                            rust_eloquent::EloquentValue::Float(f) => rust_eloquent::sqlx::Arguments::add(&mut query, *f).expect("Failed to add Float argument to query"),
-                            rust_eloquent::EloquentValue::Bool(b) => rust_eloquent::sqlx::Arguments::add(&mut query, *b).expect("Failed to add Bool argument to query"),
+                            rust_eloquent::EloquentValue::String(s) => { query_builder.push_bind(s.clone()); }
+                            rust_eloquent::EloquentValue::Int(i) => { query_builder.push_bind(*i); }
+                            rust_eloquent::EloquentValue::Float(f) => { query_builder.push_bind(*f); }
+                            rust_eloquent::EloquentValue::Bool(b) => { query_builder.push_bind(*b); }
                         }
                     }
-                    query.fetch_all(executor).await?
+                    query_builder.build_query_as::<#name>().fetch_all(executor).await?
                 };
                 
                 #[cfg(feature = "redis")]
@@ -596,22 +595,21 @@ pub fn generate(
                 
                 let query_str = total_builder.to_sql();
                 if rust_eloquent::schema::is_query_log_enabled() {
-                    println!("[SQL Debug] {} | Bindings: {:?}", query_str, total_builder.bindings);
+                    println!("[SQL Debug] {:?} | Bindings: {:?}", query_str, total_builder.bindings);
                 }
                 let pool = rust_eloquent::Eloquent::read_pool();
                 let total_row: (i64,) = {
                     use rust_eloquent::sqlx::query_builder::QueryBuilder;
                     let mut query_builder = QueryBuilder::new(&query_str);
-                    let mut query = query_builder.build();
                     for binding in &total_builder.bindings {
                         match binding {
-                            rust_eloquent::EloquentValue::String(s) => rust_eloquent::sqlx::Arguments::add(&mut query, s.clone()).expect("Failed to add String argument to query"),
-                            rust_eloquent::EloquentValue::Int(i) => rust_eloquent::sqlx::Arguments::add(&mut query, *i).expect("Failed to add Int argument to query"),
-                            rust_eloquent::EloquentValue::Float(f) => rust_eloquent::sqlx::Arguments::add(&mut query, *f).expect("Failed to add Float argument to query"),
-                            rust_eloquent::EloquentValue::Bool(b) => rust_eloquent::sqlx::Arguments::add(&mut query, *b).expect("Failed to add Bool argument to query"),
+                            rust_eloquent::EloquentValue::String(s) => { query_builder.push_bind(s.clone()); }
+                            rust_eloquent::EloquentValue::Int(i) => { query_builder.push_bind(*i); }
+                            rust_eloquent::EloquentValue::Float(f) => { query_builder.push_bind(*f); }
+                            rust_eloquent::EloquentValue::Bool(b) => { query_builder.push_bind(*b); }
                         }
                     }
-                    query.fetch_one(pool).await?
+                    query_builder.build_query_as::<(i64,)>().fetch_one(pool).await?
                 };
                 let total = total_row.0;
                 let last_page = (total as f64 / per_page as f64).ceil() as usize;
@@ -641,22 +639,21 @@ pub fn generate(
                 builder.order_by = None;
                 let query_str = builder.to_sql();
                 if rust_eloquent::schema::is_query_log_enabled() {
-                    println!("[SQL Debug] {} | Bindings: {:?}", query_str, builder.bindings);
+                    println!("[SQL Debug] {:?} | Bindings: {:?}", query_str, builder.bindings);
                 }
                 
                 let row: (i64,) = {
                     use rust_eloquent::sqlx::query_builder::QueryBuilder;
                     let mut query_builder = QueryBuilder::new(&query_str);
-                    let mut query = query_builder.build();
                     for binding in &builder.bindings {
                         match binding {
-                            rust_eloquent::EloquentValue::String(s) => rust_eloquent::sqlx::Arguments::add(&mut query, s.clone()).expect("Failed to add String argument to query"),
-                            rust_eloquent::EloquentValue::Int(i) => rust_eloquent::sqlx::Arguments::add(&mut query, *i).expect("Failed to add Int argument to query"),
-                            rust_eloquent::EloquentValue::Float(f) => rust_eloquent::sqlx::Arguments::add(&mut query, *f).expect("Failed to add Float argument to query"),
-                            rust_eloquent::EloquentValue::Bool(b) => rust_eloquent::sqlx::Arguments::add(&mut query, *b).expect("Failed to add Bool argument to query"),
+                            rust_eloquent::EloquentValue::String(s) => { query_builder.push_bind(s.clone()); }
+                            rust_eloquent::EloquentValue::Int(i) => { query_builder.push_bind(*i); }
+                            rust_eloquent::EloquentValue::Float(f) => { query_builder.push_bind(*f); }
+                            rust_eloquent::EloquentValue::Bool(b) => { query_builder.push_bind(*b); }
                         }
                     }
-                    query.fetch_one(pool).await?
+                    query_builder.build_query_as::<(i64,)>().fetch_one(pool).await?
                 };
                 Ok(row.0)
             }
@@ -731,15 +728,15 @@ pub fn generate(
                 let result = {
                     use rust_eloquent::sqlx::query_builder::QueryBuilder;
                     let mut query_builder = QueryBuilder::new(&query_str);
-                    let mut query = query_builder.build();
                     for binding in &self.bindings {
                         match binding {
-                            rust_eloquent::EloquentValue::String(s) => rust_eloquent::sqlx::Arguments::add(&mut query, s.clone()).expect("Failed to add String argument to query"),
-                            rust_eloquent::EloquentValue::Int(i) => rust_eloquent::sqlx::Arguments::add(&mut query, *i).expect("Failed to add Int argument to query"),
-                            rust_eloquent::EloquentValue::Float(f) => rust_eloquent::sqlx::Arguments::add(&mut query, *f).expect("Failed to add Float argument to query"),
-                            rust_eloquent::EloquentValue::Bool(b) => rust_eloquent::sqlx::Arguments::add(&mut query, *b).expect("Failed to add Bool argument to query"),
+                            rust_eloquent::EloquentValue::String(s) => { query_builder.push_bind(s.clone()); }
+                            rust_eloquent::EloquentValue::Int(i) => { query_builder.push_bind(*i); }
+                            rust_eloquent::EloquentValue::Float(f) => { query_builder.push_bind(*f); }
+                            rust_eloquent::EloquentValue::Bool(b) => { query_builder.push_bind(*b); }
                         }
                     }
+                    let query = query_builder.build();
                     query.execute(executor).await?
                 };
                 Ok(result.rows_affected())
@@ -753,16 +750,15 @@ pub fn generate(
                 let rows: Vec<(String,)> = {
                     use rust_eloquent::sqlx::query_builder::QueryBuilder;
                     let mut query_builder = QueryBuilder::new(&query_str);
-                    let mut query = query_builder.build();
                     for binding in &builder.bindings {
                         match binding {
-                            rust_eloquent::EloquentValue::String(s) => rust_eloquent::sqlx::Arguments::add(&mut query, s.clone()).expect("Failed to add String argument to query"),
-                            rust_eloquent::EloquentValue::Int(i) => rust_eloquent::sqlx::Arguments::add(&mut query, *i).expect("Failed to add Int argument to query"),
-                            rust_eloquent::EloquentValue::Float(f) => rust_eloquent::sqlx::Arguments::add(&mut query, *f).expect("Failed to add Float argument to query"),
-                            rust_eloquent::EloquentValue::Bool(b) => rust_eloquent::sqlx::Arguments::add(&mut query, *b).expect("Failed to add Bool argument to query"),
+                            rust_eloquent::EloquentValue::String(s) => { query_builder.push_bind(s.clone()); }
+                            rust_eloquent::EloquentValue::Int(i) => { query_builder.push_bind(*i); }
+                            rust_eloquent::EloquentValue::Float(f) => { query_builder.push_bind(*f); }
+                            rust_eloquent::EloquentValue::Bool(b) => { query_builder.push_bind(*b); }
                         }
                     }
-                    query.fetch_all(pool).await?
+                    query_builder.build_query_as::<(String,)>().fetch_all(pool).await?
                 };
                 Ok(rows.into_iter().map(|(s,)| s).collect())
             }
@@ -775,16 +771,15 @@ pub fn generate(
                 let rows: Vec<(i32,)> = {
                     use rust_eloquent::sqlx::query_builder::QueryBuilder;
                     let mut query_builder = QueryBuilder::new(&query_str);
-                    let mut query = query_builder.build();
                     for binding in &builder.bindings {
                         match binding {
-                            rust_eloquent::EloquentValue::String(s) => rust_eloquent::sqlx::Arguments::add(&mut query, s.clone()).expect("Failed to add String argument to query"),
-                            rust_eloquent::EloquentValue::Int(i) => rust_eloquent::sqlx::Arguments::add(&mut query, *i).expect("Failed to add Int argument to query"),
-                            rust_eloquent::EloquentValue::Float(f) => rust_eloquent::sqlx::Arguments::add(&mut query, *f).expect("Failed to add Float argument to query"),
-                            rust_eloquent::EloquentValue::Bool(b) => rust_eloquent::sqlx::Arguments::add(&mut query, *b).expect("Failed to add Bool argument to query"),
+                            rust_eloquent::EloquentValue::String(s) => { query_builder.push_bind(s.clone()); }
+                            rust_eloquent::EloquentValue::Int(i) => { query_builder.push_bind(*i); }
+                            rust_eloquent::EloquentValue::Float(f) => { query_builder.push_bind(*f); }
+                            rust_eloquent::EloquentValue::Bool(b) => { query_builder.push_bind(*b); }
                         }
                     }
-                    query.fetch_all(pool).await?
+                    query_builder.build_query_as::<(i32,)>().fetch_all(pool).await?
                 };
                 Ok(rows.into_iter().map(|(s,)| s).collect())
             }
