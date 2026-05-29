@@ -539,17 +539,16 @@ pub fn generate(
                     println!("[SQL Debug] {:?} | Bindings: {:?}", query_str, self.bindings);
                 }
                 let mut results: Vec<#name> = {
-                    use rust_eloquent::sqlx::query_builder::QueryBuilder;
-                    let mut query_builder = QueryBuilder::new(&query_str);
+                    let mut query = rust_eloquent::sqlx::query_as::<_, #name>(rust_eloquent::sqlx::AssertSqlSafe(query_str.as_str()));
                     for binding in &self.bindings {
                         match binding {
-                            rust_eloquent::EloquentValue::String(s) => { query_builder.push_bind(s.clone()); }
-                            rust_eloquent::EloquentValue::Int(i) => { query_builder.push_bind(*i); }
-                            rust_eloquent::EloquentValue::Float(f) => { query_builder.push_bind(*f); }
-                            rust_eloquent::EloquentValue::Bool(b) => { query_builder.push_bind(*b); }
+                            rust_eloquent::EloquentValue::String(s) => { query = query.bind(s.clone()); }
+                            rust_eloquent::EloquentValue::Int(i) => { query = query.bind(*i); }
+                            rust_eloquent::EloquentValue::Float(f) => { query = query.bind(*f); }
+                            rust_eloquent::EloquentValue::Bool(b) => { query = query.bind(*b); }
                         }
                     }
-                    query_builder.build_query_as::<#name>().fetch_all(executor).await?
+                    query.fetch_all(executor).await?
                 };
                 
                 #[cfg(feature = "redis")]
@@ -605,17 +604,16 @@ pub fn generate(
                 }
                 let pool = rust_eloquent::Eloquent::read_pool();
                 let total_row: (i64,) = {
-                    use rust_eloquent::sqlx::query_builder::QueryBuilder;
-                    let mut query_builder = QueryBuilder::new(&query_str);
+                    let mut query = rust_eloquent::sqlx::query_as::<_, (i64,)>(rust_eloquent::sqlx::AssertSqlSafe(query_str.as_str()));
                     for binding in &total_builder.bindings {
                         match binding {
-                            rust_eloquent::EloquentValue::String(s) => { query_builder.push_bind(s.clone()); }
-                            rust_eloquent::EloquentValue::Int(i) => { query_builder.push_bind(*i); }
-                            rust_eloquent::EloquentValue::Float(f) => { query_builder.push_bind(*f); }
-                            rust_eloquent::EloquentValue::Bool(b) => { query_builder.push_bind(*b); }
+                            rust_eloquent::EloquentValue::String(s) => { query = query.bind(s.clone()); }
+                            rust_eloquent::EloquentValue::Int(i) => { query = query.bind(*i); }
+                            rust_eloquent::EloquentValue::Float(f) => { query = query.bind(*f); }
+                            rust_eloquent::EloquentValue::Bool(b) => { query = query.bind(*b); }
                         }
                     }
-                    query_builder.build_query_as::<(i64,)>().fetch_one(pool).await?
+                    query.fetch_one(pool).await?
                 };
                 let total = total_row.0;
                 let last_page = (total as f64 / per_page as f64).ceil() as usize;
@@ -649,17 +647,16 @@ pub fn generate(
                 }
                 
                 let row: (i64,) = {
-                    use rust_eloquent::sqlx::query_builder::QueryBuilder;
-                    let mut query_builder = QueryBuilder::new(&query_str);
+                    let mut query = rust_eloquent::sqlx::query_as::<_, (i64,)>(rust_eloquent::sqlx::AssertSqlSafe(query_str.as_str()));
                     for binding in &builder.bindings {
                         match binding {
-                            rust_eloquent::EloquentValue::String(s) => { query_builder.push_bind(s.clone()); }
-                            rust_eloquent::EloquentValue::Int(i) => { query_builder.push_bind(*i); }
-                            rust_eloquent::EloquentValue::Float(f) => { query_builder.push_bind(*f); }
-                            rust_eloquent::EloquentValue::Bool(b) => { query_builder.push_bind(*b); }
+                            rust_eloquent::EloquentValue::String(s) => { query = query.bind(s.clone()); }
+                            rust_eloquent::EloquentValue::Int(i) => { query = query.bind(*i); }
+                            rust_eloquent::EloquentValue::Float(f) => { query = query.bind(*f); }
+                            rust_eloquent::EloquentValue::Bool(b) => { query = query.bind(*b); }
                         }
                     }
-                    query_builder.build_query_as::<(i64,)>().fetch_one(pool).await?
+                    query.fetch_one(pool).await?
                 };
                 Ok(row.0)
             }
@@ -732,17 +729,15 @@ pub fn generate(
                 }
 
                 let result = {
-                    use rust_eloquent::sqlx::query_builder::QueryBuilder;
-                    let mut query_builder = QueryBuilder::new(&query_str);
+                    let mut query = rust_eloquent::sqlx::query(rust_eloquent::sqlx::AssertSqlSafe(query_str.as_str()));
                     for binding in &self.bindings {
                         match binding {
-                            rust_eloquent::EloquentValue::String(s) => { query_builder.push_bind(s.clone()); }
-                            rust_eloquent::EloquentValue::Int(i) => { query_builder.push_bind(*i); }
-                            rust_eloquent::EloquentValue::Float(f) => { query_builder.push_bind(*f); }
-                            rust_eloquent::EloquentValue::Bool(b) => { query_builder.push_bind(*b); }
+                            rust_eloquent::EloquentValue::String(s) => { query = query.bind(s.clone()); }
+                            rust_eloquent::EloquentValue::Int(i) => { query = query.bind(*i); }
+                            rust_eloquent::EloquentValue::Float(f) => { query = query.bind(*f); }
+                            rust_eloquent::EloquentValue::Bool(b) => { query = query.bind(*b); }
                         }
                     }
-                    let query = query_builder.build();
                     query.execute(executor).await?
                 };
                 Ok(result.rows_affected())
@@ -754,17 +749,16 @@ pub fn generate(
                 builder.selects = Some(column.to_string());
                 let query_str = builder.to_sql();
                 let rows: Vec<(String,)> = {
-                    use rust_eloquent::sqlx::query_builder::QueryBuilder;
-                    let mut query_builder = QueryBuilder::new(&query_str);
+                    let mut query = rust_eloquent::sqlx::query_as::<_, (String,)>(rust_eloquent::sqlx::AssertSqlSafe(query_str.as_str()));
                     for binding in &builder.bindings {
                         match binding {
-                            rust_eloquent::EloquentValue::String(s) => { query_builder.push_bind(s.clone()); }
-                            rust_eloquent::EloquentValue::Int(i) => { query_builder.push_bind(*i); }
-                            rust_eloquent::EloquentValue::Float(f) => { query_builder.push_bind(*f); }
-                            rust_eloquent::EloquentValue::Bool(b) => { query_builder.push_bind(*b); }
+                            rust_eloquent::EloquentValue::String(s) => { query = query.bind(s.clone()); }
+                            rust_eloquent::EloquentValue::Int(i) => { query = query.bind(*i); }
+                            rust_eloquent::EloquentValue::Float(f) => { query = query.bind(*f); }
+                            rust_eloquent::EloquentValue::Bool(b) => { query = query.bind(*b); }
                         }
                     }
-                    query_builder.build_query_as::<(String,)>().fetch_all(pool).await?
+                    query.fetch_all(pool).await?
                 };
                 Ok(rows.into_iter().map(|(s,)| s).collect())
             }
@@ -775,17 +769,16 @@ pub fn generate(
                 builder.selects = Some(column.to_string());
                 let query_str = builder.to_sql();
                 let rows: Vec<(i32,)> = {
-                    use rust_eloquent::sqlx::query_builder::QueryBuilder;
-                    let mut query_builder = QueryBuilder::new(&query_str);
+                    let mut query = rust_eloquent::sqlx::query_as::<_, (i32,)>(rust_eloquent::sqlx::AssertSqlSafe(query_str.as_str()));
                     for binding in &builder.bindings {
                         match binding {
-                            rust_eloquent::EloquentValue::String(s) => { query_builder.push_bind(s.clone()); }
-                            rust_eloquent::EloquentValue::Int(i) => { query_builder.push_bind(*i); }
-                            rust_eloquent::EloquentValue::Float(f) => { query_builder.push_bind(*f); }
-                            rust_eloquent::EloquentValue::Bool(b) => { query_builder.push_bind(*b); }
+                            rust_eloquent::EloquentValue::String(s) => { query = query.bind(s.clone()); }
+                            rust_eloquent::EloquentValue::Int(i) => { query = query.bind(*i); }
+                            rust_eloquent::EloquentValue::Float(f) => { query = query.bind(*f); }
+                            rust_eloquent::EloquentValue::Bool(b) => { query = query.bind(*b); }
                         }
                     }
-                    query_builder.build_query_as::<(i32,)>().fetch_all(pool).await?
+                    query.fetch_all(pool).await?
                 };
                 Ok(rows.into_iter().map(|(s,)| s).collect())
             }

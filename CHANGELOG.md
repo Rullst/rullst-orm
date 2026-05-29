@@ -5,15 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.1.13] - 2026-05-29
 
 ### Added
-- **Release Automation:** Integrated `release-plz` GitHub Action for automated semantic versioning, changelog generation, and Crates.io publishing.
+- **Release Automation:** Integrated GitHub Actions CI/CD for automated Crates.io publishing triggered by `v*` Git tags.
 - **Security Audits in CI:** Added `cargo audit` to the `ci.yml` pipeline to automatically block PRs with vulnerable dependencies.
 - **Unit Tests:** Added full test coverage for `enable_query_log`, `validate_table_name`, `JoinClause`, `EloquentValue`, and string manipulation edge cases.
 - **Strict SQL Typing Architecture:** Complete integration of Cargo feature flags (`strict-postgres`, `strict-mysql`, `strict-sqlite`) to optionally enforce `sqlx` compile-time type verification instead of using `AnyPool`.
 - Custom `QueryResultExt` wrapper added to dynamically handle `last_insert_id()` logic across strict drivers.
 - **v2.0 Roadmap:** Updated `docs/v2_roadmap.md` with the strategy to use feature flags for Strict Typing and iterative implementation for the Zero-Copy Builder.
+
+### Fixed
+- **QueryBuilder Binding Bug (CRITICAL):** Fixed an issue where `sqlx` queries using `push_bind()` after initializing with strings containing `?` placeholders resulted in corrupt SQL. Converted all generated read methods and `delete` to correctly use `sqlx::query_as(&sql).bind()` wrapped in `AssertSqlSafe`.
+- **Database Error Propagation:** Removed silent `unwrap_or((0,))` fallbacks during migration verifications in `schema.rs`. All database driver errors are now accurately propagated to the caller.
+- **Clippy Warnings:** Fixed `collapsible_match` and `question_mark` warnings in macro parsing, and replaced manual ceiling division with `div_ceil()` in `collection.rs`.
+- **Safe Unwraps:** Converted implicit `.unwrap()` calls inside Schema Builder to explicit `.expect("...")` calls.
 
 ### Fixed
 - **10/10 Static Analysis Audit:** Completely cleared all critical warnings from the Jules static analysis engine!

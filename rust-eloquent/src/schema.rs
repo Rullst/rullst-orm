@@ -81,31 +81,31 @@ impl Blueprint {
             is_auto_increment: true,
             default_value: None,
         });
-        self.columns.last_mut().unwrap()
+        self.columns.last_mut().expect("BUG: columns is empty after push")
     }
 
     pub fn string(&mut self, name: &str) -> &mut Column {
         let col = Column::new(name, "TEXT");
         self.columns.push(col);
-        self.columns.last_mut().unwrap()
+        self.columns.last_mut().expect("BUG: columns is empty after push")
     }
 
     pub fn integer(&mut self, name: &str) -> &mut Column {
         let col = Column::new(name, "INTEGER");
         self.columns.push(col);
-        self.columns.last_mut().unwrap()
+        self.columns.last_mut().expect("BUG: columns is empty after push")
     }
 
     pub fn float(&mut self, name: &str) -> &mut Column {
         let col = Column::new(name, "REAL");
         self.columns.push(col);
-        self.columns.last_mut().unwrap()
+        self.columns.last_mut().expect("BUG: columns is empty after push")
     }
 
     pub fn boolean(&mut self, name: &str) -> &mut Column {
         let col = Column::new(name, "INTEGER");
         self.columns.push(col);
-        self.columns.last_mut().unwrap()
+        self.columns.last_mut().expect("BUG: columns is empty after push")
     }
 
     pub fn timestamps(&mut self) {
@@ -121,7 +121,7 @@ impl Blueprint {
     pub fn soft_deletes(&mut self) {
         let col = Column::new("deleted_at", "TEXT");
         self.columns.push(col);
-        self.columns.last_mut().unwrap().nullable();
+        self.columns.last_mut().expect("BUG: columns is empty after push").nullable();
     }
     
     pub fn build(&self) -> String {
@@ -250,12 +250,12 @@ async fn status_migrations(migrations: Vec<Box<dyn Migration>>) -> Result<(), Er
     let table_exists = match driver {
         "postgres" | "mysql" => {
             let query_str = "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'migrations'";
-            let row: (i64,) = sqlx::query_as(query_str).fetch_one(pool).await.unwrap_or((0,));
+            let row: (i64,) = sqlx::query_as(query_str).fetch_one(pool).await?;
             row.0 > 0
         }
         _ => {
             let query_str = "SELECT COUNT(*) FROM sqlite_schema WHERE type='table' AND name='migrations'";
-            let row: (i64,) = sqlx::query_as(query_str).fetch_one(pool).await.unwrap_or((0,));
+            let row: (i64,) = sqlx::query_as(query_str).fetch_one(pool).await?;
             row.0 > 0
         }
     };
@@ -269,7 +269,9 @@ async fn status_migrations(migrations: Vec<Box<dyn Migration>>) -> Result<(), Er
         std::collections::HashSet::new()
     };
 
-    println!("{:<40} | {}", "Migration Name", "Status");
+    let name_header = "Migration Name";
+    let status_header = "Status";
+    println!("{name_header:<40} | {status_header}");
     println!("{}", "-".repeat(55));
     for m in migrations {
         let name = m.name();
@@ -450,12 +452,12 @@ async fn rollback_migrations(migrations: Vec<Box<dyn Migration>>) -> Result<(), 
     let table_exists = match driver {
         "postgres" | "mysql" => {
             let query_str = "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'migrations'";
-            let row: (i64,) = sqlx::query_as(query_str).fetch_one(pool).await.unwrap_or((0,));
+            let row: (i64,) = sqlx::query_as(query_str).fetch_one(pool).await?;
             row.0 > 0
         }
         _ => {
             let query_str = "SELECT COUNT(*) FROM sqlite_schema WHERE type='table' AND name='migrations'";
-            let row: (i64,) = sqlx::query_as(query_str).fetch_one(pool).await.unwrap_or((0,));
+            let row: (i64,) = sqlx::query_as(query_str).fetch_one(pool).await?;
             row.0 > 0
         }
     };

@@ -47,4 +47,4 @@ All core features of Laravel Eloquent have been successfully ported to Rust.
 - [x] **Query Chunking & Cursors**: Methods like `.chunk(1000, |batch| ...)` to process millions of records safely without high memory usage.
 - [x] **Integrated Caching Layer**: Add `.remember(seconds)` using an optional Redis feature flag to automatically cache repetitive queries.
 - [x] **Background Event Hooks**: Optional pub/sub event broadcasting when models change, allowing seamless integration with external worker queues.
-- [x] **Security & Performance Static Audit**: Perfect 10/10 architecture score achieved, resolving all N+1, O(N²), and security issues from Jules.
+- [x] **Security & Performance Static Audit**: All critical and medium-priority findings from the Jules/Antigravity architecture audit resolved in v1.1.13 (QueryBuilder binding fix, error propagation, clippy compliance).

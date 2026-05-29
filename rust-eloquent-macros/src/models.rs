@@ -399,12 +399,7 @@ pub fn generate(
                 if rust_eloquent::schema::is_query_log_enabled() {
                     println!("[SQL Debug] {:?} | ID: {}", query, self.id);
                 }
-                use rust_eloquent::sqlx::query_builder::QueryBuilder;
-                use rust_eloquent::sqlx::Execute;
-                let mut query_builder = QueryBuilder::new(&query);
-                query_builder.push_bind(self.id);
-                let query = query_builder.build();
-                query.execute(executor).await?;
+                rust_eloquent::sqlx::query(rust_eloquent::sqlx::AssertSqlSafe(query.as_str())).bind(self.id).execute(executor).await?;
                 {
                     let observers = {
                         let list = Self::observers().read().expect("Failed to acquire read lock on observers - possible poisoning");

@@ -12,11 +12,10 @@ fn validate_relation_attribute(key: &str, value: &str, span: proc_macro2::Span) 
                 return Err(syn::Error::new(span, format!("{} model name should start with uppercase (PascalCase)", key)));
             }
         }
-        "foreign_key" | "related_key" | "pivot_table" | "local_key" | "name" => {
-            if value.is_empty() {
+        "foreign_key" | "related_key" | "pivot_table" | "local_key" | "name"
+            if value.is_empty() => {
                 return Err(syn::Error::new(span, format!("{} requires a value", key)));
             }
-        }
         _ => {}
     }
     Ok(())
@@ -132,9 +131,7 @@ pub fn parse(input: &DeriveInput) -> Result<ParsedModel, syn::Error> {
                             let key = parts[0].trim();
                             let val = parts[1].trim().trim_matches('"');
                             // Validate relation attributes
-                            if let Err(e) = validate_relation_attribute(key, val, field.span()) {
-                                return Err(e);
-                            }
+                            validate_relation_attribute(key, val, field.span())?;
                             match key {
                                 "has_many" => { is_relation = true; rel_type = "has_many".to_string(); rel_model = val.to_string(); }
                                 "has_one" => { is_relation = true; rel_type = "has_one".to_string(); rel_model = val.to_string(); }
