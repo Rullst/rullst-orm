@@ -5,7 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.1.13] - 2026-05-29
+## [3.0.0] - 2026-05-30
+
+### Changed
+- **Rebranding API:** Breaking change. All `EloquentModel`, `EloquentValue`, `EloquentDatabase` references internally and externally are refactored to `RullstModel`, `RullstValue`, etc., fully unifying the crate's naming convention with the new `rullst-orm` name.
+- Updated `#[eloquent(...)]` helper macro to `#[rullst(...)]`.
 
 ### Added
 - **Release Automation:** Integrated GitHub Actions CI/CD for automated Crates.io publishing triggered by `v*` Git tags.
