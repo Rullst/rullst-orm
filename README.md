@@ -58,18 +58,16 @@ cargo add rullst-orm -F redis
 
 `rullst-orm` uses Cargo Feature Flags to let you choose between developer productivity and extreme Rust performance, keeping everything in a single, unified repository!
 
-- **Standard Mode (Default)**: Prioritizes extreme ease-of-use and dynamic typing (just like Laravel). It uses `sqlx::AnyPool` and handles lifetimes automatically by allocating memory dynamically under the hood, making it perfect for rapid product development (SaaS, APIs, Web Apps).
-- **Strict Typing Mode**: Enforces `sqlx` compile-time type verification by bypassing `AnyPool` and binding directly to a specific driver (e.g., Postgres, MySQL, SQLite). *Note: The full Zero-Copy memory management (`std::borrow::Cow`) is currently on our roadmap for future updates.*
+- **Standard Mode (Default)**: Prioritizes extreme ease-of-use and dynamic typing (just like Laravel). It handles lifetimes automatically by allocating memory dynamically under the hood, making it perfect for rapid product development (SaaS, APIs, Web Apps).
+- **Strict Mode (Zero-Copy)**: Prioritizes zero-cost abstractions, zero-copy memory management (`std::borrow::Cow`), and compile-time SQL verification. It introduces lifetimes into your code but unlocks maximum hardware performance for high-load edge or financial systems. 
 
-To enable the Strict Typing Mode, simply use the specific database feature flag in your `Cargo.toml`:
+To enable the Strict Performance Mode, simply use the feature flag in your `Cargo.toml`:
 ```toml
-# Developer Productivity (Default - Dynamic AnyPool)
+# Developer Productivity (Default)
 rullst-orm = "3.0"
 
-# Strict Type Verification (Choose one specific driver)
-rullst-orm = { version = "3.0", features = ["strict-postgres"] }
-# or features = ["strict-mysql"]
-# or features = ["strict-sqlite"]
+# Extreme Rust Performance (Strict / Zero-Copy)
+rullst-orm = { version = "3.0", features = ["strict"] }
 ```
 
 ## 📖 Quick Start
