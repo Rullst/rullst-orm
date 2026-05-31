@@ -5,13 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.0.1] - 2026-05-31
+## [3.0.2-1] - 2026-05-31
+
+### Security (SQL Injection Corrections)
+- **Scout Search Parameterization:** Completely removed SQL interpolation from the generated `search()` macro method. Replaced it with native, driver-aware parametrized LIKE logic (`CAST(col AS type) LIKE ?`) binding the query values dynamically.
+- **Join Condition Validation:** Added robust table and column identifier validation to `JoinClause::on` along with a strict operator allowlist (`=`, `!=`, `<>`, `<`, `>`, `<=`, `>=`) preventing arbitrary SQL execution.
+- **Query Builder Sanitization:** Implemented safe identifier validation inside critical dynamic query builder methods (`where_column`, `order_by`, `order_by_desc`), guarding against unauthorized dynamic payload execution.
 
 ### Fixed
 - **Dev-Dependencies Resolution (CRITICAL):** Fixed an outdated `rand` version assignment (`0.1`) in `[dev-dependencies]` that triggered severe compiler errors by forcing Cargo to pull obsolete ecosystem crates (like `log v0.2.5`) from 2015. Updated seamlessly to match `rand = "0.10"`.
+- **Eager Loading Morph N+1:** Restructured the procedural relationship generator mapping in `rullst-orm-macros/src/relationships.rs`. Replaced the previous N+1 query execution loops with single batched queries (`WHERE morph_id IN (...) AND morph_type = 'Name'`) for `morph_many` and `morph_one` relations.
 
 ### Changed
 - **Flexible Versioning Model:** Refactored direct ecosystem dependencies (`tokio`, `serde`, `serde_json`, `async-trait`, `futures`, `redis`, `axum`) from highly locked-down semantic versions to modern, flexible single/dual-digit identifiers. This enables effortless automatic downstream patch and minor bugfix upgrades on `cargo update` without risking user-facing dependency conflicts.
+
+### Added
+- **Comprehensive Unit Testing Suite:** Significantly expanded repository test coverage to validate the engine's core functionality, including:
+  - `schema.rs`: Validations for `timestamps()`, `soft_deletes()`, and `validate_identifier`.
+  - `collection.rs`: Full testing suite for `RullstCollection` transformations and statistics (`key_by`, `chunk`, `implode`, `sum_by`, `max_by_key`, `min_by_key`).
+  - `resource.rs`: Tests for JSON resource translation helpers (`JsonResource`, `ResourceCollection`).
+  - `audit.rs`: Serialized round-trip coverage for the `AuditLog` structure.
+  - `scout.rs`: Unit test for search engine state retrieval (`get_search_engine`).
+  - `tenant.rs`: Flow and context assertions for SaaS dynamic tenant allocation (`get_tenant_id`).
+  - `admin.rs`: Unit testing coverage verifying HTML template building blocks inside the UI dashboard (`dashboard_html`).
 
 ---
 

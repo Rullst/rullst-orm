@@ -217,7 +217,7 @@ impl Orm {
         // Initialize all replica pools concurrently — each connect() is independent I/O.
         let replica_futures: Vec<_> = replica_urls
             .into_iter()
-            .map(|url| RullstPool::connect(url))
+            .map(RullstPool::connect)
             .collect();
         let replicas = futures::future::try_join_all(replica_futures).await?;
         let _ = REPLICA_POOLS.set(replicas);
