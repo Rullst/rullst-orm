@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [3.0.0] - 2026-05-30
 
+**Release status:** Prepared for release. The repository includes automated publishing on tag creation (see `.github/workflows/ci.yml` -> `Publish to Crates.io`). To publish the release automatically, push a Git tag matching `v3.0.0` and ensure `CARGO_REGISTRY_TOKEN` is present in the repository secrets. Alternatively, merge the `release/v3.0.0` branch and create the tag from GitHub.
+
 ### Changed
 - **Rebranding API:** Breaking change. All `EloquentModel`, `EloquentValue`, `EloquentDatabase` references internally and externally are refactored to `RullstModel`, `RullstValue`, etc., fully unifying the crate's naming convention with the new `rullst-orm` name.
 - Updated `#[eloquent(...)]` helper macro to `#[rullst(...)]`.
