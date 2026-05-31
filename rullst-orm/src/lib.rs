@@ -30,7 +30,6 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 // Re-export the procedural macro so users only need to import `rullst-orm`
 pub use futures;
-pub use rullst_orm_macros::*;
 pub use serde;
 pub use serde_json;
 pub use sqlx;

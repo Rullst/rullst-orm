@@ -4,10 +4,10 @@ use rullst_orm::dashboard_html;
 
 #[tokio::main]
 async fn main() {
-    let app: Router = Router::new()
+    let _app: Router = Router::new()
         .route("/admin", get(|| async { Html(dashboard_html()) }));
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await.unwrap();
+    let _listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await.unwrap();
     println!("Rullst ORM Admin Panel is running!");
     println!("Open http://localhost:3000/admin in your browser.");
     

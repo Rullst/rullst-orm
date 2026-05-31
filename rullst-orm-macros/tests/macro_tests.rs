@@ -1,4 +1,3 @@
-use rullst_orm_macros::Orm;
 use syn::{parse_quote, DeriveInput};
 
 #[test]

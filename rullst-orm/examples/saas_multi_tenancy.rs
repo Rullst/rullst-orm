@@ -25,8 +25,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("--- TENANT 1 CONTEXT ---");
     with_tenant(t1_id.clone(), async {
-        let mut p = Product::default();
-        p.name = "Apple iPhone".to_string();
+        let mut p = Product { name: "Apple iPhone".to_string(), ..Default::default() };
         p.save().await.unwrap();
 
         let products = Product::all().await.unwrap();
@@ -35,8 +34,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("--- TENANT 2 CONTEXT ---");
     with_tenant(t2_id.clone(), async {
-        let mut p = Product::default();
-        p.name = "Samsung Galaxy".to_string();
+        let mut p = Product { name: "Samsung Galaxy".to_string(), ..Default::default() };
         p.save().await.unwrap();
 
         let products = Product::all().await.unwrap();
