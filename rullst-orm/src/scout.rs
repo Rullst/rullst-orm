@@ -40,9 +40,20 @@ mod tests {
         struct Noop;
         #[async_trait::async_trait]
         impl SearchEngine for Noop {
-            async fn update(&self, _: &str, _: i32, _: serde_json::Value) -> Result<(), sqlx::Error> { Ok(()) }
-            async fn delete(&self, _: &str, _: i32) -> Result<(), sqlx::Error> { Ok(()) }
-            async fn search(&self, _: &str, _: &str) -> Result<Vec<i32>, sqlx::Error> { Ok(vec![]) }
+            async fn update(
+                &self,
+                _: &str,
+                _: i32,
+                _: serde_json::Value,
+            ) -> Result<(), sqlx::Error> {
+                Ok(())
+            }
+            async fn delete(&self, _: &str, _: i32) -> Result<(), sqlx::Error> {
+                Ok(())
+            }
+            async fn search(&self, _: &str, _: &str) -> Result<Vec<i32>, sqlx::Error> {
+                Ok(vec![])
+            }
         }
         set_search_engine(Box::new(Noop));
         set_search_engine(Box::new(Noop)); // second call must not panic

@@ -8,7 +8,9 @@ const ALLOWED_OPERATORS: &[&str] = &["=", "!=", "<>", "<", ">", "<=", ">="];
 /// for qualified names like `table.column`.
 pub fn validate_identifier(name: &str) -> Result<(), Error> {
     if name.is_empty() {
-        return Err(Error::Protocol("SQL identifier cannot be empty".to_string()));
+        return Err(Error::Protocol(
+            "SQL identifier cannot be empty".to_string(),
+        ));
     }
     // At most one dot is allowed (for `table.column` notation)
     let dot_count = name.chars().filter(|&c| c == '.').count();
@@ -735,4 +737,3 @@ mod tests {
         );
     }
 }
-

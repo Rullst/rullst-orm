@@ -31,9 +31,7 @@ mod tests {
     #[tokio::test]
     async fn test_with_tenant_sets_and_restores() {
         // Inside with_tenant the id is visible; outside, it is gone.
-        let result = with_tenant("acme", async {
-            get_tenant_id()
-        }).await;
+        let result = with_tenant("acme", async { get_tenant_id() }).await;
         assert!(matches!(result, Some(RullstValue::String(ref s)) if s == "acme"));
         // After the scope, it should be None again.
         assert!(get_tenant_id().is_none());
