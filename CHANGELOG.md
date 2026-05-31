@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.1] - 2026-05-31
+
+### Fixed
+- **Dev-Dependencies Resolution (CRITICAL):** Fixed an outdated `rand` version assignment (`0.1`) in `[dev-dependencies]` that triggered severe compiler errors by forcing Cargo to pull obsolete ecosystem crates (like `log v0.2.5`) from 2015. Updated seamlessly to match `rand = "0.10"`.
+
+### Changed
+- **Flexible Versioning Model:** Refactored direct ecosystem dependencies (`tokio`, `serde`, `serde_json`, `async-trait`, `futures`, `redis`, `axum`) from highly locked-down semantic versions to modern, flexible single/dual-digit identifiers. This enables effortless automatic downstream patch and minor bugfix upgrades on `cargo update` without risking user-facing dependency conflicts.
+
+---
+
 ## [3.0.0] - 2026-05-30
 
 **Release status:** Prepared for release. The repository includes automated publishing on tag creation (see `.github/workflows/ci.yml` -> `Publish to Crates.io`). To publish the release automatically, push a Git tag matching `v3.0.0` and ensure `CARGO_REGISTRY_TOKEN` is present in the repository secrets. Alternatively, merge the `release/v3.0.0` branch and create the tag from GitHub.
