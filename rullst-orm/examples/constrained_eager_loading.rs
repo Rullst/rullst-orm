@@ -1,4 +1,4 @@
-use rullst_orm::{Orm, sqlx::FromRow};
+﻿use rullst_orm::{Orm, sqlx::FromRow};
 
 #[derive(Debug, Clone, FromRow, rullst_orm::Orm)]
 #[orm(table = "users")]
@@ -89,7 +89,7 @@ async fn main() -> Result<(), rullst_orm::sqlx::Error> {
     println!("User ID: {}", saved_user.id);
 
     println!(
-        "🚀 Fetching user with CONSTRAINED eager loaded posts (status = 'published' AND title LIKE '%Masterpiece%'):"
+        "ðŸš€ Fetching user with CONSTRAINED eager loaded posts (status = 'published' AND title LIKE '%Masterpiece%'):"
     );
 
     // Eager load only published posts containing the word "Masterpiece"

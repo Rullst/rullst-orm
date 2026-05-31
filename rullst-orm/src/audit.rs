@@ -1,4 +1,4 @@
-use crate::Orm;
+﻿use crate::Orm;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -56,15 +56,19 @@ pub async fn log_audit_diff(
     old_json: &str,
     new_json: &str,
 ) -> Result<(), sqlx::Error> {
-    let old_val: serde_json::Value = serde_json::from_str(old_json).unwrap_or(serde_json::Value::Null);
-    let new_val: serde_json::Value = serde_json::from_str(new_json).unwrap_or(serde_json::Value::Null);
+    let old_val: serde_json::Value =
+        serde_json::from_str(old_json).unwrap_or(serde_json::Value::Null);
+    let new_val: serde_json::Value =
+        serde_json::from_str(new_json).unwrap_or(serde_json::Value::Null);
 
     let mut diff_old = serde_json::Map::new();
     let mut diff_new = serde_json::Map::new();
 
     if let (Some(old_obj), Some(new_obj)) = (old_val.as_object(), new_val.as_object()) {
         for (k, v) in old_obj {
-            if let Some(new_v) = new_obj.get(k) && v != new_v {
+            if let Some(new_v) = new_obj.get(k)
+                && v != new_v
+            {
                 diff_old.insert(k.clone(), v.clone());
                 diff_new.insert(k.clone(), new_v.clone());
             }

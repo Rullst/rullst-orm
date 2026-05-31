@@ -1,4 +1,4 @@
-use rand::RngExt;
+﻿use rand::RngExt;
 use rullst_orm::schema::{Blueprint, Schema};
 use rullst_orm::{Orm, Seeder, async_trait, sqlx::FromRow};
 

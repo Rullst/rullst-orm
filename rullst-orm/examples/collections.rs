@@ -1,4 +1,4 @@
-use rullst_orm::schema::{Blueprint, Schema};
+﻿use rullst_orm::schema::{Blueprint, Schema};
 use rullst_orm::{Orm, RullstCollection, sqlx::FromRow};
 
 #[derive(Debug, Clone, FromRow, rullst_orm::Orm)]

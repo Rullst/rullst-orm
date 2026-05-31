@@ -1,4 +1,4 @@
-use rullst_orm::{Orm, sqlx::FromRow};
+﻿use rullst_orm::{Orm, sqlx::FromRow};
 #[cfg(feature = "redis")]
 use std::time::Duration;
 #[derive(Debug, Clone, FromRow, rullst_orm::Orm)]
@@ -33,13 +33,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     {
         if let Err(e) = Orm::init_redis(redis_url).await {
             println!(
-                "⚠️ Could not connect to Redis: {}. Skipping Redis caching and Pub/Sub event demo.",
+                "âš ï¸ Could not connect to Redis: {}. Skipping Redis caching and Pub/Sub event demo.",
                 e
             );
             let _ = std::fs::remove_file("products_demo.db");
             return Ok(());
         }
-        println!("✅ Connected to Redis successfully!");
+        println!("âœ… Connected to Redis successfully!");
 
         // 3. Spawn a background thread to subscribe to all product events and print them
         tokio::spawn(async move {
@@ -48,14 +48,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let mut pubsub = conn.as_pubsub();
                 let _ = pubsub.psubscribe("orm:events:products:*");
                 println!(
-                    "📡 Background Subscriber: Listening for products Pub/Sub events on Redis..."
+                    "ðŸ“¡ Background Subscriber: Listening for products Pub/Sub events on Redis..."
                 );
                 loop {
                     if let Ok(msg) = pubsub.get_message() {
                         let channel: String = msg.get_channel_name().to_string();
                         let payload: String = msg.get_payload().unwrap_or_default();
                         println!(
-                            "🔔 [Pub/Sub Event] Received event on channel '{}': {}",
+                            "ðŸ”” [Pub/Sub Event] Received event on channel '{}': {}",
                             channel, payload
                         );
                     }
@@ -67,14 +67,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         tokio::time::sleep(Duration::from_millis(200)).await;
 
         // 4. Save a new product (Routes to DB + Publishes created and saved events to Redis!)
-        println!("\n📥 Saving a new product to database...");
+        println!("\nðŸ“¥ Saving a new product to database...");
         let mut p = Product {
             id: 0,
             name: "Super Quantum Laptop".to_string(),
             price: 2499.99,
         };
         p.save().await?;
-        println!("✅ Product saved with ID: {}", p.id);
+        println!("âœ… Product saved with ID: {}", p.id);
 
         tokio::time::sleep(Duration::from_millis(200)).await;
 
@@ -83,32 +83,32 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         // 5. Caching: fetch with .remember(10) (10 seconds cache TTL)
         println!(
-            "\n🔍 Fetching product for the FIRST time (should hit SQL database and cache in Redis):"
+            "\nðŸ” Fetching product for the FIRST time (should hit SQL database and cache in Redis):"
         );
         let p_db = Product::query().where_id(p.id).remember(10).first().await?;
         println!("Fetched product: {:?}", p_db);
 
         println!(
-            "\n⚡ Fetching product for the SECOND time (should hit cache instantly, no SQL log!):"
+            "\nâš¡ Fetching product for the SECOND time (should hit cache instantly, no SQL log!):"
         );
         let p_cached = Product::query().where_id(p.id).remember(10).first().await?;
         println!("Fetched from cache: {:?}", p_cached);
 
         // 6. Delete product (Routes to DB + Publishes deleted event!)
-        println!("\n🗑️ Deleting product...");
+        println!("\nðŸ—‘ï¸ Deleting product...");
         p.delete().await?;
-        println!("✅ Product deleted successfully!");
+        println!("âœ… Product deleted successfully!");
 
         tokio::time::sleep(Duration::from_millis(200)).await;
     }
 
     #[cfg(not(feature = "redis"))]
     {
-        println!("⚠️ Caching & Event features require '--features redis' flag to run!");
+        println!("âš ï¸ Caching & Event features require '--features redis' flag to run!");
     }
 
     // Clean up
     let _ = std::fs::remove_file("products_demo.db");
-    println!("\n🎉 Redis Caching and Pub/Sub event demo completed successfully!");
+    println!("\nðŸŽ‰ Redis Caching and Pub/Sub event demo completed successfully!");
     Ok(())
 }

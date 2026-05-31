@@ -1,4 +1,4 @@
-use serde_json::Value;
+﻿use serde_json::Value;
 
 pub trait ApiResource {
     fn to_array(&self) -> Value;

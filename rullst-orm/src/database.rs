@@ -1,4 +1,4 @@
-#[cfg(not(any(
+﻿#[cfg(not(any(
     feature = "strict-postgres",
     feature = "strict-mysql",
     feature = "strict-sqlite"

@@ -1,4 +1,4 @@
-use rullst_orm::Orm;
+﻿use rullst_orm::Orm;
 use rullst_orm::schema::{Blueprint, Schema};
 
 #[tokio::main]

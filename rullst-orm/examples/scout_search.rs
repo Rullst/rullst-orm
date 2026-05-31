@@ -1,4 +1,4 @@
-use rullst_orm::Orm;
+﻿use rullst_orm::Orm;
 use rullst_orm::sqlx;
 
 #[derive(Clone, Debug, Default, rullst_orm::Orm, rullst_orm::sqlx::FromRow)]
@@ -15,10 +15,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     std::fs::File::create("test_scout.db").unwrap();
     Orm::init("sqlite:test_scout.db").await?;
     let pool = Orm::pool();
-    
-    sqlx::query("CREATE TABLE documents (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, body TEXT)")
-        .execute(pool)
-        .await?;
+
+    sqlx::query(
+        "CREATE TABLE documents (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, body TEXT)",
+    )
+    .execute(pool)
+    .await?;
 
     let mut doc1 = Document {
         id: 0,

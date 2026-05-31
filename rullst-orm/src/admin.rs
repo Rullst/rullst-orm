@@ -1,4 +1,4 @@
-pub fn dashboard_html() -> &'static str {
+﻿pub fn dashboard_html() -> &'static str {
     r##"<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -29,7 +29,7 @@ pub fn dashboard_html() -> &'static str {
             color: var(--text-main);
             min-height: 100vh;
             display: flex;
-            background-image: 
+            background-image:
                 radial-gradient(circle at 15% 50%, rgba(249, 50, 44, 0.08), transparent 25%),
                 radial-gradient(circle at 85% 30%, rgba(50, 100, 255, 0.05), transparent 25%);
         }

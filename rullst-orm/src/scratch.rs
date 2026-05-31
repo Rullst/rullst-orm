@@ -1,4 +1,4 @@
-use sqlx::{any::AnyArguments, Arguments};
+﻿use sqlx::{any::AnyArguments, Arguments};
 
 pub fn test() {
     let mut args = AnyArguments::default();

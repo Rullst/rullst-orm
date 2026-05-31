@@ -1,4 +1,4 @@
-use rullst_orm::sqlx::FromRow;
+﻿use rullst_orm::sqlx::FromRow;
 
 #[derive(Debug, Clone, FromRow, rullst_orm::Orm)]
 #[orm(table = "users")]
@@ -36,6 +36,6 @@ async fn main() -> Result<(), rullst_orm::sqlx::Error> {
     assert!(!json_str.contains("password"));
     assert!(!json_str.contains("super_secret_password_123"));
 
-    println!("\n✅ Serialization verified! 'password' was successfully hidden.");
+    println!("\nâœ… Serialization verified! 'password' was successfully hidden.");
     Ok(())
 }

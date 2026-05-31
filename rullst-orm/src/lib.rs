@@ -1,4 +1,4 @@
-#[cfg(not(any(
+﻿#[cfg(not(any(
     feature = "strict-postgres",
     feature = "strict-mysql",
     feature = "strict-sqlite"
@@ -36,23 +36,23 @@ pub use sqlx;
 
 #[cfg(feature = "redis")]
 pub use redis;
+pub mod admin;
+pub mod audit;
 pub mod collection;
 pub mod database;
-pub mod audit;
 pub mod resource;
-pub mod scout;
-pub mod admin;
 pub mod schema;
+pub mod scout;
 pub mod tenant;
 pub mod types;
 
 // Re-exports
+pub use admin::dashboard_html;
 pub use collection::RullstCollection;
 pub use database::RullstDatabase;
-pub use rullst_orm_macros::Orm;
 pub use resource::{ApiResource, JsonResource, ResourceCollection};
-pub use scout::{get_search_engine, set_search_engine, SearchEngine};
-pub use admin::dashboard_html;
+pub use rullst_orm_macros::Orm;
+pub use scout::{SearchEngine, get_search_engine, set_search_engine};
 pub use tenant::{get_tenant_id, with_tenant};
 pub use types::Json;
 
@@ -81,7 +81,7 @@ static REDIS_CLIENT: OnceLock<redis::Client> = OnceLock::new();
 #[cfg(feature = "redis")]
 static REDIS_MANAGER: OnceLock<redis::aio::ConnectionManager> = OnceLock::new();
 
-/// Enum dinâmico para encapsular qualquer tipo que possa ser associado ao banco de dados pelo Macro
+/// Enum dinÃ¢mico para encapsular qualquer tipo que possa ser associado ao banco de dados pelo Macro
 #[derive(Clone, Debug)]
 pub enum RullstValue {
     String(String),

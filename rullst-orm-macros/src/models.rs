@@ -1,4 +1,4 @@
-use crate::parser::ParsedModel;
+﻿use crate::parser::ParsedModel;
 use proc_macro2::TokenStream;
 use quote::quote;
 
@@ -150,7 +150,11 @@ pub fn generate(parsed: &ParsedModel, relationship_methods: &[TokenStream]) -> T
     };
 
     let search_method = if parsed.searchable {
-        let cols = parsed.normal_fields.iter().map(|f| f.to_string()).collect::<Vec<_>>();
+        let cols = parsed
+            .normal_fields
+            .iter()
+            .map(|f| f.to_string())
+            .collect::<Vec<_>>();
         quote! {
             pub async fn search(query: &str) -> #builder_name {
                 let mut base_builder = #builder_name::new();
@@ -174,7 +178,7 @@ pub fn generate(parsed: &ParsedModel, relationship_methods: &[TokenStream]) -> T
                 let driver = rullst_orm::Orm::driver();
                 let cast_type = if driver == "mysql" { "CHAR" } else { "TEXT" };
                 let like_query = format!("%{}%", query);
-                
+
                 let mut raw_where = String::new();
                 let cols = vec![#(#cols),*];
                 for (i, col) in cols.iter().enumerate() {
@@ -183,7 +187,7 @@ pub fn generate(parsed: &ParsedModel, relationship_methods: &[TokenStream]) -> T
                         raw_where.push_str(" OR ");
                     }
                 }
-                
+
                 base_builder.where_raw(raw_where.as_str())
             }
         }

@@ -1,4 +1,4 @@
-use rullst_orm::{Orm, sqlx::FromRow};
+﻿use rullst_orm::{Orm, sqlx::FromRow};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -134,7 +134,7 @@ async fn main() -> Result<(), rullst_orm::sqlx::Error> {
     assert_eq!(DELETING_COUNT.load(Ordering::SeqCst), 1);
     assert_eq!(DELETED_COUNT.load(Ordering::SeqCst), 1);
 
-    println!("\n🎉 All 8 Observer lifecycle hooks executed successfully!");
+    println!("\nðŸŽ‰ All 8 Observer lifecycle hooks executed successfully!");
 
     // Clean up
     let _ = std::fs::remove_file("test.db");

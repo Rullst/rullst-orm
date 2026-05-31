@@ -1,4 +1,4 @@
-use syn::{parse_quote, DeriveInput};
+﻿use syn::{DeriveInput, parse_quote};
 
 #[test]
 fn test_basic_model() {

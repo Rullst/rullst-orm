@@ -1,4 +1,4 @@
-use syn::{spanned::Spanned, Data, DeriveInput, Fields};
+﻿use syn::{Data, DeriveInput, Fields, spanned::Spanned};
 
 /// Validates that a relation attribute has valid syntax
 fn validate_relation_attribute(

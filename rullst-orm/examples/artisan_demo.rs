@@ -1,4 +1,4 @@
-use rullst_orm::Orm;
+﻿use rullst_orm::Orm;
 use rullst_orm::schema::{Migration, Schema, run_artisan};
 
 pub struct CreateUsersMigration;
@@ -51,7 +51,7 @@ async fn main() -> Result<(), rullst_orm::sqlx::Error> {
     std::fs::File::create("artisan_test.db").unwrap();
     Orm::init("sqlite://artisan_test.db").await?;
 
-    println!("--- 🛠️  Simulating Migration Execution (Batch 1) ---");
+    println!("--- ðŸ› ï¸  Simulating Migration Execution (Batch 1) ---");
     let migrations: Vec<Box<dyn Migration>> = vec![
         Box::new(CreateUsersMigration),
         Box::new(CreatePostsMigration),
@@ -83,7 +83,7 @@ async fn main() -> Result<(), rullst_orm::sqlx::Error> {
     // Clean up
     let _ = std::fs::remove_file("artisan_test.db");
 
-    println!("\n🎉 Artisan Migrations State Machine verified successfully!");
+    println!("\nðŸŽ‰ Artisan Migrations State Machine verified successfully!");
 
     Ok(())
 }

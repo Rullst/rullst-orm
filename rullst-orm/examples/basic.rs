@@ -1,4 +1,4 @@
-use rullst_orm::{Orm, sqlx::FromRow};
+﻿use rullst_orm::{Orm, sqlx::FromRow};
 
 #[derive(Debug, Clone, FromRow, rullst_orm::Orm)]
 pub struct User {
@@ -9,7 +9,7 @@ pub struct User {
 
 #[tokio::main]
 async fn main() -> Result<(), rullst_orm::sqlx::Error> {
-    // Para testar corretamente com o Pool do SQLX, precisamos de um arquivo físico
+    // Para testar corretamente com o Pool do SQLX, precisamos de um arquivo fÃ­sico
     let _ = std::fs::File::create("test.db");
     Orm::init("sqlite://test.db").await?;
     let pool = Orm::pool();
@@ -36,7 +36,7 @@ async fn main() -> Result<(), rullst_orm::sqlx::Error> {
     .execute(pool)
     .await?;
 
-    println!("\n🚀 Testando o Query Builder Encadeável:");
+    println!("\nðŸš€ Testando o Query Builder EncadeÃ¡vel:");
 
     let users = User::query()
         .where_like("email", "%@example.com")
@@ -45,14 +45,14 @@ async fn main() -> Result<(), rullst_orm::sqlx::Error> {
         .get()
         .await?;
 
-    println!("=> Último usuário da example.com: {:?}", users);
+    println!("=> Ãšltimo usuÃ¡rio da example.com: {:?}", users);
 
     let count = User::query().count().await?;
-    println!("=> Total de usuários na tabela: {}", count);
+    println!("=> Total de usuÃ¡rios na tabela: {}", count);
 
     // Filter using dynamic generic inputs (i32) and magic methods
     let filtered_user = User::query().where_id(1).first().await?;
-    println!("=> User via builder mágico onde id=1: {:?}", filtered_user);
+    println!("=> User via builder mÃ¡gico onde id=1: {:?}", filtered_user);
 
     // Limpeza
     let _ = std::fs::remove_file("test.db");

@@ -1,4 +1,4 @@
-use rullst_orm::Orm;
+﻿use rullst_orm::Orm;
 use rullst_orm::sqlx;
 
 #[derive(Clone, Debug, Default, rullst_orm::Orm, rullst_orm::sqlx::FromRow)]
@@ -15,11 +15,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     std::fs::File::create("test_audit.db").unwrap();
     Orm::init("sqlite:test_audit.db").await?;
     let pool = Orm::pool();
-    
-    sqlx::query("CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, status TEXT)")
-        .execute(pool)
-        .await?;
-        
+
+    sqlx::query(
+        "CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT, status TEXT)",
+    )
+    .execute(pool)
+    .await?;
+
     rullst_orm::audit::create_audit_table().await?;
 
     println!("--- Creating user ---");
@@ -29,14 +31,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         status: "active".to_string(),
     };
     user.save().await.unwrap();
-    
+
     println!("--- Updating user ---");
     user.status = "banned".to_string();
     user.save().await.unwrap();
 
     println!("--- Querying audit logs ---");
     let audits: Vec<(String, String, Option<String>, Option<String>)> = sqlx::query_as(
-        "SELECT event, model_type, old_values, new_values FROM rullst_audits ORDER BY id ASC"
+        "SELECT event, model_type, old_values, new_values FROM rullst_audits ORDER BY id ASC",
     )
     .fetch_all(pool)
     .await?;

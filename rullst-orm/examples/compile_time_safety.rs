@@ -1,4 +1,4 @@
-use rullst_orm::schema::{Blueprint, Schema};
+﻿use rullst_orm::schema::{Blueprint, Schema};
 use rullst_orm::{Orm, sqlx::FromRow};
 
 // When we derive Orm, it will generate a `UserColumn` enum automatically

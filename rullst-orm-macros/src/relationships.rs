@@ -1,4 +1,4 @@
-use crate::parser::ParsedModel;
+﻿use crate::parser::ParsedModel;
 use proc_macro2::TokenStream;
 use quote::quote;
 
@@ -215,7 +215,7 @@ pub fn generate(parsed: &ParsedModel) -> GeneratedRelationships {
         let load_flag = quote::format_ident!("load_{}", field_name);
         let filter_flag = quote::format_ident!("filter_{}", field_name);
         let method_name = quote::format_ident!("{}", field_name);
-        
+
         let rel_model_ident = syn::Ident::new(rel_model, field_name.span());
         let fk_ident = quote::format_ident!("{}", if foreign_key.is_empty() { format!("{}_id", name.to_string().to_lowercase()) } else { foreign_key.clone() });
         let lk_ident = quote::format_ident!("{}", if local_key.is_empty() { "id".to_string() } else { local_key.clone() });
@@ -231,7 +231,7 @@ pub fn generate(parsed: &ParsedModel) -> GeneratedRelationships {
                             query = filter(query);
                         }
                         let mut all_related = Box::pin(query.get()).await?;
-                        
+
                         for model in &mut results {
                             let mut matching = vec![];
                             let mut remaining = Vec::with_capacity(all_related.len());
@@ -258,7 +258,7 @@ pub fn generate(parsed: &ParsedModel) -> GeneratedRelationships {
                             query = filter(query);
                         }
                         let mut all_related = Box::pin(query.get()).await?;
-                        
+
                         for model in &mut results {
                             let mut matching = None;
                             let mut i = 0;
@@ -284,7 +284,7 @@ pub fn generate(parsed: &ParsedModel) -> GeneratedRelationships {
                             query = filter(query);
                         }
                         let mut all_related = Box::pin(query.get()).await?;
-                        
+
                         for model in &mut results {
                             let mut matching = None;
                             let mut i = 0;

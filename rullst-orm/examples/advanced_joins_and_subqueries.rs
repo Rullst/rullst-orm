@@ -1,4 +1,4 @@
-use rullst_orm::{Orm, sqlx::FromRow};
+﻿use rullst_orm::{Orm, sqlx::FromRow};
 
 #[derive(Debug, Clone, FromRow, rullst_orm::Orm)]
 #[orm(table = "users")]
@@ -91,7 +91,7 @@ async fn main() -> Result<(), rullst_orm::sqlx::Error> {
 
     // 1. Test where_exists Subquery
     // Find users who have at least one PUBLISHED post
-    println!("🚀 Querying users using 'where_exists' subquery...");
+    println!("ðŸš€ Querying users using 'where_exists' subquery...");
     let active_users = User::query()
         .where_exists(
             Post::query()
@@ -109,7 +109,7 @@ async fn main() -> Result<(), rullst_orm::sqlx::Error> {
 
     // 2. Test join_constrained
     // Join posts table with multiple ON constraints
-    println!("\n🚀 Querying posts joining with users using 'join_constrained'...");
+    println!("\nðŸš€ Querying posts joining with users using 'join_constrained'...");
     let posts_with_users = Post::query()
         .select_raw("posts.*, users.name as author_name")
         .join_constrained("users", |join| {

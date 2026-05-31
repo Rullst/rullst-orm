@@ -1,4 +1,4 @@
-use sqlx::Error;
+﻿use sqlx::Error;
 
 /// Validates a table name to prevent SQL injection
 /// Only allows alphanumeric characters, underscores, and hyphens

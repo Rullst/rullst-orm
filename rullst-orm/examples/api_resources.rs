@@ -1,4 +1,4 @@
-use rullst_orm::{ApiResource, JsonResource, RullstCollection};
+﻿use rullst_orm::{ApiResource, JsonResource, RullstCollection};
 
 #[derive(Clone, Debug)]
 pub struct User {
@@ -47,5 +47,8 @@ fn main() {
     let users = vec![user1, user2];
     let json_collection = users.collection_resource();
     println!("\n--- Collection Resource ---");
-    println!("{}", serde_json::to_string_pretty(&json_collection).unwrap());
+    println!(
+        "{}",
+        serde_json::to_string_pretty(&json_collection).unwrap()
+    );
 }

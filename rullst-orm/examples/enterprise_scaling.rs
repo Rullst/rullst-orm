@@ -1,4 +1,4 @@
-use rullst_orm::{Orm, sqlx::FromRow};
+﻿use rullst_orm::{Orm, sqlx::FromRow};
 
 #[derive(Debug, Clone, FromRow, rullst_orm::Orm)]
 #[orm(table = "users")]
@@ -39,10 +39,10 @@ async fn main() -> Result<(), rullst_orm::sqlx::Error> {
         .await?;
     }
 
-    println!("✅ Read/Write Connection Split initialized successfully!");
+    println!("âœ… Read/Write Connection Split initialized successfully!");
 
     // 3. Write data strictly routes to the primary pool
-    println!("\n📥 Inserting users (routes to primary database pool)...");
+    println!("\nðŸ“¥ Inserting users (routes to primary database pool)...");
     for i in 1..=10 {
         let mut user = User {
             id: 0,
@@ -72,14 +72,14 @@ async fn main() -> Result<(), rullst_orm::sqlx::Error> {
 
     // 4. Read operations route to replica pools round-robin
     println!(
-        "\n🔍 Running multiple read operations (load-balanced round-robin across replicas)..."
+        "\nðŸ” Running multiple read operations (load-balanced round-robin across replicas)..."
     );
     let count1 = User::query().count().await?;
     let count2 = User::query().count().await?;
     println!("=> Count query 1: {}, Count query 2: {}", count1, count2);
 
     // 5. Query Chunking: low memory batch processing
-    println!("\n📦 Testing Query Chunking (processing users in batches of 3)...");
+    println!("\nðŸ“¦ Testing Query Chunking (processing users in batches of 3)...");
 
     User::query()
         .chunk(3, |chunk| async move {
@@ -95,6 +95,6 @@ async fn main() -> Result<(), rullst_orm::sqlx::Error> {
     let _ = std::fs::remove_file("replica1.db");
     let _ = std::fs::remove_file("replica2.db");
 
-    println!("\n🎉 Enterprise Scaling demo completed successfully!");
+    println!("\nðŸŽ‰ Enterprise Scaling demo completed successfully!");
     Ok(())
 }

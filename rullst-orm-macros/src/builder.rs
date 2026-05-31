@@ -1,4 +1,4 @@
-use crate::parser::ParsedModel;
+﻿use crate::parser::ParsedModel;
 use proc_macro2::TokenStream;
 use quote::quote;
 

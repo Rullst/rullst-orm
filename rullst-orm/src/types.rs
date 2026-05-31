@@ -1,4 +1,4 @@
-use std::ops::{Deref, DerefMut};
+﻿use std::ops::{Deref, DerefMut};
 
 /// A wrapper for JSON columns in the database.
 /// This type allows users to easily cast a column to a struct that implements Serialize and Deserialize.

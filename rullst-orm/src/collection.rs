@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+﻿use std::collections::HashMap;
 use std::hash::Hash;
 
 /// An extension trait that brings Laravel-style Collection methods natively to Rust's Vec<T>.
