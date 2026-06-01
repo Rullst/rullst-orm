@@ -1,5 +1,5 @@
 use rullst_orm::Orm;
-use rullst_orm::_sqlx;
+
 
 #[derive(Clone, Debug, Default, rullst_orm::Orm, rullst_orm::FromRow)]
 #[orm(table = "users", auditable)]

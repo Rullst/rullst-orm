@@ -76,7 +76,7 @@ rullst-orm = { version = "3.0", features = ["strict-postgres"] }
 ## 📖 Quick Start
 
 ```rust
-use rullst_orm::{Orm, sqlx::FromRow};
+use rullst_orm::{Orm, FromRow};
 
 // 1. Just add the Orm macro to your struct!
 #[derive(Debug, Clone, FromRow, rullst_orm::Orm)]
@@ -90,7 +90,7 @@ pub struct User {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), rullst_orm::sqlx::Error> {
+async fn main() -> Result<(), rullst_orm::Error> {
     // 2. Initialize the global connection pool
     Orm::init("sqlite::memory:").await?;
 
@@ -208,7 +208,7 @@ pub struct UserObserverImpl;
 
 #[rullst_orm::async_trait]
 impl UserObserver for UserObserverImpl {
-    async fn saving(&self, model: &mut User) -> Result<(), rullst_orm::sqlx::Error> {
+    async fn saving(&self, model: &mut User) -> Result<(), rullst_orm::Error> {
         println!("We are about to save user: {}", model.name);
         Ok(())
     }

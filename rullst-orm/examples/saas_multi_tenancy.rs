@@ -1,4 +1,4 @@
-use rullst_orm::_sqlx;
+
 use rullst_orm::{Orm, with_tenant};
 
 #[derive(Clone, Debug, Default, rullst_orm::Orm, rullst_orm::FromRow)]

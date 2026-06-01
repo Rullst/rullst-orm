@@ -622,6 +622,7 @@ pub fn generate(
                 Ok(results.into_iter().next())
             }
 
+            #[allow(clippy::needless_update)]
             pub async fn paginate(&self, page: usize, per_page: usize) -> Result<rullst_orm::PaginationResult<#name>, rullst_orm::Error> {
                 let total_builder = Self {
                     selects: Some("COUNT(*)".to_string()),

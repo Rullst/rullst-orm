@@ -10,7 +10,7 @@ categories = ["database"]
 readme = "../README.md"
 
 [dependencies]
-rullst-orm-macros = { path = "../rullst-orm-macros", version = "3" }
+rullst-orm-macros = { path = "../rullst-orm-macros", version = "4" }
 sqlx = { version = "0.9", features = ["sqlite", "postgres", "mysql", "any", "runtime-tokio", "macros", "json"] }
 tokio = { version = "1", features = ["full"] }
 async-trait = "0.1"

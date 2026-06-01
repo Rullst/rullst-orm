@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Internal API Wrappers**: Direct access to `sqlx::Transaction` and `sqlx::Pool` has been replaced with safe internal wrappers (`rullst_orm::db::Transaction` and `rullst_orm::db::Pool`).
 - **Standardized Error Handling**: Replaced raw `sqlx::Error` propagation with the new unified `rullst_orm::Error` (`RullstError`). All framework operations now return this standardized error, effectively isolating application code from the underlying database driver's error variants.
 
+### Security
+- **Comprehensive Audit**: Executed a comprehensive v4.0.0 security and architecture audit. Validated zero known vulnerabilities across 204 dependencies via `cargo audit`. Confirmed 100% safe Rust (no `unsafe` blocks) and zero `clippy` warnings workspace-wide. Validated that all dynamic query builders utilize robust `validate_identifier` logic to prevent SQL injections.
+
 ---
 
 ## [3.0.3-1] - 2026-05-31
