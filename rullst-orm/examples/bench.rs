@@ -1,5 +1,5 @@
-use rullst_orm::schema::JoinClause;
 use rullst_orm::RullstValue;
+use rullst_orm::schema::JoinClause;
 use std::time::Instant;
 
 fn main() {
