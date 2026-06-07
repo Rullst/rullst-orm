@@ -60,12 +60,11 @@ pub fn compute_diff(old_json: &str, new_json: &str) -> (Option<String>, Option<S
 
     if let (Some(old_obj), Some(new_obj)) = (old_val.as_object(), new_val.as_object()) {
         for (k, v) in old_obj {
-            if let Some(new_v) = new_obj.get(k) {
-                if v != new_v {
+            if let Some(new_v) = new_obj.get(k)
+                && v != new_v {
                     diff_old.insert(k.clone(), v.clone());
                     diff_new.insert(k.clone(), new_v.clone());
                 }
-            }
         }
     }
 

@@ -246,12 +246,11 @@ impl Orm {
     /// Performs round-robin load balancing over replicas if configured.
     /// Returns `Err(Error::Internal)` if `Orm::init()` has not been called yet.
     pub fn read_pool() -> Result<&'static RullstPool, crate::Error> {
-        if let Some(replicas) = REPLICA_POOLS.get() {
-            if !replicas.is_empty() {
+        if let Some(replicas) = REPLICA_POOLS.get()
+            && !replicas.is_empty() {
                 let idx = REPLICA_INDEX.fetch_add(1, Ordering::Relaxed) % replicas.len();
                 return Ok(&replicas[idx]);
             }
-        }
         Self::pool()
     }
 
