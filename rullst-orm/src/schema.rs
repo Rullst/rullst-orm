@@ -584,10 +584,16 @@ impl JoinClause {
     /// derived from user input. Returns errors internally rather than panicking.
     pub fn on(&mut self, first: &str, operator: &str, second: &str) -> &mut Self {
         if let Err(e) = validate_identifier(first) {
-            self.errors.push(crate::Error::Validation(format!("JoinClause::on — invalid identifier for `first`: {:?}", e)));
+            self.errors.push(crate::Error::Validation(format!(
+                "JoinClause::on — invalid identifier for `first`: {:?}",
+                e
+            )));
         }
         if let Err(e) = validate_identifier(second) {
-            self.errors.push(crate::Error::Validation(format!("JoinClause::on — invalid identifier for `second`: {:?}", e)));
+            self.errors.push(crate::Error::Validation(format!(
+                "JoinClause::on — invalid identifier for `second`: {:?}",
+                e
+            )));
         }
         if !ALLOWED_OPERATORS.contains(&operator) {
             self.errors.push(crate::Error::Validation(format!(
@@ -602,7 +608,10 @@ impl JoinClause {
 
     pub fn on_eq<T: Into<crate::RullstValue>>(&mut self, column: &str, value: T) -> &mut Self {
         if let Err(e) = validate_identifier(column) {
-            self.errors.push(crate::Error::Validation(format!("JoinClause::on_eq — invalid identifier for `column`: {:?}", e)));
+            self.errors.push(crate::Error::Validation(format!(
+                "JoinClause::on_eq — invalid identifier for `column`: {:?}",
+                e
+            )));
         }
         self.conditions.push(format!("{} = ?", column));
         self.bindings.push(value.into());

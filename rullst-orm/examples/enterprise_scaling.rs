@@ -56,7 +56,7 @@ async fn main() -> Result<(), rullst_orm::Error> {
     let all_users = rullst_orm::_sqlx::query_as::<_, User>("SELECT * FROM users")
         .fetch_all(primary_pool)
         .await?;
-    
+
     let mut replication_futures = vec![];
     for user in &all_users {
         let q1 = rullst_orm::_sqlx::query("INSERT INTO users (id, name, email) VALUES (?, ?, ?)")

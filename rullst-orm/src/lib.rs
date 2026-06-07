@@ -179,7 +179,9 @@ impl Orm {
         let pool = RullstPool::connect(database_url).await?;
 
         if DB_POOL.set(pool).is_err() {
-            return Err(crate::Error::Internal("Orm has already been initialized".to_string()));
+            return Err(crate::Error::Internal(
+                "Orm has already been initialized".to_string(),
+            ));
         }
 
         let driver = if database_url.starts_with("postgres") {
@@ -211,7 +213,9 @@ impl Orm {
         let pool = RullstPool::connect(primary_url).await?;
 
         if DB_POOL.set(pool).is_err() {
-            return Err(crate::Error::Internal("Orm has already been initialized".to_string()));
+            return Err(crate::Error::Internal(
+                "Orm has already been initialized".to_string(),
+            ));
         }
 
         let driver = if primary_url.starts_with("postgres") {
@@ -247,24 +251,22 @@ impl Orm {
     /// Returns `Err(Error::Internal)` if `Orm::init()` has not been called yet.
     pub fn read_pool() -> Result<&'static RullstPool, crate::Error> {
         if let Some(replicas) = REPLICA_POOLS.get()
-            && !replicas.is_empty() {
-                let idx = REPLICA_INDEX.fetch_add(1, Ordering::Relaxed) % replicas.len();
-                return Ok(&replicas[idx]);
-            }
+            && !replicas.is_empty()
+        {
+            let idx = REPLICA_INDEX.fetch_add(1, Ordering::Relaxed) % replicas.len();
+            return Ok(&replicas[idx]);
+        }
         Self::pool()
     }
 
     /// Retrieve the active driver string ("postgres", "mysql", or "sqlite").
     /// Returns `Err(Error::Internal)` if `Orm::init()` has not been called yet.
     pub fn driver() -> Result<&'static str, crate::Error> {
-        DB_DRIVER
-            .get()
-            .map(|s| s.as_str())
-            .ok_or_else(|| {
-                crate::Error::Internal(
-                    "Orm::init() must be called before any database operation".to_string(),
-                )
-            })
+        DB_DRIVER.get().map(|s| s.as_str()).ok_or_else(|| {
+            crate::Error::Internal(
+                "Orm::init() must be called before any database operation".to_string(),
+            )
+        })
     }
 
     pub async fn begin_transaction() -> Result<crate::db::Transaction<'static>, crate::Error> {
@@ -315,14 +317,11 @@ impl Orm {
     /// Returns `Err(Error::Internal)` if `Orm::init_redis()` has not been called yet.
     #[cfg(feature = "redis")]
     pub fn redis_manager() -> Result<_redis::aio::ConnectionManager, crate::Error> {
-        REDIS_MANAGER
-            .get()
-            .cloned()
-            .ok_or_else(|| {
-                crate::Error::Internal(
-                    "Orm::init_redis() must be called before using cache features".to_string(),
-                )
-            })
+        REDIS_MANAGER.get().cloned().ok_or_else(|| {
+            crate::Error::Internal(
+                "Orm::init_redis() must be called before using cache features".to_string(),
+            )
+        })
     }
 }
 
