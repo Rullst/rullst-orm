@@ -77,7 +77,13 @@ pub fn generate(parsed: &ParsedModel, relationship_methods: &[TokenStream]) -> T
         quote! {
             let old_model_for_audit = if !is_new {
                 let pool = rullst_orm::Orm::read_pool();
-                rullst_orm::_sqlx::query_as::<_, Self>(rullst_orm::_sqlx::AssertSqlSafe(format!("SELECT * FROM {} WHERE id = ?", #table_name).as_str()))
+                let driver = rullst_orm::Orm::driver();
+                let query = if driver == "postgres" {
+                    format!("SELECT * FROM {} WHERE id = $1", #table_name)
+                } else {
+                    format!("SELECT * FROM {} WHERE id = ?", #table_name)
+                };
+                rullst_orm::_sqlx::query_as::<_, Self>(rullst_orm::_sqlx::AssertSqlSafe(query.as_str()))
                     .bind(self.id)
                     .fetch_optional(pool)
                     .await
@@ -235,11 +241,21 @@ pub fn generate(parsed: &ParsedModel, relationship_methods: &[TokenStream]) -> T
 
     let delete_logic = if has_soft_deletes {
         quote! {
-            let query = format!("UPDATE {} SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?", #table_name);
+            let driver = rullst_orm::Orm::driver();
+            let query = if driver == "postgres" {
+                format!("UPDATE {} SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1", #table_name)
+            } else {
+                format!("UPDATE {} SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?", #table_name)
+            };
         }
     } else {
         quote! {
-            let query = format!("DELETE FROM {} WHERE id = ?", #table_name);
+            let driver = rullst_orm::Orm::driver();
+            let query = if driver == "postgres" {
+                format!("DELETE FROM {} WHERE id = $1", #table_name)
+            } else {
+                format!("DELETE FROM {} WHERE id = ?", #table_name)
+            };
         }
     };
 
@@ -427,38 +443,38 @@ pub fn generate(parsed: &ParsedModel, relationship_methods: &[TokenStream]) -> T
                     }
                     let driver = rullst_orm::Orm::driver();
                     if driver == "postgres" || driver == "sqlite" {
-                        use rullst_orm::_sqlx::query_builder::QueryBuilder;
                         use rullst_orm::_sqlx::Execute;
-                        let mut query_builder = QueryBuilder::new("INSERT INTO ");
-                        query_builder.push(#table_name);
-                        query_builder.push(" (");
-                        query_builder.push(#insert_columns_str);
-                        query_builder.push(") VALUES (");
-                        query_builder.push(#insert_placeholders_str);
-                        query_builder.push(") RETURNING id");
-                        if rullst_orm::schema::is_query_log_enabled() {
-                            println!("[SQL Debug] {:?}", query_builder.sql());
+                        let mut final_sql = format!("INSERT INTO {} ({}) VALUES ({}) RETURNING id", #table_name, #insert_columns_str, #insert_placeholders_str);
+                        if driver == "postgres" {
+                            let mut replaced = String::with_capacity(final_sql.len());
+                            let mut idx = 1;
+                            for c in final_sql.chars() {
+                                if c == '?' {
+                                    replaced.push_str(&format!("${}", idx));
+                                    idx += 1;
+                                } else {
+                                    replaced.push(c);
+                                }
+                            }
+                            final_sql = replaced;
                         }
-                        let query = query_builder.build();
+                        if rullst_orm::schema::is_query_log_enabled() {
+                            println!("[SQL Debug] {:?}", final_sql);
+                        }
+                        let query = rullst_orm::_sqlx::query(rullst_orm::_sqlx::AssertSqlSafe(final_sql.as_str()));
                         let row = query
                             #(#bind_inserts)*
                             .fetch_one(executor)
                             .await?;
                         self.id = rullst_orm::_sqlx::Row::try_get(&row, "id")?;
                     } else {
-                        use rullst_orm::_sqlx::query_builder::QueryBuilder;
                         use rullst_orm::_sqlx::Execute;
-                        let mut query_builder = QueryBuilder::new("INSERT INTO ");
-                        query_builder.push(#table_name);
-                        query_builder.push(" (");
-                        query_builder.push(#insert_columns_str);
-                        query_builder.push(") VALUES (");
-                        query_builder.push(#insert_placeholders_str);
-                        query_builder.push(")");
+                        let mut final_sql = format!("INSERT INTO {} ({}) VALUES ({})", #table_name, #insert_columns_str, #insert_placeholders_str);
+                        // No replacement needed for mysql since ? works there
                         if rullst_orm::schema::is_query_log_enabled() {
-                            println!("[SQL Debug] {:?}", query_builder.sql());
+                            println!("[SQL Debug] {:?}", final_sql);
                         }
-                        let query = query_builder.build();
+                        let query = rullst_orm::_sqlx::query(rullst_orm::_sqlx::AssertSqlSafe(final_sql.as_str()));
                         let result = query
                             #(#bind_inserts)*
                             .execute(executor)
@@ -475,17 +491,25 @@ pub fn generate(parsed: &ParsedModel, relationship_methods: &[TokenStream]) -> T
                     for obs in &observers {
                         obs.updating(self).await?;
                     }
-                    use rullst_orm::_sqlx::query_builder::QueryBuilder;
                     use rullst_orm::_sqlx::Execute;
-                    let mut query_builder = QueryBuilder::new("UPDATE ");
-                    query_builder.push(#table_name);
-                    query_builder.push(" SET ");
-                    query_builder.push(#update_sets_str);
-                    query_builder.push(" WHERE id = ?");
-                    if rullst_orm::schema::is_query_log_enabled() {
-                        println!("[SQL Debug] {:?} | ID: {}", query_builder.sql(), self.id);
+                    let mut final_sql = format!("UPDATE {} SET {} WHERE id = ?", #table_name, #update_sets_str);
+                    if rullst_orm::Orm::driver() == "postgres" {
+                        let mut replaced = String::with_capacity(final_sql.len());
+                        let mut idx = 1;
+                        for c in final_sql.chars() {
+                            if c == '?' {
+                                replaced.push_str(&format!("${}", idx));
+                                idx += 1;
+                            } else {
+                                replaced.push(c);
+                            }
+                        }
+                        final_sql = replaced;
                     }
-                    let query = query_builder.build();
+                    if rullst_orm::schema::is_query_log_enabled() {
+                        println!("[SQL Debug] {:?} | ID: {}", final_sql, self.id);
+                    }
+                    let query = rullst_orm::_sqlx::query(rullst_orm::_sqlx::AssertSqlSafe(final_sql.as_str()));
                     query
                         #(#bind_updates)*
                         .bind(self.id)
@@ -580,7 +604,11 @@ pub fn generate(parsed: &ParsedModel, relationship_methods: &[TokenStream]) -> T
                     use rullst_orm::_sqlx::query_builder::QueryBuilder;
                     let mut query_builder = QueryBuilder::new("UPDATE ");
                     query_builder.push(#table_name);
-                    query_builder.push(" SET deleted_at = NULL WHERE id = ?");
+                    if rullst_orm::Orm::driver() == "postgres" {
+                        query_builder.push(" SET deleted_at = NULL WHERE id = $1");
+                    } else {
+                        query_builder.push(" SET deleted_at = NULL WHERE id = ?");
+                    }
                     let query = query_builder.build();
                     query.bind(self.id).execute(pool).await?;
                 }
@@ -592,7 +620,11 @@ pub fn generate(parsed: &ParsedModel, relationship_methods: &[TokenStream]) -> T
                 use rullst_orm::_sqlx::query_builder::QueryBuilder;
                 let mut query_builder = QueryBuilder::new("DELETE FROM ");
                 query_builder.push(#table_name);
-                query_builder.push(" WHERE id = ?");
+                if rullst_orm::Orm::driver() == "postgres" {
+                    query_builder.push(" WHERE id = $1");
+                } else {
+                    query_builder.push(" WHERE id = ?");
+                }
                 let query = query_builder.build();
                 query.bind(self.id).execute(pool).await?;
                 Ok(())

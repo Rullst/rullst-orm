@@ -158,6 +158,20 @@ You can chain these methods after calling `Model::query()` to filter your data. 
 - `.order_by(column)` / `.order_by_desc(column)`
 - `.limit(value: usize)` / `.offset(value: usize)`
 
+### 🛡️ Raw Queries & SQL Injection
+When writing raw `WHERE` clauses, **never concatenate user input directly into the string**. Instead, use the `?` placeholder and bind the value using the `.bind()` method. This delegates the escape process to the database driver, effectively preventing SQL Injection.
+
+```rust
+// ❌ DANGEROUS: Susceptible to SQL Injection!
+let query = User::query().where_raw(&format!("email = '{}'", input_email));
+
+// ✅ SECURE: Uses parameterized bindings
+let query = User::query()
+    .where_raw("email = ? AND status = ?")
+    .bind(input_email)
+    .bind("active");
+```
+
 ### ⚡ Executors (Terminal Methods)
 End your Query Builder chain with one of these to execute the SQL query asynchronously:
 - `.get().await?` -> Returns a `Vec<Model>` matching your filters.

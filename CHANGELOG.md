@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.2] - 2026-06-07 🛡️
+
+### Security
+- **SQL Injection Prevention:** Adicionado método `.bind()` nativo no `QueryBuilder` permitindo que usuários efetuem binds de variáveis de forma 100% segura e parametrizada ao utilizar queries cruas via `.where_raw()`.
+
+### Fixed
+- **PostgreSQL Macros Compatibility:** O ORM agora detecta automaticamente o driver `postgres` em runtime e substitui parâmetros `?` por marcadores numéricos `$1, $2, etc`, resolvendo os erros de sintaxe (como `ERR_EMPTY_RESPONSE` e crashes de servidor) durante queries complexas no PostgreSQL mantendo a retrocompatibilidade com SQLite e MySQL.
+
 ## [4.0.1] - 2026-06-01
 
 ### Changed (Breaking Changes)

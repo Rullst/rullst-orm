@@ -142,6 +142,11 @@ pub fn generate(
                 self
             }
 
+            pub fn bind<T: Into<rullst_orm::RullstValue>>(mut self, value: T) -> Self {
+                self.bindings.push(value.into());
+                self
+            }
+
             pub fn or_where_raw(mut self, query: &str) -> Self {
                 self.wheres.push(("OR".to_string(), query.to_string()));
                 self
@@ -541,7 +546,21 @@ pub fn generate(
                     sql.push_str(&offset.to_string());
                 }
 
-                sql
+                if rullst_orm::Orm::driver() == "postgres" {
+                    let mut pg_sql = String::with_capacity(sql.len());
+                    let mut param_idx = 1;
+                    for c in sql.chars() {
+                        if c == '?' {
+                            pg_sql.push_str(&format!("${}", param_idx));
+                            param_idx += 1;
+                        } else {
+                            pg_sql.push(c);
+                        }
+                    }
+                    pg_sql
+                } else {
+                    sql
+                }
             }
 
             pub async fn get(&self) -> Result<Vec<#name>, rullst_orm::Error> {
