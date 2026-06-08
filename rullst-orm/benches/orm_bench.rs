@@ -13,8 +13,8 @@
 // production async code.
 
 use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
-use rullst_orm::{FromRow, Orm};
 use rullst_orm::schema::{Blueprint, Schema};
+use rullst_orm::{FromRow, Orm};
 
 // ── model used throughout ────────────────────────────────────────────────
 #[derive(Debug, Clone, FromRow, rullst_orm::Orm)]
@@ -185,21 +185,22 @@ fn bench_query(c: &mut Criterion) {
 
     group.bench_function("query/all_limit_10", |b| {
         b.to_async(&rt).iter(|| async {
-            let _ = std::hint::black_box(
-                BenchUser::query().limit(10).get().await.unwrap(),
-            );
+            let _ = std::hint::black_box(BenchUser::query().limit(10).get().await.unwrap());
         });
     });
 
     // parametric: vary LIMIT to show scaling
     for size in [1usize, 10, 50, 100] {
-        group.bench_with_input(BenchmarkId::new("query/limit_n", size), &size, |b, &size| {
-            b.to_async(&rt).iter(|| async move {
-                let _ = std::hint::black_box(
-                    BenchUser::query().limit(size).get().await.unwrap(),
-                );
-            });
-        });
+        group.bench_with_input(
+            BenchmarkId::new("query/limit_n", size),
+            &size,
+            |b, &size| {
+                b.to_async(&rt).iter(|| async move {
+                    let _ =
+                        std::hint::black_box(BenchUser::query().limit(size).get().await.unwrap());
+                });
+            },
+        );
     }
 
     group.finish();

@@ -16,7 +16,9 @@ async fn main() -> Result<(), rullst_orm::Error> {
         table.string("name").not_null();
         table.string("email").nullable();
         table.integer("age").default(ColumnDefault::Integer(18));
-        table.boolean("is_active").default(ColumnDefault::Integer(1));
+        table
+            .boolean("is_active")
+            .default(ColumnDefault::Integer(1));
         table.timestamps(); // created_at, updated_at
         table.soft_deletes(); // deleted_at
     })

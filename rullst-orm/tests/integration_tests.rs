@@ -11,9 +11,9 @@
 
 #![cfg(not(any(feature = "strict-postgres", feature = "strict-mysql")))]
 
-use rullst_orm::{Orm, FromRow};
 use rullst_orm::schema::{Blueprint, Schema};
 use rullst_orm::types::Json;
+use rullst_orm::{FromRow, Orm};
 use serde::{Deserialize, Serialize};
 
 // ── shared JSON payload type ───────────────────────────────────────────────
@@ -94,18 +94,28 @@ async fn scenario_crud() {
     assert!(user.id > 0, "id must be assigned after save");
 
     // SELECT by PK
-    let found = User::find(user.id).await.expect("find").expect("user exists");
+    let found = User::find(user.id)
+        .await
+        .expect("find")
+        .expect("user exists");
     assert_eq!(found.name, "Alice");
     assert_eq!(found.email, "alice@example.com");
 
     // UPDATE
     user.name = "Alice Updated".into();
     user.save().await.expect("update user");
-    let updated = User::find(user.id).await.expect("find updated").expect("exists");
+    let updated = User::find(user.id)
+        .await
+        .expect("find updated")
+        .expect("exists");
     assert_eq!(updated.name, "Alice Updated");
 
     // INSERT second record
-    let mut user2 = User { id: 0, name: "Bob".into(), email: "bob@example.com".into() };
+    let mut user2 = User {
+        id: 0,
+        name: "Bob".into(),
+        email: "bob@example.com".into(),
+    };
     user2.save().await.expect("save Bob");
 
     // SELECT all
@@ -133,7 +143,9 @@ async fn scenario_crud() {
     let count_after = User::query().count().await.expect("count after delete");
     assert_eq!(count_after, 1);
 
-    Schema::drop_if_exists("it_users").await.expect("drop it_users");
+    Schema::drop_if_exists("it_users")
+        .await
+        .expect("drop it_users");
 }
 
 // ── Scenario 2: soft deletes ──────────────────────────────────────────────
@@ -154,7 +166,11 @@ async fn scenario_soft_delete() {
     .await
     .expect("create it_soft_users");
 
-    let mut u = SoftUser { id: 0, name: "SoftAlice".into(), deleted_at: None };
+    let mut u = SoftUser {
+        id: 0,
+        name: "SoftAlice".into(),
+        deleted_at: None,
+    };
     u.save().await.expect("save SoftAlice");
 
     // soft-delete
@@ -162,43 +178,47 @@ async fn scenario_soft_delete() {
 
     // record still exists in DB but deleted_at is set
     let pool = Orm::pool();
-    let row: Option<(i32, Option<String>)> = sqlx::query_as(
-        "SELECT id, deleted_at FROM it_soft_users WHERE id = ?"
-    )
-    .bind(u.id)
-    .fetch_optional(pool)
-    .await
-    .expect("raw query");
+    let row: Option<(i32, Option<String>)> =
+        sqlx::query_as("SELECT id, deleted_at FROM it_soft_users WHERE id = ?")
+            .bind(u.id)
+            .fetch_optional(pool)
+            .await
+            .expect("raw query");
 
     let (_, deleted_at) = row.expect("row must exist");
-    assert!(deleted_at.is_some(), "deleted_at must be set after soft delete");
+    assert!(
+        deleted_at.is_some(),
+        "deleted_at must be set after soft delete"
+    );
 
     // restore
     u.restore().await.expect("restore");
 
-    let row2: Option<(i32, Option<String>)> = sqlx::query_as(
-        "SELECT id, deleted_at FROM it_soft_users WHERE id = ?"
-    )
-    .bind(u.id)
-    .fetch_optional(pool)
-    .await
-    .expect("raw query after restore");
+    let row2: Option<(i32, Option<String>)> =
+        sqlx::query_as("SELECT id, deleted_at FROM it_soft_users WHERE id = ?")
+            .bind(u.id)
+            .fetch_optional(pool)
+            .await
+            .expect("raw query after restore");
 
     let (_, deleted_at2) = row2.expect("row must still exist");
-    assert!(deleted_at2.is_none(), "deleted_at must be NULL after restore");
+    assert!(
+        deleted_at2.is_none(),
+        "deleted_at must be NULL after restore"
+    );
 
     // force_delete
     u.force_delete().await.expect("force delete");
-    let gone: Option<(i32,)> = sqlx::query_as(
-        "SELECT id FROM it_soft_users WHERE id = ?"
-    )
-    .bind(u.id)
-    .fetch_optional(pool)
-    .await
-    .expect("raw query after force delete");
+    let gone: Option<(i32,)> = sqlx::query_as("SELECT id FROM it_soft_users WHERE id = ?")
+        .bind(u.id)
+        .fetch_optional(pool)
+        .await
+        .expect("raw query after force delete");
     assert!(gone.is_none(), "row must be gone after force_delete");
 
-    Schema::drop_if_exists("it_soft_users").await.expect("drop it_soft_users");
+    Schema::drop_if_exists("it_soft_users")
+        .await
+        .expect("drop it_soft_users");
 }
 
 // ── Scenario 3: transactions ──────────────────────────────────────────────
@@ -221,7 +241,10 @@ async fn scenario_transactions() {
     {
         let pool = Orm::pool();
         let mut tx = pool.begin().await.expect("begin tx");
-        let mut acc = Account { id: 0, balance: 100 };
+        let mut acc = Account {
+            id: 0,
+            balance: 100,
+        };
         acc.save_with_tx(&mut tx).await.expect("save with tx");
         acc.balance = 200;
         acc.save_with_tx(&mut tx).await.expect("update with tx");
@@ -237,19 +260,27 @@ async fn scenario_transactions() {
 
         let pool = Orm::pool();
         let mut tx = pool.begin().await.expect("begin tx2");
-        let mut ghost = Account { id: 0, balance: 999 };
+        let mut ghost = Account {
+            id: 0,
+            balance: 999,
+        };
         ghost.save_with_tx(&mut tx).await.expect("save ghost");
         // rollback instead of commit
         tx.rollback().await.expect("rollback");
 
-        let after_rollback = Account::query().count().await.expect("count after rollback");
+        let after_rollback = Account::query()
+            .count()
+            .await
+            .expect("count after rollback");
         assert_eq!(
             after_rollback, initial_count,
             "rollback must not persist the ghost account"
         );
     }
 
-    Schema::drop_if_exists("it_tx_accounts").await.expect("drop it_tx_accounts");
+    Schema::drop_if_exists("it_tx_accounts")
+        .await
+        .expect("drop it_tx_accounts");
 }
 
 // ── Scenario 4: JSON column round-trip ───────────────────────────────────
@@ -263,21 +294,34 @@ async fn scenario_json_column() {
 
     let mut rec = JsonRecord {
         id: 0,
-        data: Json(Payload { value: "hello_world".into() }),
+        data: Json(Payload {
+            value: "hello_world".into(),
+        }),
     };
     rec.save().await.expect("save json record");
 
-    let fetched = JsonRecord::find(rec.id).await.expect("find").expect("exists");
-    assert_eq!(fetched.data.0.value, "hello_world", "JSON round-trip must preserve value");
+    let fetched = JsonRecord::find(rec.id)
+        .await
+        .expect("find")
+        .expect("exists");
+    assert_eq!(
+        fetched.data.0.value, "hello_world",
+        "JSON round-trip must preserve value"
+    );
 
     // Verify to_json / from_json
     let json_str = rec.to_json();
-    assert!(json_str.contains("hello_world"), "to_json must include field value");
+    assert!(
+        json_str.contains("hello_world"),
+        "to_json must include field value"
+    );
 
     let rehydrated = JsonRecord::from_json(&json_str).expect("from_json");
     assert_eq!(rehydrated.data.0.value, "hello_world");
 
-    Schema::drop_if_exists("it_json_records").await.expect("drop it_json_records");
+    Schema::drop_if_exists("it_json_records")
+        .await
+        .expect("drop it_json_records");
 }
 
 // ── Scenario 5: bulk operations ───────────────────────────────────────────
@@ -300,7 +344,11 @@ async fn scenario_bulk_operations() {
 
     // Insert 20 records
     for i in 1..=20i32 {
-        let mut item = BulkItem { id: 0, label: format!("item_{}", i), score: i };
+        let mut item = BulkItem {
+            id: 0,
+            label: format!("item_{}", i),
+            score: i,
+        };
         item.save().await.expect("bulk save");
     }
 
@@ -354,7 +402,9 @@ async fn scenario_bulk_operations() {
     let count = BulkItem::query().count().await.expect("count after delete");
     assert_eq!(count, 19);
 
-    Schema::drop_if_exists("it_bulk_items").await.expect("drop it_bulk_items");
+    Schema::drop_if_exists("it_bulk_items")
+        .await
+        .expect("drop it_bulk_items");
 }
 
 // ── Scenario 6: schema lifecycle ─────────────────────────────────────────

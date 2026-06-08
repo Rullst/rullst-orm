@@ -543,10 +543,10 @@ async fn run_migrations(migrations: Vec<Box<dyn Migration>>) -> Result<(), Error
     }
 
     if count > 0 {
-        let mut query_builder = sqlx::query_builder::QueryBuilder::new("INSERT INTO migrations (migration, batch) ");
+        let mut query_builder =
+            sqlx::query_builder::QueryBuilder::new("INSERT INTO migrations (migration, batch) ");
         query_builder.push_values(successful_migrations, |mut b, name| {
-            b.push_bind(name)
-             .push_bind(next_batch);
+            b.push_bind(name).push_bind(next_batch);
         });
         query_builder.build().execute(pool).await?;
     } else {
@@ -646,10 +646,16 @@ impl JoinClause {
     /// derived from user input. Returns errors internally rather than panicking.
     pub fn on(&mut self, first: &str, operator: &str, second: &str) -> &mut Self {
         if let Err(e) = validate_identifier(first) {
-            self.errors.push(crate::Error::Validation(format!("JoinClause::on — invalid identifier for `first`: {:?}", e)));
+            self.errors.push(crate::Error::Validation(format!(
+                "JoinClause::on — invalid identifier for `first`: {:?}",
+                e
+            )));
         }
         if let Err(e) = validate_identifier(second) {
-            self.errors.push(crate::Error::Validation(format!("JoinClause::on — invalid identifier for `second`: {:?}", e)));
+            self.errors.push(crate::Error::Validation(format!(
+                "JoinClause::on — invalid identifier for `second`: {:?}",
+                e
+            )));
         }
         if !ALLOWED_OPERATORS.contains(&operator) {
             self.errors.push(crate::Error::Validation(format!(
@@ -664,7 +670,10 @@ impl JoinClause {
 
     pub fn on_eq<T: Into<crate::RullstValue>>(&mut self, column: &str, value: T) -> &mut Self {
         if let Err(e) = validate_identifier(column) {
-            self.errors.push(crate::Error::Validation(format!("JoinClause::on_eq — invalid identifier for `column`: {:?}", e)));
+            self.errors.push(crate::Error::Validation(format!(
+                "JoinClause::on_eq — invalid identifier for `column`: {:?}",
+                e
+            )));
         }
         self.conditions.push(format!("{} = ?", column));
         self.bindings.push(value.into());
@@ -768,8 +777,14 @@ mod tests {
         assert_eq!(bp.columns.len(), 2);
         assert_eq!(bp.columns[0].name, "created_at");
         assert_eq!(bp.columns[1].name, "updated_at");
-        assert_eq!(bp.columns[0].default_value, Some(ColumnDefault::CurrentTimestamp));
-        assert_eq!(bp.columns[1].default_value, Some(ColumnDefault::CurrentTimestamp));
+        assert_eq!(
+            bp.columns[0].default_value,
+            Some(ColumnDefault::CurrentTimestamp)
+        );
+        assert_eq!(
+            bp.columns[1].default_value,
+            Some(ColumnDefault::CurrentTimestamp)
+        );
     }
 
     #[test]
@@ -795,16 +810,16 @@ mod tests {
 
     #[test]
     fn test_column_default_sql_rendering() {
-        assert_eq!(ColumnDefault::CurrentTimestamp.to_sql(), "CURRENT_TIMESTAMP");
+        assert_eq!(
+            ColumnDefault::CurrentTimestamp.to_sql(),
+            "CURRENT_TIMESTAMP"
+        );
         assert_eq!(ColumnDefault::Null.to_sql(), "NULL");
         assert_eq!(ColumnDefault::Integer(42).to_sql(), "42");
         assert_eq!(ColumnDefault::Float(1.23).to_sql(), "1.23");
         assert_eq!(ColumnDefault::Text("hello".to_string()).to_sql(), "'hello'");
         // SQL injection via embedded quote must be escaped
-        assert_eq!(
-            ColumnDefault::Text("it's".to_string()).to_sql(),
-            "'it''s'"
-        );
+        assert_eq!(ColumnDefault::Text("it's".to_string()).to_sql(), "'it''s'");
     }
 
     #[test]
