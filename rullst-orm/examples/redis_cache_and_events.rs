@@ -43,8 +43,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         // 3. Spawn a background thread to subscribe to all product events and print them
         tokio::spawn(async move {
-            let client = Orm::redis_client();
-            if let Ok(mut conn) = client.get_connection() {
+            if let Ok(client) = Orm::redis_client()
+                && let Ok(mut conn) = client.get_connection()
+            {
                 let mut pubsub = conn.as_pubsub();
                 let _ = pubsub.psubscribe("orm:events:products:*");
                 println!(

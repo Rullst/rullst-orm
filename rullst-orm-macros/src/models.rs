@@ -32,7 +32,7 @@ pub fn generate(parsed: &ParsedModel, relationship_methods: &[TokenStream]) -> T
 
             pub fn observe(observer: std::sync::Arc<dyn #observer_trait_name + Send + Sync>) {
                 let list = Self::observers();
-                let mut writer = list.write().expect("Failed to acquire write lock on observers - possible poisoning");
+                let mut writer = list.write().unwrap_or_else(|poisoned| poisoned.into_inner());
                 writer.push(observer);
             }
 
@@ -319,8 +319,7 @@ fn generate_save_method(parsed: &ParsedModel) -> TokenStream {
                 rullst_orm::_sqlx::query_as::<_, Self>(rullst_orm::_sqlx::AssertSqlSafe(query.as_str()))
                     .bind(self.id)
                     .fetch_optional(pool)
-                    .await
-                    .unwrap_or(None)
+                    .await?
             } else {
                 None
             };
@@ -407,7 +406,7 @@ fn generate_save_method(parsed: &ParsedModel) -> TokenStream {
             #audit_before_update
             #hook_before_save
             let observers = {
-                let list = Self::observers().read().expect("Failed to acquire read lock on observers - possible poisoning");
+                let list = Self::observers().read().unwrap_or_else(|poisoned| poisoned.into_inner());
                 list.clone()
             };
             for obs in &observers {
@@ -500,7 +499,7 @@ fn generate_save_method(parsed: &ParsedModel) -> TokenStream {
             #[cfg(feature = "redis")]
             {
                 use rullst_orm::_redis::AsyncCommands;
-                let mut conn = rullst_orm::Orm::redis_manager();
+                let mut conn = rullst_orm::Orm::redis_manager()?;
                 let payload = self.to_json();
                 if is_new {
                     let topic = format!("orm:events:{}:created", #table_name);
@@ -597,7 +596,7 @@ fn generate_delete_methods(parsed: &ParsedModel) -> TokenStream {
         {
             #hook_before_delete
             let observers = {
-                let list = Self::observers().read().expect("Failed to acquire read lock on observers - possible poisoning");
+                let list = Self::observers().read().unwrap_or_else(|poisoned| poisoned.into_inner());
                 list.clone()
             };
             for obs in &observers {
@@ -614,7 +613,7 @@ fn generate_delete_methods(parsed: &ParsedModel) -> TokenStream {
             #[cfg(feature = "redis")]
             {
                 use rullst_orm::_redis::AsyncCommands;
-                let mut conn = rullst_orm::Orm::redis_manager();
+                let mut conn = rullst_orm::Orm::redis_manager()?;
                 let payload = self.to_json();
                 let topic = format!("orm:events:{}:deleted", #table_name);
                 let _: Result<usize, _> = conn.publish(&topic, &payload).await;

@@ -38,15 +38,21 @@ fn generate_magic_methods(parsed: &ParsedModel) -> Vec<TokenStream> {
     magic_methods
 }
 
-/// Generates the delete_all logic based on soft deletes
 fn generate_delete_all_logic(has_soft_deletes: bool, table_name: &str) -> TokenStream {
     if has_soft_deletes {
         quote! {
-            let mut query_str = format!("UPDATE {} SET deleted_at = CURRENT_TIMESTAMP", #table_name);
+            let mut estimated_capacity = 50 + #table_name.len() + self.wheres.iter().map(|(o, c)| o.len() + c.len() + 4).sum::<usize>();
+            let mut query_str = String::with_capacity(estimated_capacity);
+            query_str.push_str("UPDATE ");
+            query_str.push_str(#table_name);
+            query_str.push_str(" SET deleted_at = CURRENT_TIMESTAMP");
         }
     } else {
         quote! {
-            let mut query_str = format!("DELETE FROM {}", #table_name);
+            let mut estimated_capacity = 20 + #table_name.len() + self.wheres.iter().map(|(o, c)| o.len() + c.len() + 4).sum::<usize>();
+            let mut query_str = String::with_capacity(estimated_capacity);
+            query_str.push_str("DELETE FROM ");
+            query_str.push_str(#table_name);
         }
     }
 }
@@ -250,42 +256,63 @@ pub fn generate(
             }
 
             pub fn where_eq<T: Into<rullst_orm::RullstValue>>(mut self, column: &str, value: T) -> Self {
+                if let Err(e) = rullst_orm::schema::validate_identifier(column) {
+                    self.errors.push(rullst_orm::Error::Validation(format!("where_eq() — invalid column identifier: {}", e)));
+                }
                 self.wheres.push(("AND".to_string(), format!("{} = ?", column)));
                 self.bindings.push(value.into());
                 self
             }
 
             pub fn where_not_eq<T: Into<rullst_orm::RullstValue>>(mut self, column: &str, value: T) -> Self {
+                if let Err(e) = rullst_orm::schema::validate_identifier(column) {
+                    self.errors.push(rullst_orm::Error::Validation(format!("where_not_eq() — invalid column identifier: {}", e)));
+                }
                 self.wheres.push(("AND".to_string(), format!("{} != ?", column)));
                 self.bindings.push(value.into());
                 self
             }
 
             pub fn where_gt<T: Into<rullst_orm::RullstValue>>(mut self, column: &str, value: T) -> Self {
+                if let Err(e) = rullst_orm::schema::validate_identifier(column) {
+                    self.errors.push(rullst_orm::Error::Validation(format!("where_gt() — invalid column identifier: {}", e)));
+                }
                 self.wheres.push(("AND".to_string(), format!("{} > ?", column)));
                 self.bindings.push(value.into());
                 self
             }
 
             pub fn where_lt<T: Into<rullst_orm::RullstValue>>(mut self, column: &str, value: T) -> Self {
+                if let Err(e) = rullst_orm::schema::validate_identifier(column) {
+                    self.errors.push(rullst_orm::Error::Validation(format!("where_lt() — invalid column identifier: {}", e)));
+                }
                 self.wheres.push(("AND".to_string(), format!("{} < ?", column)));
                 self.bindings.push(value.into());
                 self
             }
 
             pub fn where_like<T: Into<rullst_orm::RullstValue>>(mut self, column: &str, value: T) -> Self {
+                if let Err(e) = rullst_orm::schema::validate_identifier(column) {
+                    self.errors.push(rullst_orm::Error::Validation(format!("where_like() — invalid column identifier: {}", e)));
+                }
                 self.wheres.push(("AND".to_string(), format!("{} LIKE ?", column)));
                 self.bindings.push(value.into());
                 self
             }
 
             pub fn where_not_like<T: Into<rullst_orm::RullstValue>>(mut self, column: &str, value: T) -> Self {
+                if let Err(e) = rullst_orm::schema::validate_identifier(column) {
+                    self.errors.push(rullst_orm::Error::Validation(format!("where_not_like() — invalid column identifier: {}", e)));
+                }
                 self.wheres.push(("AND".to_string(), format!("{} NOT LIKE ?", column)));
                 self.bindings.push(value.into());
                 self
             }
 
             pub fn where_null(mut self, column: &str) -> Self {
+                if let Err(e) = rullst_orm::schema::validate_identifier(column) {
+                    self.errors.push(rullst_orm::Error::Validation(format!("where_null() — invalid column identifier: {}", e)));
+                }
                 self.wheres.push(("AND".to_string(), format!("{} IS NULL", column)));
                 self
             }
@@ -318,12 +345,18 @@ pub fn generate(
             }
 
             pub fn where_not_null(mut self, column: &str) -> Self {
+                if let Err(e) = rullst_orm::schema::validate_identifier(column) {
+                    self.errors.push(rullst_orm::Error::Validation(format!("where_not_null() — invalid column identifier: {}", e)));
+                }
                 self.wheres.push(("AND".to_string(), format!("{} IS NOT NULL", column)));
                 self
             }
 
             /// WARNING: Ensure `column` does not contain user input to prevent SQL Injection.
             pub fn where_in<T: Into<rullst_orm::RullstValue>>(mut self, column: &str, values: Vec<T>) -> Self {
+                if let Err(e) = rullst_orm::schema::validate_identifier(column) {
+                    self.errors.push(rullst_orm::Error::Validation(format!("where_in() — invalid column identifier: {}", e)));
+                }
                 if values.is_empty() { return self; }
                 let placeholders = vec!["?"; values.len()].join(", ");
                 self.wheres.push(("AND".to_string(), format!("{} IN ({})", column, placeholders)));
@@ -332,6 +365,9 @@ pub fn generate(
             }
 
             pub fn where_not_in<T: Into<rullst_orm::RullstValue>>(mut self, column: &str, values: Vec<T>) -> Self {
+                if let Err(e) = rullst_orm::schema::validate_identifier(column) {
+                    self.errors.push(rullst_orm::Error::Validation(format!("where_not_in() — invalid column identifier: {}", e)));
+                }
                 if values.is_empty() { return self; }
                 let placeholders = vec!["?"; values.len()].join(", ");
                 self.wheres.push(("AND".to_string(), format!("{} NOT IN ({})", column, placeholders)));
@@ -340,6 +376,9 @@ pub fn generate(
             }
 
             pub fn where_between<T: Into<rullst_orm::RullstValue>>(mut self, column: &str, min: T, max: T) -> Self {
+                if let Err(e) = rullst_orm::schema::validate_identifier(column) {
+                    self.errors.push(rullst_orm::Error::Validation(format!("where_between() — invalid column identifier: {}", e)));
+                }
                 self.wheres.push(("AND".to_string(), format!("{} BETWEEN ? AND ?", column)));
                 self.bindings.push(min.into());
                 self.bindings.push(max.into());
@@ -347,6 +386,9 @@ pub fn generate(
             }
 
             pub fn where_not_between<T: Into<rullst_orm::RullstValue>>(mut self, column: &str, min: T, max: T) -> Self {
+                if let Err(e) = rullst_orm::schema::validate_identifier(column) {
+                    self.errors.push(rullst_orm::Error::Validation(format!("where_not_between() — invalid column identifier: {}", e)));
+                }
                 self.wheres.push(("AND".to_string(), format!("{} NOT BETWEEN ? AND ?", column)));
                 self.bindings.push(min.into());
                 self.bindings.push(max.into());
@@ -370,47 +412,71 @@ pub fn generate(
             }
 
             pub fn or_where<T: Into<rullst_orm::RullstValue>>(mut self, column: &str, value: T) -> Self {
+                if let Err(e) = rullst_orm::schema::validate_identifier(column) {
+                    self.errors.push(rullst_orm::Error::Validation(format!("or_where() — invalid column identifier: {}", e)));
+                }
                 self.wheres.push(("OR".to_string(), format!("{} = ?", column)));
                 self.bindings.push(value.into());
                 self
             }
 
             pub fn or_where_not_eq<T: Into<rullst_orm::RullstValue>>(mut self, column: &str, value: T) -> Self {
+                if let Err(e) = rullst_orm::schema::validate_identifier(column) {
+                    self.errors.push(rullst_orm::Error::Validation(format!("or_where_not_eq() — invalid column identifier: {}", e)));
+                }
                 self.wheres.push(("OR".to_string(), format!("{} != ?", column)));
                 self.bindings.push(value.into());
                 self
             }
 
             pub fn or_where_gt<T: Into<rullst_orm::RullstValue>>(mut self, column: &str, value: T) -> Self {
+                if let Err(e) = rullst_orm::schema::validate_identifier(column) {
+                    self.errors.push(rullst_orm::Error::Validation(format!("or_where_gt() — invalid column identifier: {}", e)));
+                }
                 self.wheres.push(("OR".to_string(), format!("{} > ?", column)));
                 self.bindings.push(value.into());
                 self
             }
 
             pub fn or_where_lt<T: Into<rullst_orm::RullstValue>>(mut self, column: &str, value: T) -> Self {
+                if let Err(e) = rullst_orm::schema::validate_identifier(column) {
+                    self.errors.push(rullst_orm::Error::Validation(format!("or_where_lt() — invalid column identifier: {}", e)));
+                }
                 self.wheres.push(("OR".to_string(), format!("{} < ?", column)));
                 self.bindings.push(value.into());
                 self
             }
 
             pub fn or_where_like<T: Into<rullst_orm::RullstValue>>(mut self, column: &str, value: T) -> Self {
+                if let Err(e) = rullst_orm::schema::validate_identifier(column) {
+                    self.errors.push(rullst_orm::Error::Validation(format!("or_where_like() — invalid column identifier: {}", e)));
+                }
                 self.wheres.push(("OR".to_string(), format!("{} LIKE ?", column)));
                 self.bindings.push(value.into());
                 self
             }
 
             pub fn or_where_null(mut self, column: &str) -> Self {
+                if let Err(e) = rullst_orm::schema::validate_identifier(column) {
+                    self.errors.push(rullst_orm::Error::Validation(format!("or_where_null() — invalid column identifier: {}", e)));
+                }
                 self.wheres.push(("OR".to_string(), format!("{} IS NULL", column)));
                 self
             }
 
             pub fn or_where_not_null(mut self, column: &str) -> Self {
+                if let Err(e) = rullst_orm::schema::validate_identifier(column) {
+                    self.errors.push(rullst_orm::Error::Validation(format!("or_where_not_null() — invalid column identifier: {}", e)));
+                }
                 self.wheres.push(("OR".to_string(), format!("{} IS NOT NULL", column)));
                 self
             }
 
             /// WARNING: Ensure `column` does not contain user input to prevent SQL Injection.
             pub fn or_where_in<T: Into<rullst_orm::RullstValue>>(mut self, column: &str, values: Vec<T>) -> Self {
+                if let Err(e) = rullst_orm::schema::validate_identifier(column) {
+                    self.errors.push(rullst_orm::Error::Validation(format!("or_where_in() — invalid column identifier: {}", e)));
+                }
                 if values.is_empty() { return self; }
                 let placeholders = vec!["?"; values.len()].join(", ");
                 self.wheres.push(("OR".to_string(), format!("{} IN ({})", column, placeholders)));
@@ -419,6 +485,9 @@ pub fn generate(
             }
 
             pub fn or_where_between<T: Into<rullst_orm::RullstValue>>(mut self, column: &str, min: T, max: T) -> Self {
+                if let Err(e) = rullst_orm::schema::validate_identifier(column) {
+                    self.errors.push(rullst_orm::Error::Validation(format!("or_where_between() — invalid column identifier: {}", e)));
+                }
                 self.wheres.push(("OR".to_string(), format!("{} BETWEEN ? AND ?", column)));
                 self.bindings.push(min.into());
                 self.bindings.push(max.into());
@@ -426,6 +495,9 @@ pub fn generate(
             }
 
             pub fn group_by(mut self, column: &str) -> Self {
+                if let Err(e) = rullst_orm::schema::validate_identifier(column) {
+                    self.errors.push(rullst_orm::Error::Validation(format!("group_by() — invalid column identifier: {}", e)));
+                }
                 self.group_by = Some(column.to_string());
                 self
             }
@@ -622,7 +694,7 @@ pub async fn get(&self) -> Result<Vec<#name>, rullst_orm::Error> {
                     if let Some(ttl) = self.remember_ttl {
                         use rullst_orm::_redis::AsyncCommands;
                         let cache_key = format!("orm:cache:{}:{:?}", #table_name, (&query_str, &self.bindings));
-                        let mut conn = rullst_orm::Orm::redis_manager();
+                        let mut conn = rullst_orm::Orm::redis_manager()?;
                         if let Ok(cached_data) = conn.get::<_, String>(&cache_key).await {
                             if !cached_data.is_empty() {
                                 if let Ok(mut results) = #name::from_cache_json_array(&cached_data) {
@@ -657,7 +729,7 @@ pub async fn get(&self) -> Result<Vec<#name>, rullst_orm::Error> {
                         use rullst_orm::_redis::AsyncCommands;
                         let cache_key = format!("orm:cache:{}:{:?}", #table_name, (&query_str, &self.bindings));
                         let serialized = #name::to_cache_json_array(&results);
-                        let mut conn = rullst_orm::Orm::redis_manager();
+                        let mut conn = rullst_orm::Orm::redis_manager()?;
                         let _: Result<(), rullst_orm::_redis::RedisError> = conn.set_ex(&cache_key, serialized, ttl as u64).await;
                     }
                 }
@@ -821,10 +893,16 @@ pub async fn get(&self) -> Result<Vec<#name>, rullst_orm::Error> {
                     let mut first = true;
                     for (operator, condition) in &self.wheres {
                         if first {
-                            query_str.push_str(&format!("({})", condition));
+                            query_str.push('(');
+                            query_str.push_str(condition);
+                            query_str.push(')');
                             first = false;
                         } else {
-                            query_str.push_str(&format!(" {} ({})", operator, condition));
+                            query_str.push(' ');
+                            query_str.push_str(operator);
+                            query_str.push_str(" (");
+                            query_str.push_str(condition);
+                            query_str.push(')');
                         }
                     }
                 }

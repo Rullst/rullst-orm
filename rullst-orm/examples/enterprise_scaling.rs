@@ -43,36 +43,45 @@ async fn main() -> Result<(), rullst_orm::Error> {
 
     // 3. Write data strictly routes to the primary pool
     println!("\n📥 Inserting users (routes to primary database pool)...");
+    let mut users = vec![];
     for i in 1..=10 {
-        let mut user = User {
+        users.push(User {
             id: 0,
             name: format!("User {}", i),
             email: format!("user{}@cosmos.com", i),
-        };
-        user.save().await?;
+        });
     }
+    
+    let mut query_builder = rullst_orm::_sqlx::QueryBuilder::new("INSERT INTO users (name, email) ");
+    query_builder.push_values(users.into_iter(), |mut b, user| {
+        b.push_bind(user.name)
+         .push_bind(user.email);
+    });
+    query_builder.build().execute(primary_pool).await?;
 
     // In our manual setup, to simulate replication, let's copy the records from primary to the replica databases
     let all_users = rullst_orm::_sqlx::query_as::<_, User>("SELECT * FROM users")
         .fetch_all(primary_pool)
         .await?;
     
-    let mut replication_futures = vec![];
-    for user in &all_users {
-        let q1 = rullst_orm::_sqlx::query("INSERT INTO users (id, name, email) VALUES (?, ?, ?)")
-            .bind(user.id)
-            .bind(user.name.clone())
-            .bind(user.email.clone())
-            .execute(&r1_pool);
-        let q2 = rullst_orm::_sqlx::query("INSERT INTO users (id, name, email) VALUES (?, ?, ?)")
-            .bind(user.id)
-            .bind(user.name.clone())
-            .bind(user.email.clone())
-            .execute(&r2_pool);
-        replication_futures.push(q1);
-        replication_futures.push(q2);
-    }
-    rullst_orm::_futures::future::try_join_all(replication_futures).await?;
+    let mut qb1 = rullst_orm::_sqlx::QueryBuilder::new("INSERT INTO users (id, name, email) ");
+    qb1.push_values(all_users.iter(), |mut b, user| {
+        b.push_bind(user.id)
+         .push_bind(user.name.clone())
+         .push_bind(user.email.clone());
+    });
+    
+    let mut qb2 = rullst_orm::_sqlx::QueryBuilder::new("INSERT INTO users (id, name, email) ");
+    qb2.push_values(all_users.iter(), |mut b, user| {
+        b.push_bind(user.id)
+         .push_bind(user.name.clone())
+         .push_bind(user.email.clone());
+    });
+
+    rullst_orm::_futures::future::try_join(
+        qb1.build().execute(&r1_pool),
+        qb2.build().execute(&r2_pool)
+    ).await?;
 
     // Enable query logging to visualize connection/query details
     Orm::enable_query_log();

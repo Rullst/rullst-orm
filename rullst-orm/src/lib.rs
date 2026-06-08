@@ -294,19 +294,19 @@ impl Orm {
 
     /// Get reference to the global Redis client
     #[cfg(feature = "redis")]
-    pub fn redis_client() -> &'static _redis::Client {
+    pub fn redis_client() -> Result<&'static _redis::Client, crate::Error> {
         REDIS_CLIENT
             .get()
-            .expect("Redis must be initialized before using cache features")
+            .ok_or_else(|| crate::Error::Internal("Orm::init_redis() must be called before using cache features".to_string()))
     }
 
     /// Get clone of the thread-safe connection manager for async Redis queries
     #[cfg(feature = "redis")]
-    pub fn redis_manager() -> _redis::aio::ConnectionManager {
+    pub fn redis_manager() -> Result<_redis::aio::ConnectionManager, crate::Error> {
         REDIS_MANAGER
             .get()
-            .expect("Redis must be initialized before using cache features")
-            .clone()
+            .cloned()
+            .ok_or_else(|| crate::Error::Internal("Orm::init_redis() must be called before using cache features".to_string()))
     }
 }
 
@@ -362,5 +362,19 @@ mod tests {
         Orm::enable_query_log();
         Orm::disable_query_log();
         assert!(!crate::schema::is_query_log_enabled());
+    }
+
+    #[cfg(feature = "redis")]
+    #[test]
+    fn test_redis_client_uninitialized() {
+        let err = Orm::redis_client().unwrap_err();
+        assert!(matches!(err, crate::Error::Internal(_)));
+    }
+
+    #[cfg(feature = "redis")]
+    #[test]
+    fn test_redis_manager_uninitialized() {
+        let err = Orm::redis_manager().unwrap_err();
+        assert!(matches!(err, crate::Error::Internal(_)));
     }
 }

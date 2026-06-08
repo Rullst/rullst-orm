@@ -472,22 +472,26 @@ async fn run_migrations(migrations: Vec<Box<dyn Migration>>) -> Result<(), Error
     let next_batch = batch_row.0.unwrap_or(0) + 1;
 
     let mut count = 0;
+    let mut successful_migrations = vec![];
     for m in migrations {
         let name = m.name();
         if !executed_set.contains(name) {
             println!("Migrating: {}", name);
             m.up().await?;
-            sqlx::query("INSERT INTO migrations (migration, batch) VALUES (?, ?)")
-                .bind(name)
-                .bind(next_batch)
-                .execute(pool)
-                .await?;
+            successful_migrations.push(name);
             println!("Migrated:  {}", name);
             count += 1;
         }
     }
 
-    if count == 0 {
+    if count > 0 {
+        let mut query_builder = sqlx::query_builder::QueryBuilder::new("INSERT INTO migrations (migration, batch) ");
+        query_builder.push_values(successful_migrations, |mut b, name| {
+            b.push_bind(name)
+             .push_bind(next_batch);
+        });
+        query_builder.build().execute(pool).await?;
+    } else {
         println!("Nothing to migrate.");
     }
 

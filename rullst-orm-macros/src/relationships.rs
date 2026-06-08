@@ -369,15 +369,19 @@ pub fn generate(parsed: &ParsedModel) -> GeneratedRelationships {
                 // keep concurrent execution via try_join_all for now.
                 quote! {
                     if self.#load_flag {
-                        let futures = results.iter().map(|model| {
-                            if let Some(ref filter) = self.#filter_flag {
-                                model.#method_name_constrained(filter.clone())
-                            } else {
-                                model.#method_name()
-                            }
-                        });
-                        let related_results = rullst_orm::_futures::future::try_join_all(futures).await?;
-                        for (model, related) in results.iter_mut().zip(related_results.into_iter()) {
+                        let mut all_related = Vec::with_capacity(results.len());
+                        for chunk in results.chunks(10) {
+                            let futures = chunk.iter().map(|model| {
+                                if let Some(ref filter) = self.#filter_flag {
+                                    model.#method_name_constrained(filter.clone())
+                                } else {
+                                    model.#method_name()
+                                }
+                            });
+                            let chunk_results = rullst_orm::_futures::future::try_join_all(futures).await?;
+                            all_related.extend(chunk_results);
+                        }
+                        for (model, related) in results.iter_mut().zip(all_related.into_iter()) {
                             model.#method_name = Some(related);
                         }
                     }

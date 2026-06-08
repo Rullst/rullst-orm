@@ -26,34 +26,41 @@ async fn main() -> Result<(), rullst_orm::Error> {
     .await?;
 
     // 2. Insert Test Data
-    let mut p1 = Product {
-        id: 0,
-        name: "Laptop".to_string(),
-        price: 1200.50,
-        category: "Tech".to_string(),
-    };
-    p1.save().await?;
-    let mut p2 = Product {
-        id: 0,
-        name: "Mouse".to_string(),
-        price: 45.00,
-        category: "Tech".to_string(),
-    };
-    p2.save().await?;
-    let mut p3 = Product {
-        id: 0,
-        name: "Desk".to_string(),
-        price: 250.00,
-        category: "Furniture".to_string(),
-    };
-    p3.save().await?;
-    let mut p4 = Product {
-        id: 0,
-        name: "Chair".to_string(),
-        price: 150.00,
-        category: "Furniture".to_string(),
-    };
-    p4.save().await?;
+    let products = vec![
+        Product {
+            id: 0,
+            name: "Laptop".to_string(),
+            price: 1200.50,
+            category: "Tech".to_string(),
+        },
+        Product {
+            id: 0,
+            name: "Mouse".to_string(),
+            price: 45.00,
+            category: "Tech".to_string(),
+        },
+        Product {
+            id: 0,
+            name: "Desk".to_string(),
+            price: 250.00,
+            category: "Furniture".to_string(),
+        },
+        Product {
+            id: 0,
+            name: "Chair".to_string(),
+            price: 150.00,
+            category: "Furniture".to_string(),
+        },
+    ];
+
+    let pool = Orm::pool();
+    let mut query_builder = rullst_orm::_sqlx::QueryBuilder::new("INSERT INTO products (name, price, category) ");
+    query_builder.push_values(products.into_iter(), |mut b, p| {
+        b.push_bind(p.name)
+         .push_bind(p.price)
+         .push_bind(p.category);
+    });
+    query_builder.build().execute(pool).await?;
 
     // 3. Fetch all records using Orm (Returns a standard Vec<Product>)
     let collection = Product::all().await?;

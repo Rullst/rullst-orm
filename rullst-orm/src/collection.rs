@@ -105,16 +105,8 @@ impl<T> RullstCollection<T> for Vec<T> {
     where
         F: Fn(&T) -> String,
     {
-        let mut result = String::new();
-        let mut iter = self.iter();
-        if let Some(first) = iter.next() {
-            result.push_str(&f(first));
-            for item in iter {
-                result.push_str(separator);
-                result.push_str(&f(item));
-            }
-        }
-        result
+        let items: Vec<String> = self.iter().map(f).collect();
+        items.join(separator)
     }
 
     fn sum_by<N, F>(&self, f: F) -> N
@@ -162,7 +154,6 @@ mod tests {
     }
 
     #[test]
-        #[test]
     fn test_map() {
         let v = vec![1, 2, 3];
         let mapped = v.map(|x| x * 2);
@@ -243,5 +234,20 @@ mod tests {
         assert!(v.min_by_key(|n| *n).is_none());
         let sum: i32 = v.sum_by(|n| *n);
         assert_eq!(sum, 0);
+    }
+
+    #[test]
+    fn test_chunk_larger_than_len() {
+        let v = vec![1, 2];
+        let chunks = v.chunk(5);
+        assert_eq!(chunks.len(), 1);
+        assert_eq!(chunks[0], vec![1, 2]);
+    }
+
+    #[test]
+    fn test_chunk_empty() {
+        let v: Vec<i32> = vec![];
+        let chunks = v.chunk(2);
+        assert!(chunks.is_empty());
     }
 }
