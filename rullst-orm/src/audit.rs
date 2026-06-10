@@ -58,7 +58,9 @@ pub fn compute_diff(old_json: &str, new_json: &str) -> (Option<String>, Option<S
     let mut diff_old = serde_json::Map::new();
     let mut diff_new = serde_json::Map::new();
 
-    if let (serde_json::Value::Object(old_obj), serde_json::Value::Object(mut new_obj)) = (old_val, new_val) {
+    if let (serde_json::Value::Object(old_obj), serde_json::Value::Object(mut new_obj)) =
+        (old_val, new_val)
+    {
         for (k, v) in old_obj {
             if let Some(new_v) = new_obj.remove(&k) {
                 #[allow(clippy::collapsible_if)]
@@ -211,9 +213,14 @@ mod tests {
     #[tokio::test]
     async fn test_log_audit_diff_bypass() {
         // Should not panic or hit the database if the old and new JSONs are identical
-        let result = super::log_audit_diff("User", 1, "update", r#"{"name":"Alice"}"#, r#"{"name":"Alice"}"#).await;
+        let result = super::log_audit_diff(
+            "User",
+            1,
+            "update",
+            r#"{"name":"Alice"}"#,
+            r#"{"name":"Alice"}"#,
+        )
+        .await;
         assert!(result.is_ok());
     }
-
-
 }

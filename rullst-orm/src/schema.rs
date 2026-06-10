@@ -880,8 +880,9 @@ mod tests {
     async fn test_db_migration_error_state_invalid_blueprint() {
         let result = Schema::create("invalid; DROP TABLE users", |bp| {
             bp.id();
-        }).await;
-        
+        })
+        .await;
+
         assert!(result.is_err());
     }
 
