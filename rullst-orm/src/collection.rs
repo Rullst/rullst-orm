@@ -93,7 +93,7 @@ impl<T> RullstCollection<T> for Vec<T> {
         for item in self {
             current_chunk.push(item);
             remaining -= 1;
-            
+
             if current_chunk.len() == size {
                 chunks.push(current_chunk);
                 current_chunk = Vec::with_capacity(size.min(remaining));

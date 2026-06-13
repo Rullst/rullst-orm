@@ -747,7 +747,7 @@ mod tests {
         assert!(validate_identifier("admin'--").is_err()); // Quotes not allowed
         assert!(validate_identifier("users()").is_err()); // Parentheses not allowed
         assert!(validate_identifier("a*b").is_err()); // Asterisk not allowed
-        
+
         // Extensive error tests
         assert!(validate_identifier("SELECT * FROM users").is_err());
         assert!(validate_identifier("users\nWHERE").is_err());

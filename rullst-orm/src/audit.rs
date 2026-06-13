@@ -244,7 +244,7 @@ mod tests {
         let (old_diff2, new_diff2) = super::compute_diff(old_json2, new_json2);
         assert_eq!(old_diff2.unwrap(), r#"{"age":null}"#);
         assert_eq!(new_diff2.unwrap(), r#"{"age":null}"#);
-        
+
         let old_json3 = r#"{"name":"Alice"}"#;
         let new_json3 = r#"{"name":"Alice","age":30}"#;
         let (old_diff3, new_diff3) = super::compute_diff(old_json3, new_json3);
