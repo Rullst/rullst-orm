@@ -11,7 +11,7 @@
 
 #![cfg(not(any(feature = "strict-postgres", feature = "strict-mysql")))]
 
-use rullst_orm::schema::{Blueprint, Schema};
+use rullst_orm::schema::{Blueprint, ColumnDefault, Schema};
 use rullst_orm::types::Json;
 use rullst_orm::{FromRow, Orm};
 use serde::{Deserialize, Serialize};
@@ -65,6 +65,8 @@ async fn integration_suite() {
 
     scenario_crud().await;
     scenario_soft_delete().await;
+    scenario_configurable_soft_delete().await;
+    scenario_skipped_field().await;
     scenario_transactions().await;
     scenario_json_column().await;
     scenario_bulk_operations().await;
@@ -221,6 +223,285 @@ async fn scenario_soft_delete() {
     Schema::drop_if_exists("it_soft_users")
         .await
         .expect("drop it_soft_users");
+}
+
+// ── Scenario 2b: configurable soft delete (MyBatis-Plus style) ────────────
+//
+// Verifies that the new `#[orm(soft_delete(field = ..., value = ..., delval = ...))]`
+// configuration produces the correct SQL fragments for SELECT filters,
+// DELETE statements, and restore on every supported driver.
+#[derive(Debug, Clone, FromRow, rullst_orm::Orm)]
+#[orm(table = "it_int_soft", soft_delete(field = "is_deleted", value = "0", delval = "1"))]
+struct IntSoftUser {
+    pub id: i32,
+    pub name: String,
+    pub is_deleted: i32,
+}
+
+#[derive(Debug, Clone, FromRow, rullst_orm::Orm)]
+#[orm(table = "it_ts_soft", soft_delete(field = "deleted_at", value = "null", delval = "CURRENT_TIMESTAMP"))]
+struct TimestampSoftUser {
+    pub id: i32,
+    pub name: String,
+    pub deleted_at: Option<String>,
+}
+
+async fn scenario_configurable_soft_delete() {
+    // ── Integer sentinel variant ─────────────────────────────────────────
+    Schema::create("it_int_soft", |t: &mut Blueprint| {
+        t.id();
+        t.string("name").not_null();
+        t.integer("is_deleted").not_null().default(ColumnDefault::Integer(0));
+    })
+    .await
+    .expect("create it_int_soft");
+
+    // Verify the SELECT builder emits `<column> = <value>` for the
+    // "not deleted" filter.
+    let mut b = IntSoftUser::query();
+    b.wheres.push(("AND".to_string(), "1=1".to_string()));
+    let sql = b.to_sql();
+    assert!(
+        sql.contains("is_deleted = 0"),
+        "expected `is_deleted = 0` in SQL, got: {sql}"
+    );
+
+    // `.only_trashed()` flips the comparison to `!=`.
+    let mut b2 = IntSoftUser::query().only_trashed();
+    b2.wheres.push(("AND".to_string(), "1=1".to_string()));
+    let sql2 = b2.to_sql();
+    assert!(
+        sql2.contains("is_deleted != 0"),
+        "expected `is_deleted != 0` in SQL, got: {sql2}"
+    );
+
+    // Insert + soft delete + restore cycle on the integer variant.
+    let mut u = IntSoftUser {
+        id: 0,
+        name: "IntAlice".into(),
+        is_deleted: 0,
+    };
+    u.save().await.expect("save IntAlice");
+
+    let pool = Orm::pool();
+    let row: (i32,) = sqlx::query_as("SELECT is_deleted FROM it_int_soft WHERE id = ?")
+        .bind(u.id)
+        .fetch_one(pool)
+        .await
+        .expect("raw select before delete");
+    assert_eq!(row.0, 0, "row should start as not deleted");
+
+    u.delete().await.expect("soft delete");
+
+    let row: (i32,) = sqlx::query_as("SELECT is_deleted FROM it_int_soft WHERE id = ?")
+        .bind(u.id)
+        .fetch_one(pool)
+        .await
+        .expect("raw select after delete");
+    assert_eq!(row.0, 1, "row should be flagged as deleted");
+
+    u.restore().await.expect("restore");
+    let row: (i32,) = sqlx::query_as("SELECT is_deleted FROM it_int_soft WHERE id = ?")
+        .bind(u.id)
+        .fetch_one(pool)
+        .await
+        .expect("raw select after restore");
+    assert_eq!(row.0, 0, "row should be cleared after restore");
+
+    Schema::drop_if_exists("it_int_soft")
+        .await
+        .expect("drop it_int_soft");
+
+    // ── DateTime / NULL sentinel variant ──────────────────────────────────
+    Schema::create("it_ts_soft", |t: &mut Blueprint| {
+        t.id();
+        t.string("name").not_null();
+        t.soft_deletes();
+    })
+    .await
+    .expect("create it_ts_soft");
+
+    // `value = "null"` should produce `IS NULL` filters (not `= null`).
+    let mut b = TimestampSoftUser::query();
+    b.wheres.push(("AND".to_string(), "1=1".to_string()));
+    let sql = b.to_sql();
+    assert!(
+        sql.contains("deleted_at IS NULL"),
+        "expected `deleted_at IS NULL` in SQL, got: {sql}"
+    );
+
+    let mut b = TimestampSoftUser::query().only_trashed();
+    b.wheres.push(("AND".to_string(), "1=1".to_string()));
+    let sql = b.to_sql();
+    assert!(
+        sql.contains("deleted_at IS NOT NULL"),
+        "expected `deleted_at IS NOT NULL` in SQL, got: {sql}"
+    );
+
+    let mut u = TimestampSoftUser {
+        id: 0,
+        name: "TsAlice".into(),
+        deleted_at: None,
+    };
+    u.save().await.expect("save TsAlice");
+    u.delete().await.expect("soft delete TsAlice");
+    let row: (Option<String>,) =
+        sqlx::query_as("SELECT deleted_at FROM it_ts_soft WHERE id = ?")
+            .bind(u.id)
+            .fetch_one(Orm::pool())
+            .await
+            .expect("select after delete");
+    assert!(row.0.is_some(), "deleted_at should be set after delete");
+
+    Schema::drop_if_exists("it_ts_soft")
+        .await
+        .expect("drop it_ts_soft");
+}
+
+// ── Scenario 2c: #[orm(skip)] / #[sqlx(skip)] field ──────────────────────
+//
+// Confirms that fields marked with `#[orm(skip)]` (or its `#[sqlx(skip)]`
+// alias) are excluded from generated INSERT / UPDATE statements and the
+// `*Column` enum, but remain on the struct itself.
+#[derive(Debug, Clone, Default, FromRow, rullst_orm::Orm)]
+#[orm(table = "it_skipped")]
+struct SkippedFieldUser {
+    pub id: i32,
+    pub name: String,
+    // `#[sqlx(skip)]` is the alias recognised by both this ORM
+    // derive and the `sqlx::FromRow` derive, so the field is excluded
+    // from INSERT / UPDATE column lists, the `*Column` enum, the JSON
+    // serialiser *and* the row mapping.
+    #[sqlx(skip)]
+    pub secret: String,
+}
+
+async fn scenario_skipped_field() {
+    Schema::create("it_skipped", |t: &mut Blueprint| {
+        t.id();
+        t.string("name").not_null();
+    })
+    .await
+    .expect("create it_skipped");
+
+    // The `secret` column does not exist in the schema, so if the
+    // generator still emitted it in the INSERT we would get a
+    // "no such column" error. This implicit assertion exercises the
+    // exclusion logic end-to-end.
+    let mut u = SkippedFieldUser {
+        id: 0,
+        name: "SkipBob".into(),
+        secret: "this should not be persisted".to_string(),
+    };
+    u.save().await.expect("save should ignore `secret` field");
+
+    let pool = Orm::pool();
+    let row: (i32, String) = sqlx::query_as("SELECT id, name FROM it_skipped WHERE id = ?")
+        .bind(u.id)
+        .fetch_one(pool)
+        .await
+        .expect("raw select");
+    assert_eq!(row.1, "SkipBob");
+
+    // The in-memory value is still intact.
+    assert_eq!(u.secret, "this should not be persisted");
+
+    // UPDATE should also ignore the skipped field.
+    u.name = "SkipBobUpdated".into();
+    u.secret = "still untouched".to_string();
+    u.save().await.expect("update should ignore `secret` field");
+    assert_eq!(u.secret, "still untouched");
+
+    // The query builder must also refuse to use a skipped field as a
+    // column. The typed `*Column` enum and the `where_<field>` magic
+    // methods do not even *exist* for `secret` (compile-time
+    // exclusion), but the raw string-based builders could in theory
+    // be tricked into emitting `WHERE secret = ?`. We patch that
+    // hole by collecting a `Validation` error in every raw entry
+    // point that takes a column name.
+    use rullst_orm::Error as OrmError;
+
+    let err = SkippedFieldUser::query()
+        .where_eq("secret", "x")
+        .first()
+        .await
+        .expect_err("where_eq on a skipped field must fail");
+    let msg = format!("{}", err);
+    assert!(
+        matches!(err, OrmError::Validation(_)) && msg.contains("secret"),
+        "expected Validation error mentioning `secret`, got: {}",
+        msg
+    );
+
+    let err = SkippedFieldUser::query()
+        .or_where("secret", "x")
+        .first()
+        .await
+        .expect_err("or_where on a skipped field must fail");
+    assert!(matches!(err, OrmError::Validation(_)));
+
+    let err = SkippedFieldUser::query()
+        .where_null("secret")
+        .first()
+        .await
+        .expect_err("where_null on a skipped field must fail");
+    assert!(matches!(err, OrmError::Validation(_)));
+
+    let err = SkippedFieldUser::query()
+        .where_in("secret", vec!["a", "b"])
+        .first()
+        .await
+        .expect_err("where_in on a skipped field must fail");
+    assert!(matches!(err, OrmError::Validation(_)));
+
+    let err = SkippedFieldUser::query()
+        .where_between("secret", 1, 9)
+        .first()
+        .await
+        .expect_err("where_between on a skipped field must fail");
+    assert!(matches!(err, OrmError::Validation(_)));
+
+    let err = SkippedFieldUser::query()
+        .order_by("secret")
+        .first()
+        .await
+        .expect_err("order_by on a skipped field must fail");
+    assert!(matches!(err, OrmError::Validation(_)));
+
+    let err = SkippedFieldUser::query()
+        .order_by_desc("secret")
+        .first()
+        .await
+        .expect_err("order_by_desc on a skipped field must fail");
+    assert!(matches!(err, OrmError::Validation(_)));
+
+    let err = SkippedFieldUser::query()
+        .group_by("secret")
+        .first()
+        .await
+        .expect_err("group_by on a skipped field must fail");
+    assert!(matches!(err, OrmError::Validation(_)));
+
+    let err = SkippedFieldUser::query()
+        .select(&["id", "name", "secret"])
+        .first()
+        .await
+        .expect_err("select on a skipped field must fail");
+    assert!(matches!(err, OrmError::Validation(_)));
+
+    // A *normal* column reference must still succeed and not
+    // accumulate any errors.
+    let ok = SkippedFieldUser::query()
+        .where_eq("name", "SkipBobUpdated")
+        .first()
+        .await
+        .expect("where_eq on a real column must succeed")
+        .expect("the row inserted above must still be present");
+    assert_eq!(ok.name, "SkipBobUpdated");
+
+    Schema::drop_if_exists("it_skipped")
+        .await
+        .expect("drop it_skipped");
 }
 
 // ── Scenario 3: transactions ──────────────────────────────────────────────

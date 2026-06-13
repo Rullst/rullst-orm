@@ -1,4 +1,4 @@
-﻿extern crate proc_macro;
+extern crate proc_macro;
 
 use proc_macro::TokenStream;
 use syn::{DeriveInput, parse_macro_input};
@@ -9,7 +9,7 @@ mod models;
 mod parser;
 mod relationships;
 
-#[proc_macro_derive(Orm, attributes(orm))]
+#[proc_macro_derive(Orm, attributes(orm, sqlx))]
 pub fn rullst_macro(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 

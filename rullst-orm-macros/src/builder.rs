@@ -1,6 +1,49 @@
-use crate::parser::ParsedModel;
+use crate::parser::{ParsedModel, SoftDeleteConfig};
 use proc_macro2::TokenStream;
 use quote::quote;
+
+/// Identifies how a soft-delete value should be compared inside
+/// `SELECT` / `restore` queries. The "literal" mode matches against
+/// `<column> = <value>` while the "null" mode matches against
+/// `<column> IS NULL` / `IS NOT NULL`.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum SoftDeleteCmp {
+    NullSentinel,
+    LiteralSentinel,
+}
+
+impl SoftDeleteCmp {
+    fn for_value(value: &str) -> Self {
+        if value.trim().eq_ignore_ascii_case("null") {
+            SoftDeleteCmp::NullSentinel
+        } else {
+            SoftDeleteCmp::LiteralSentinel
+        }
+    }
+}
+
+/// Renders the `<column> = <value>` fragment used in `SELECT` queries
+/// to filter non-deleted rows.
+fn soft_delete_where_clause(cfg: &SoftDeleteConfig, is_trashed: bool) -> String {
+    let cmp = SoftDeleteCmp::for_value(&cfg.value);
+    match (cmp, is_trashed) {
+        (SoftDeleteCmp::NullSentinel, false) => format!("{} IS NULL", cfg.column),
+        (SoftDeleteCmp::NullSentinel, true) => format!("{} IS NOT NULL", cfg.column),
+        (SoftDeleteCmp::LiteralSentinel, false) => format!("{} = {}", cfg.column, cfg.value),
+        (SoftDeleteCmp::LiteralSentinel, true) => format!("{} != {}", cfg.column, cfg.value),
+    }
+}
+
+/// Renders the `<column> = <value>` fragment used in `restore` queries
+/// to bring a soft-deleted row back to the "not deleted" state.
+#[allow(dead_code)]
+fn soft_delete_restore_clause(cfg: &SoftDeleteConfig) -> String {
+    if SoftDeleteCmp::for_value(&cfg.value) == SoftDeleteCmp::NullSentinel {
+        format!("{} = NULL", cfg.column)
+    } else {
+        format!("{} = {}", cfg.column, cfg.value)
+    }
+}
 
 /// Generates the magic methods for each field (where_field, order_by_field, etc)
 fn generate_magic_methods(parsed: &ParsedModel) -> Vec<TokenStream> {
@@ -38,23 +81,65 @@ fn generate_magic_methods(parsed: &ParsedModel) -> Vec<TokenStream> {
     magic_methods
 }
 
-fn generate_delete_all_logic(has_soft_deletes: bool, table_name: &str) -> TokenStream {
-    if has_soft_deletes {
-        quote! {
-            let mut estimated_capacity = 50 + #table_name.len() + self.wheres.iter().map(|(o, c)| o.len() + c.len() + 4).sum::<usize>();
-            let mut query_str = String::with_capacity(estimated_capacity);
-            query_str.push_str("UPDATE ");
-            query_str.push_str(#table_name);
-            query_str.push_str(" SET deleted_at = CURRENT_TIMESTAMP");
-        }
-    } else {
-        quote! {
+fn generate_delete_all_logic(parsed: &ParsedModel) -> TokenStream {
+    let table_name = &parsed.table_name;
+    if !parsed.has_soft_deletes {
+        return quote! {
             let mut estimated_capacity = 20 + #table_name.len() + self.wheres.iter().map(|(o, c)| o.len() + c.len() + 4).sum::<usize>();
             let mut query_str = String::with_capacity(estimated_capacity);
             query_str.push_str("DELETE FROM ");
             query_str.push_str(#table_name);
-        }
+        };
     }
+    // Build a portable UPDATE that flips the soft delete column to
+    // its "deleted" value. We prefer the user-supplied `delval`
+    // expression (e.g. `now()`, `UNIX_TIMESTAMP()`, `1`) so the same
+    // generated SQL works on MySQL, PostgreSQL and SQLite.
+    let cfg = parsed
+        .soft_delete
+        .as_ref()
+        .expect("has_soft_deletes implies soft_delete config");
+    let set_fragment = build_soft_delete_set_clause(cfg);
+    let delval_token: TokenStream = if cfg.delval.trim().is_empty() {
+        // No explicit delval: fall back to driver-specific defaults that
+        // mimic the historical hard-coded behaviour.
+        quote! {
+            let delval = if rullst_orm::Orm::driver() == "postgres" {
+                "deleted_at = CURRENT_TIMESTAMP"
+            } else {
+                "deleted_at = CURRENT_TIMESTAMP"
+            };
+        }
+    } else {
+        // The user supplied an expression like `now()` or
+        // `UNIX_TIMESTAMP()`. It is interpolated as raw SQL (it must
+        // not contain user input) so it travels through the `?`/SQL
+        // pipeline untouched.
+        let delval_lit = cfg.delval.clone();
+        quote! {
+            let delval = #delval_lit;
+        }
+    };
+    let set_template = set_fragment;
+    let table_lit = table_name.clone();
+    quote! {
+        #delval_token
+        let mut estimated_capacity = 50 + #table_lit.len() + delval.len() + self.wheres.iter().map(|(o, c)| o.len() + c.len() + 4).sum::<usize>();
+        let mut query_str = String::with_capacity(estimated_capacity);
+        query_str.push_str("UPDATE ");
+        query_str.push_str(#table_lit);
+        query_str.push_str(" SET ");
+        query_str.push_str(#set_template.replace("{VALUE}", delval).as_str());
+    }
+}
+
+/// Build the SET clause template for soft delete updates. The string
+/// `{VALUE}` is replaced at codegen with the actual `delval` SQL
+/// fragment. This indirection keeps the column name configurable
+/// while still letting us splice in a function call as a literal SQL
+/// string.
+fn build_soft_delete_set_clause(cfg: &SoftDeleteConfig) -> String {
+    format!("{} = {{VALUE}}", cfg.column)
 }
 
 pub fn generate(
@@ -69,8 +154,37 @@ pub fn generate(
     let builder_name = quote::format_ident!("{}QueryBuilder", name);
     let table_name = &parsed.table_name;
     let has_soft_deletes = parsed.has_soft_deletes;
+    // Pre-render the SQL fragments that depend on the user's soft
+    // delete config. We pre-compute them here (instead of inlining
+    // strings) so the generated `push_soft_deletes` body stays clean
+    // and so any user-provided `delval` / `value` survives verbatim
+    // across every supported driver.
+    let soft_delete_filter_unset = parsed
+        .soft_delete
+        .as_ref()
+        .map(|cfg| soft_delete_where_clause(cfg, false))
+        .unwrap_or_else(|| "deleted_at IS NULL".to_string());
+    let soft_delete_filter_set = parsed
+        .soft_delete
+        .as_ref()
+        .map(|cfg| soft_delete_where_clause(cfg, true))
+        .unwrap_or_else(|| "deleted_at IS NOT NULL".to_string());
     let execution_methods = generate_execution_methods(parsed, &builder_name, eager_loads);
     let magic_methods = generate_magic_methods(parsed);
+    // Names of fields tagged with `#[orm(skip)]` / `#[sqlx(skip)]`.
+    // They are not real columns in the underlying table, so any
+    // raw string-based `where_*` / `order_by` / `group_by` / `select`
+    // call that references one of these names must surface a
+    // `Validation` error instead of silently generating
+    // `WHERE skipped = ?`. The typed `*Column` enum and the
+    // `where_<field>` magic methods already exclude them at compile
+    // time; this constant closes the remaining escape hatch.
+    let skipped_columns: Vec<String> = parsed
+        .skipped_fields
+        .iter()
+        .map(|ident| ident.to_string())
+        .collect();
+    let skipped_columns_lit = skipped_columns.clone();
 
     quote! {
         #[derive(Clone)]
@@ -103,6 +217,37 @@ pub fn generate(
         }
 
         impl #builder_name {
+            /// Names of struct fields that the user marked with
+            /// `#[orm(skip)]` or `#[sqlx(skip)]`. Those fields are
+            /// intentionally not part of the SQL column list, so any
+            /// builder method that accepts a raw column name must
+            /// reject references to them with a `Validation` error
+            /// rather than letting them reach the database.
+            const SKIPPED_COLUMNS: &'static [&'static str] = &[#(#skipped_columns_lit),*];
+
+            /// Returns `true` when `column` is a struct field that
+            /// the user opted out of generated SQL via
+            /// `#[orm(skip)]` / `#[sqlx(skip)]`.
+            fn is_skipped_column(column: &str) -> bool {
+                Self::SKIPPED_COLUMNS.iter().any(|c| *c == column)
+            }
+
+            /// Records a `Validation` error when the caller referenced
+            /// a `#[orm(skip)]` / `#[sqlx(skip)]` field. Returns `true`
+            /// if the column is invalid, so the caller can `return
+            /// self` early and skip pushing the SQL fragment.
+            fn reject_skipped_column(&mut self, column: &str) -> bool {
+                if Self::is_skipped_column(column) {
+                    self.errors.push(rullst_orm::Error::Validation(format!(
+                        "column `{}` is declared with `#[orm(skip)]` / `#[sqlx(skip)]` and does not exist in the table; it must not be used in WHERE / ORDER BY / GROUP BY / SELECT",
+                        column
+                    )));
+                    true
+                } else {
+                    false
+                }
+            }
+
             pub fn new() -> Self {
                 Self {
                     selects: None,
@@ -250,6 +395,7 @@ pub fn generate(
             }
 
             pub fn where_eq<T: Into<rullst_orm::RullstValue>>(mut self, column: &str, value: T) -> Self {
+                self.reject_skipped_column(column);
                 if let Err(e) = rullst_orm::schema::validate_identifier(column) {
                     self.errors.push(rullst_orm::Error::Validation(format!("where_eq() — invalid column identifier: {}", e)));
                 }
@@ -259,6 +405,7 @@ pub fn generate(
             }
 
             pub fn where_not_eq<T: Into<rullst_orm::RullstValue>>(mut self, column: &str, value: T) -> Self {
+                self.reject_skipped_column(column);
                 if let Err(e) = rullst_orm::schema::validate_identifier(column) {
                     self.errors.push(rullst_orm::Error::Validation(format!("where_not_eq() — invalid column identifier: {}", e)));
                 }
@@ -268,6 +415,7 @@ pub fn generate(
             }
 
             pub fn where_gt<T: Into<rullst_orm::RullstValue>>(mut self, column: &str, value: T) -> Self {
+                self.reject_skipped_column(column);
                 if let Err(e) = rullst_orm::schema::validate_identifier(column) {
                     self.errors.push(rullst_orm::Error::Validation(format!("where_gt() — invalid column identifier: {}", e)));
                 }
@@ -277,6 +425,7 @@ pub fn generate(
             }
 
             pub fn where_lt<T: Into<rullst_orm::RullstValue>>(mut self, column: &str, value: T) -> Self {
+                self.reject_skipped_column(column);
                 if let Err(e) = rullst_orm::schema::validate_identifier(column) {
                     self.errors.push(rullst_orm::Error::Validation(format!("where_lt() — invalid column identifier: {}", e)));
                 }
@@ -286,6 +435,7 @@ pub fn generate(
             }
 
             pub fn where_like<T: Into<rullst_orm::RullstValue>>(mut self, column: &str, value: T) -> Self {
+                self.reject_skipped_column(column);
                 if let Err(e) = rullst_orm::schema::validate_identifier(column) {
                     self.errors.push(rullst_orm::Error::Validation(format!("where_like() — invalid column identifier: {}", e)));
                 }
@@ -295,6 +445,7 @@ pub fn generate(
             }
 
             pub fn where_not_like<T: Into<rullst_orm::RullstValue>>(mut self, column: &str, value: T) -> Self {
+                self.reject_skipped_column(column);
                 if let Err(e) = rullst_orm::schema::validate_identifier(column) {
                     self.errors.push(rullst_orm::Error::Validation(format!("where_not_like() — invalid column identifier: {}", e)));
                 }
@@ -304,6 +455,7 @@ pub fn generate(
             }
 
             pub fn where_null(mut self, column: &str) -> Self {
+                self.reject_skipped_column(column);
                 if let Err(e) = rullst_orm::schema::validate_identifier(column) {
                     self.errors.push(rullst_orm::Error::Validation(format!("where_null() — invalid column identifier: {}", e)));
                 }
@@ -312,6 +464,9 @@ pub fn generate(
             }
 
             pub fn select(mut self, columns: &[&str]) -> Self {
+                for col in columns {
+                    self.reject_skipped_column(col);
+                }
                 self.selects = Some(columns.join(", "));
                 self
             }
@@ -339,6 +494,7 @@ pub fn generate(
             }
 
             pub fn where_not_null(mut self, column: &str) -> Self {
+                self.reject_skipped_column(column);
                 if let Err(e) = rullst_orm::schema::validate_identifier(column) {
                     self.errors.push(rullst_orm::Error::Validation(format!("where_not_null() — invalid column identifier: {}", e)));
                 }
@@ -348,6 +504,7 @@ pub fn generate(
 
             /// WARNING: Ensure `column` does not contain user input to prevent SQL Injection.
             pub fn where_in<T: Into<rullst_orm::RullstValue>>(mut self, column: &str, values: Vec<T>) -> Self {
+                self.reject_skipped_column(column);
                 if let Err(e) = rullst_orm::schema::validate_identifier(column) {
                     self.errors.push(rullst_orm::Error::Validation(format!("where_in() — invalid column identifier: {}", e)));
                 }
@@ -359,6 +516,7 @@ pub fn generate(
             }
 
             pub fn where_not_in<T: Into<rullst_orm::RullstValue>>(mut self, column: &str, values: Vec<T>) -> Self {
+                self.reject_skipped_column(column);
                 if let Err(e) = rullst_orm::schema::validate_identifier(column) {
                     self.errors.push(rullst_orm::Error::Validation(format!("where_not_in() — invalid column identifier: {}", e)));
                 }
@@ -370,6 +528,7 @@ pub fn generate(
             }
 
             pub fn where_between<T: Into<rullst_orm::RullstValue>>(mut self, column: &str, min: T, max: T) -> Self {
+                self.reject_skipped_column(column);
                 if let Err(e) = rullst_orm::schema::validate_identifier(column) {
                     self.errors.push(rullst_orm::Error::Validation(format!("where_between() — invalid column identifier: {}", e)));
                 }
@@ -380,6 +539,7 @@ pub fn generate(
             }
 
             pub fn where_not_between<T: Into<rullst_orm::RullstValue>>(mut self, column: &str, min: T, max: T) -> Self {
+                self.reject_skipped_column(column);
                 if let Err(e) = rullst_orm::schema::validate_identifier(column) {
                     self.errors.push(rullst_orm::Error::Validation(format!("where_not_between() — invalid column identifier: {}", e)));
                 }
@@ -406,6 +566,7 @@ pub fn generate(
             }
 
             pub fn or_where<T: Into<rullst_orm::RullstValue>>(mut self, column: &str, value: T) -> Self {
+                self.reject_skipped_column(column);
                 if let Err(e) = rullst_orm::schema::validate_identifier(column) {
                     self.errors.push(rullst_orm::Error::Validation(format!("or_where() — invalid column identifier: {}", e)));
                 }
@@ -415,6 +576,7 @@ pub fn generate(
             }
 
             pub fn or_where_not_eq<T: Into<rullst_orm::RullstValue>>(mut self, column: &str, value: T) -> Self {
+                self.reject_skipped_column(column);
                 if let Err(e) = rullst_orm::schema::validate_identifier(column) {
                     self.errors.push(rullst_orm::Error::Validation(format!("or_where_not_eq() — invalid column identifier: {}", e)));
                 }
@@ -424,6 +586,7 @@ pub fn generate(
             }
 
             pub fn or_where_gt<T: Into<rullst_orm::RullstValue>>(mut self, column: &str, value: T) -> Self {
+                self.reject_skipped_column(column);
                 if let Err(e) = rullst_orm::schema::validate_identifier(column) {
                     self.errors.push(rullst_orm::Error::Validation(format!("or_where_gt() — invalid column identifier: {}", e)));
                 }
@@ -433,6 +596,7 @@ pub fn generate(
             }
 
             pub fn or_where_lt<T: Into<rullst_orm::RullstValue>>(mut self, column: &str, value: T) -> Self {
+                self.reject_skipped_column(column);
                 if let Err(e) = rullst_orm::schema::validate_identifier(column) {
                     self.errors.push(rullst_orm::Error::Validation(format!("or_where_lt() — invalid column identifier: {}", e)));
                 }
@@ -442,6 +606,7 @@ pub fn generate(
             }
 
             pub fn or_where_like<T: Into<rullst_orm::RullstValue>>(mut self, column: &str, value: T) -> Self {
+                self.reject_skipped_column(column);
                 if let Err(e) = rullst_orm::schema::validate_identifier(column) {
                     self.errors.push(rullst_orm::Error::Validation(format!("or_where_like() — invalid column identifier: {}", e)));
                 }
@@ -451,6 +616,7 @@ pub fn generate(
             }
 
             pub fn or_where_null(mut self, column: &str) -> Self {
+                self.reject_skipped_column(column);
                 if let Err(e) = rullst_orm::schema::validate_identifier(column) {
                     self.errors.push(rullst_orm::Error::Validation(format!("or_where_null() — invalid column identifier: {}", e)));
                 }
@@ -459,6 +625,7 @@ pub fn generate(
             }
 
             pub fn or_where_not_null(mut self, column: &str) -> Self {
+                self.reject_skipped_column(column);
                 if let Err(e) = rullst_orm::schema::validate_identifier(column) {
                     self.errors.push(rullst_orm::Error::Validation(format!("or_where_not_null() — invalid column identifier: {}", e)));
                 }
@@ -468,6 +635,7 @@ pub fn generate(
 
             /// WARNING: Ensure `column` does not contain user input to prevent SQL Injection.
             pub fn or_where_in<T: Into<rullst_orm::RullstValue>>(mut self, column: &str, values: Vec<T>) -> Self {
+                self.reject_skipped_column(column);
                 if let Err(e) = rullst_orm::schema::validate_identifier(column) {
                     self.errors.push(rullst_orm::Error::Validation(format!("or_where_in() — invalid column identifier: {}", e)));
                 }
@@ -479,6 +647,7 @@ pub fn generate(
             }
 
             pub fn or_where_between<T: Into<rullst_orm::RullstValue>>(mut self, column: &str, min: T, max: T) -> Self {
+                self.reject_skipped_column(column);
                 if let Err(e) = rullst_orm::schema::validate_identifier(column) {
                     self.errors.push(rullst_orm::Error::Validation(format!("or_where_between() — invalid column identifier: {}", e)));
                 }
@@ -489,6 +658,7 @@ pub fn generate(
             }
 
             pub fn group_by(mut self, column: &str) -> Self {
+                self.reject_skipped_column(column);
                 if let Err(e) = rullst_orm::schema::validate_identifier(column) {
                     self.errors.push(rullst_orm::Error::Validation(format!("group_by() — invalid column identifier: {}", e)));
                 }
@@ -502,6 +672,7 @@ pub fn generate(
             /// Panics if `column` is not a valid SQL identifier.
             /// Column names must always be hardcoded — never pass user input here.
             pub fn order_by(mut self, column: &str) -> Self {
+                self.reject_skipped_column(column);
                 if let Err(e) = rullst_orm::schema::validate_identifier(column) {
                     self.errors.push(rullst_orm::Error::Validation(format!("order_by() — invalid column identifier: {}", e)));
                 }
@@ -515,6 +686,7 @@ pub fn generate(
             /// Panics if `column` is not a valid SQL identifier.
             /// Column names must always be hardcoded — never pass user input here.
             pub fn order_by_desc(mut self, column: &str) -> Self {
+                self.reject_skipped_column(column);
                 if let Err(e) = rullst_orm::schema::validate_identifier(column) {
                     self.errors.push(rullst_orm::Error::Validation(format!("order_by_desc() — invalid column identifier: {}", e)));
                 }
@@ -585,10 +757,15 @@ pub fn generate(
                     } else {
                         sql.push_str(" AND ");
                     }
+                    // The column name and sentinel value come from the
+                    // user's `#[orm(soft_delete(...))]` declaration (or
+                    // the legacy `deleted_at` default), so this works for
+                    // MySQL, PostgreSQL, and SQLite without any driver
+                    // specific code.
                     if self.only_trashed {
-                        sql.push_str("deleted_at IS NOT NULL");
+                        sql.push_str(#soft_delete_filter_set);
                     } else {
-                        sql.push_str("deleted_at IS NULL");
+                        sql.push_str(#soft_delete_filter_unset);
                     }
                 }
             }
@@ -689,7 +866,6 @@ fn generate_execution_methods(
 ) -> Vec<TokenStream> {
     let name = &parsed.name;
     let table_name = &parsed.table_name;
-    let has_soft_deletes = parsed.has_soft_deletes;
     let hook_after_fetch = if !parsed.after_fetch.is_empty() {
         let method = syn::Ident::new(&parsed.after_fetch, name.span());
         quote! {
@@ -699,7 +875,7 @@ fn generate_execution_methods(
     } else {
         quote! {}
     };
-    let delete_all_logic = generate_delete_all_logic(has_soft_deletes, table_name);
+    let delete_all_logic = generate_delete_all_logic(parsed);
 
     vec![quote! {
     pub async fn get(&self) -> Result<Vec<#name>, rullst_orm::Error> {

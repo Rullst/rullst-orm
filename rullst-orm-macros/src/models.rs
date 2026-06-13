@@ -104,6 +104,7 @@ fn generate_column_enum(parsed: &ParsedModel) -> TokenStream {
 fn generate_json_methods(parsed: &ParsedModel) -> TokenStream {
     let normal_fields = &parsed.normal_fields;
     let hidden_fields = &parsed.hidden_fields;
+    let skipped_fields = &parsed.skipped_fields;
     let mut relation_field_idents = vec![];
     for rel in &parsed.relations {
         relation_field_idents.push(rel.field_name.clone());
@@ -119,6 +120,20 @@ fn generate_json_methods(parsed: &ParsedModel) -> TokenStream {
         }
     }
 
+    let skip_tail = if skipped_fields.is_empty() {
+        // No `#[orm(skip)]` / `#[sqlx(skip)]` fields, so the
+        // exhaustive struct literal is fine and we don't force the
+        // user model to implement `Default`.
+        quote! {}
+    } else {
+        // When a model has skipped fields the struct literal
+        // intentionally omits them; trailing `..Default::default()`
+        // fills them in. Users must therefore add
+        // `#[derive(Default)]` (or implement `Default` manually) on
+        // any model that opts into `#[orm(skip)]`.
+        quote! { ..Default::default() }
+    };
+
     quote! {
         pub fn from_json(json_str: &str) -> Result<Self, rullst_orm::_serde_json::Error> {
             let value: rullst_orm::_serde_json::Value = rullst_orm::_serde_json::from_str(json_str)?;
@@ -133,6 +148,7 @@ fn generate_json_methods(parsed: &ParsedModel) -> TokenStream {
                 #(
                     #relation_field_idents: None,
                 )*
+                #skip_tail
             })
         }
 
@@ -566,13 +582,33 @@ fn generate_delete_methods(parsed: &ParsedModel) -> TokenStream {
         quote! {}
     };
 
+    // Compose the soft delete UPDATE statement. The column name and
+    // the `delval` expression both come from the user config so the
+    // same generated SQL works against MySQL (`now()`,
+    // `UNIX_TIMESTAMP()`), PostgreSQL (`now() :: timestamp`) and
+    // SQLite (`CURRENT_TIMESTAMP`).
     let delete_logic = if has_soft_deletes {
+        let cfg = parsed
+            .soft_delete
+            .as_ref()
+            .expect("has_soft_deletes implies a soft_delete config");
+        let delval_expr = if cfg.delval.trim().is_empty() {
+            "CURRENT_TIMESTAMP".to_string()
+        } else {
+            cfg.delval.clone()
+        };
+        // Build the SET fragment as a runtime string so the
+        // user-supplied `delval` is interpolated verbatim rather than
+        // being reparsed as Rust tokens (which would mistake
+        // `now()` for an unresolved function call).
+        let set_clause = format!("{} = {}", cfg.column, delval_expr);
+        let set_clause_lit = set_clause;
         quote! {
             let driver = rullst_orm::Orm::driver();
             let query = if driver == "postgres" {
-                format!("UPDATE {} SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1", #table_name)
+                format!("UPDATE {} SET {} WHERE id = $1", #table_name, #set_clause_lit)
             } else {
-                format!("UPDATE {} SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?", #table_name)
+                format!("UPDATE {} SET {} WHERE id = ?", #table_name, #set_clause_lit)
             };
         }
     } else {
@@ -584,6 +620,41 @@ fn generate_delete_methods(parsed: &ParsedModel) -> TokenStream {
                 format!("DELETE FROM {} WHERE id = ?", #table_name)
             };
         }
+    };
+
+    // Build the restore SQL: flip the soft delete column back to its
+    // "not deleted" sentinel. If the user configured the sentinel as
+    // `null` we emit `<column> = NULL`; otherwise we use the literal
+    // value they provided.
+    let restore_logic = if has_soft_deletes {
+        let cfg = parsed
+            .soft_delete
+            .as_ref()
+            .expect("has_soft_deletes implies a soft_delete config");
+        let set_clause = if cfg.value.trim().eq_ignore_ascii_case("null") {
+            format!("{} = NULL", cfg.column)
+        } else if cfg.value.is_empty() {
+            // No explicit value -> fall back to the legacy NULL default.
+            format!("{} = NULL", cfg.column)
+        } else {
+            format!("{} = {}", cfg.column, cfg.value)
+        };
+        let set_clause_lit = set_clause;
+        quote! {
+            let pool = rullst_orm::Orm::pool();
+            use rullst_orm::_sqlx::query_builder::QueryBuilder;
+            let mut query_builder = QueryBuilder::new("UPDATE ");
+            query_builder.push(#table_name);
+            if rullst_orm::Orm::driver() == "postgres" {
+                query_builder.push(format!(" SET {} WHERE id = $1", #set_clause_lit));
+            } else {
+                query_builder.push(format!(" SET {} WHERE id = ?", #set_clause_lit));
+            }
+            let query = query_builder.build();
+            query.bind(self.id).execute(pool).await?;
+        }
+    } else {
+        quote! {}
     };
 
     quote! {
@@ -630,19 +701,7 @@ fn generate_delete_methods(parsed: &ParsedModel) -> TokenStream {
         }
 
         pub async fn restore(&self) -> Result<(), rullst_orm::Error> {
-            if #has_soft_deletes {
-                let pool = rullst_orm::Orm::pool();
-                use rullst_orm::_sqlx::query_builder::QueryBuilder;
-                let mut query_builder = QueryBuilder::new("UPDATE ");
-                query_builder.push(#table_name);
-                if rullst_orm::Orm::driver() == "postgres" {
-                    query_builder.push(" SET deleted_at = NULL WHERE id = $1");
-                } else {
-                    query_builder.push(" SET deleted_at = NULL WHERE id = ?");
-                }
-                let query = query_builder.build();
-                query.bind(self.id).execute(pool).await?;
-            }
+            #restore_logic
             Ok(())
         }
 
