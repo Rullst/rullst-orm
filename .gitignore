@@ -7,6 +7,8 @@ test.db
 *.recovered*
 expanded.rs
 *.txt
+# JetBrains / IntelliJ IDE configuration
+.idea/
 # Legacy directories (old crate name, pre-rename artifacts)
 rust-eloquent/
 # Work directory (UA scratch space)

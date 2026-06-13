@@ -1,5 +1,49 @@
 use syn::{Data, DeriveInput, Fields, spanned::Spanned};
 
+/// Split a token string at top-level commas, ignoring commas that
+/// appear inside matched parentheses. This lets us keep arguments of
+/// calls like `soft_delete(field = "a", value = "0")` together while
+/// still separating the outer attributes.
+fn split_top_level(input: &str) -> Vec<String> {
+    let mut parts: Vec<String> = Vec::new();
+    let mut buf = String::new();
+    let mut depth: i32 = 0;
+    for c in input.chars() {
+        match c {
+            '(' => {
+                depth += 1;
+                buf.push(c);
+            }
+            ')' => {
+                if depth > 0 {
+                    depth -= 1;
+                }
+                buf.push(c);
+            }
+            ',' if depth == 0 => {
+                parts.push(std::mem::take(&mut buf));
+            }
+            other => buf.push(other),
+        }
+    }
+    if !buf.is_empty() {
+        parts.push(buf);
+    }
+    parts
+}
+
+/// If `input` looks like `<name>(<inner>)`, return the inner portion
+/// (with surrounding whitespace trimmed). Returns `None` otherwise.
+fn strip_outer_call(input: &str, name: &str) -> Option<String> {
+    let trimmed = input.trim();
+    let prefix = format!("{name}(");
+    if trimmed.starts_with(&prefix) && trimmed.ends_with(')') {
+        let inner = &trimmed[prefix.len()..trimmed.len() - 1];
+        return Some(inner.trim().to_string());
+    }
+    None
+}
+
 /// Validates that a relation attribute has valid syntax
 fn validate_relation_attribute(
     key: &str,
@@ -52,11 +96,43 @@ pub struct ParsedModel {
     pub before_delete: String,
     pub after_delete: String,
     pub after_fetch: String,
+    /// Soft delete configuration. `column` defaults to `deleted_at`,
+    /// `value` is the literal SQL expression for the "not deleted" sentinel
+    /// (e.g. `0`, `false`, `null`, `'N'`), `delval` is the literal SQL
+    /// expression for the "deleted" sentinel (e.g. `1`, `true`, `now()`,
+    /// `UNIX_TIMESTAMP()`). All values are emitted as raw SQL fragments
+    /// (never user input) so the user is responsible for keeping them
+    /// safe and portable across MySQL / PostgreSQL / SQLite.
+    pub soft_delete: Option<SoftDeleteConfig>,
 
     pub normal_fields: Vec<syn::Ident>,
     pub hidden_fields: Vec<syn::Ident>,
+    /// Fields tagged with `#[orm(skip)]` or `#[sqlx(skip)]`. They are
+    /// still part of the struct but excluded from generated INSERT /
+    /// UPDATE statements, the `*Column` enum and JSON serialisation.
+    /// Tracked for introspection; not currently consumed by the
+    /// codegen because the parser already moves them out of
+    /// `normal_fields` before the generators run.
+    #[allow(dead_code)]
+    pub skipped_fields: Vec<syn::Ident>,
     pub relations: Vec<ParsedRelation>,
     pub has_soft_deletes: bool,
+}
+
+#[derive(Clone, Debug)]
+pub struct SoftDeleteConfig {
+    pub column: String,
+    /// SQL fragment representing the "not deleted" state.
+    /// When this is the literal string `null` (case-insensitive) the
+    /// generated `SELECT` / `restore` statements compare the column
+    /// against `IS NULL`. For all other values the comparison is
+    /// `<column> = <value>`.
+    pub value: String,
+    /// SQL fragment representing the "deleted" state. This is
+    /// interpolated verbatim into the generated `UPDATE` statement,
+    /// so users can use database functions such as `now()`,
+    /// `CURRENT_TIMESTAMP`, `UNIX_TIMESTAMP()` etc.
+    pub delval: String,
 }
 
 pub struct ParsedRelation {
@@ -82,6 +158,7 @@ pub fn parse(input: &DeriveInput) -> Result<ParsedModel, syn::Error> {
     let mut before_delete = String::new();
     let mut after_delete = String::new();
     let mut after_fetch = String::new();
+    let mut soft_delete: Option<SoftDeleteConfig> = None;
 
     for attr in &input.attrs {
         if attr.path().is_ident("orm") {
@@ -89,12 +166,47 @@ pub fn parse(input: &DeriveInput) -> Result<ParsedModel, syn::Error> {
                 Ok(list) => list.tokens.to_string(),
                 Err(_) => continue, // Skip malformed attributes
             };
-            for part in token_str.split(',') {
+            // Split top-level orm attributes, but keep parenthesised
+            // groups such as `soft_delete(field = "...", value = "0", delval = "1")`
+            // intact so the inner key/value pairs aren't accidentally cut
+            // by the comma split.
+            let top_parts = split_top_level(&token_str);
+            for part in top_parts {
                 let trimmed = part.trim();
+                if trimmed.is_empty() {
+                    continue;
+                }
                 if trimmed == "auditable" {
                     auditable = true;
                 } else if trimmed == "searchable" {
                     searchable = true;
+                } else if let Some(inner) = strip_outer_call(trimmed, "soft_delete") {
+                    let mut column: Option<String> = None;
+                    let mut value: Option<String> = None;
+                    let mut delval: Option<String> = None;
+                    for kv in split_top_level(&inner) {
+                        let kv = kv.trim();
+                        if kv.is_empty() {
+                            continue;
+                        }
+                        let kv_parts: Vec<&str> = kv.splitn(2, '=').collect();
+                        if kv_parts.len() != 2 {
+                            continue;
+                        }
+                        let k = kv_parts[0].trim();
+                        let v = kv_parts[1].trim().trim_matches('"');
+                        match k {
+                            "field" => column = Some(v.to_string()),
+                            "value" => value = Some(v.to_string()),
+                            "delval" => delval = Some(v.to_string()),
+                            _ => {}
+                        }
+                    }
+                    soft_delete = Some(SoftDeleteConfig {
+                        column: column.unwrap_or_else(|| "deleted_at".to_string()),
+                        value: value.unwrap_or_default(),
+                        delval: delval.unwrap_or_default(),
+                    });
                 } else {
                     let parts: Vec<&str> = trimmed.split('=').collect();
                     if parts.len() == 2 {
@@ -137,8 +249,22 @@ pub fn parse(input: &DeriveInput) -> Result<ParsedModel, syn::Error> {
 
     let mut normal_fields = vec![];
     let mut hidden_fields = vec![];
+    let mut skipped_fields = vec![];
     let mut relations = vec![];
-    let mut has_soft_deletes = false;
+    // If the user explicitly opted in via `#[orm(soft_delete(...))]` the
+    // `has_soft_deletes` flag is derived from that. Otherwise we keep the
+    // legacy behaviour of detecting a `deleted_at` field by name so
+    // existing models keep working without changes.
+    let mut has_soft_deletes = soft_delete.is_some();
+    let soft_delete_column_lower = soft_delete
+        .as_ref()
+        .map(|c| c.column.to_lowercase());
+    // Track the column name that should be considered the soft delete
+    // marker. Used at the end of field iteration to synthesise a
+    // default `SoftDeleteConfig` for legacy `deleted_at` models so the
+    // downstream generators can always assume `soft_delete` is `Some`
+    // when `has_soft_deletes` is true.
+    let mut detected_soft_delete_column: Option<String> = None;
 
     for field in fields {
         let field_name = match field.ident.as_ref() {
@@ -146,8 +272,16 @@ pub fn parse(input: &DeriveInput) -> Result<ParsedModel, syn::Error> {
             None => continue, // Skip fields without identifiers
         };
         let field_name_str = field_name.to_string();
-        if field_name_str == "deleted_at" {
+        if soft_delete_column_lower
+            .as_deref()
+            .map(|c| c == field_name_str.to_lowercase())
+            .unwrap_or(false)
+        {
             has_soft_deletes = true;
+            detected_soft_delete_column = Some(field_name_str.clone());
+        } else if field_name_str == "deleted_at" {
+            has_soft_deletes = true;
+            detected_soft_delete_column = Some(field_name_str);
         }
 
         let mut is_relation = false;
@@ -159,17 +293,30 @@ pub fn parse(input: &DeriveInput) -> Result<ParsedModel, syn::Error> {
         let mut local_key = "id".to_string();
         let mut morph_name = String::new();
         let mut is_hidden = false;
+        let mut is_skipped = false;
 
         for attr in &field.attrs {
-            if attr.path().is_ident("orm") {
+            // The macro accepts `#[orm(...)]` as well as the more
+            // explicit `#[sqlx(...)]` style requested in the feature
+            // spec. Both produce the same set of recognised keys.
+            if attr.path().is_ident("orm") || attr.path().is_ident("sqlx") {
                 let token_str = match attr.meta.require_list() {
                     Ok(list) => list.tokens.to_string(),
                     Err(_) => continue, // Skip malformed attributes
                 };
-                for part in token_str.split(',') {
+                for part in split_top_level(&token_str) {
                     let trimmed = part.trim();
+                    if trimmed.is_empty() {
+                        continue;
+                    }
                     if trimmed == "hidden" {
                         is_hidden = true;
+                    } else if trimmed == "skip" {
+                        // Excluded from generated INSERT / UPDATE column
+                        // lists, bindings, JSON serialisation and the
+                        // `*Column` enum. The field is still part of the
+                        // struct so user code can still read/write it.
+                        is_skipped = true;
                     } else {
                         let parts: Vec<&str> = trimmed.split('=').collect();
                         if parts.len() == 2 {
@@ -232,6 +379,14 @@ pub fn parse(input: &DeriveInput) -> Result<ParsedModel, syn::Error> {
                 pivot_table,
                 morph_name,
             });
+        } else if is_skipped {
+            // Skipped fields are not exposed to the generated SQL or the
+            // column enum; record the ident so downstream code (if it ever
+            // needs to introspect) can still see them.
+            skipped_fields.push(field_name.clone());
+            if is_hidden {
+                hidden_fields.push(field_name);
+            }
         } else {
             normal_fields.push(field_name.clone());
             if is_hidden {
@@ -239,6 +394,20 @@ pub fn parse(input: &DeriveInput) -> Result<ParsedModel, syn::Error> {
             }
         }
     }
+
+    // Synthesise a default `SoftDeleteConfig` for legacy models that
+    // declared a `deleted_at` field without an explicit
+    // `#[orm(soft_delete(...))]`. The defaults match the historical
+    // behaviour (column = `deleted_at`, not-deleted = NULL, deleted =
+    // `CURRENT_TIMESTAMP`) so all pre-existing models continue to
+    // compile and behave identically.
+    let soft_delete = soft_delete.or_else(|| {
+        detected_soft_delete_column.map(|column| SoftDeleteConfig {
+            column,
+            value: String::new(),
+            delval: String::new(),
+        })
+    });
 
     Ok(ParsedModel {
         name,
@@ -252,8 +421,10 @@ pub fn parse(input: &DeriveInput) -> Result<ParsedModel, syn::Error> {
         before_delete,
         after_delete,
         after_fetch,
+        soft_delete,
         normal_fields,
         hidden_fields,
+        skipped_fields,
         relations,
         has_soft_deletes,
     })

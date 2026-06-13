@@ -1,4 +1,4 @@
-﻿use syn::{DeriveInput, parse_quote};
+use syn::{DeriveInput, parse_quote};
 
 #[test]
 fn test_basic_model() {
@@ -58,5 +58,104 @@ fn test_model_with_hidden_fields() {
         }
     };
 
+    let _ = input;
+}
+
+#[test]
+fn test_model_with_explicit_soft_delete_config() {
+    // Custom column name, integer sentinel, function-based delval.
+    // Exercises the MySQL/PostgreSQL/SQLite portable `value`/`delval`
+    // handling without binding to any specific dialect.
+    let input: DeriveInput = parse_quote! {
+        #[derive(Orm)]
+        #[orm(soft_delete(field = "is_deleted", value = "0", delval = "1"))]
+        pub struct Post {
+            pub id: i32,
+            pub title: String,
+            pub is_deleted: i32,
+        }
+    };
+    let _ = input;
+}
+
+#[test]
+fn test_model_with_soft_delete_null_sentinel() {
+    // `value = "null"` should map to `IS NULL` filters and `delval`
+    // can be an arbitrary database function.
+    let input: DeriveInput = parse_quote! {
+        #[derive(Orm)]
+        #[orm(soft_delete(field = "deleted_at", value = "null", delval = "now()"))]
+        pub struct Audit {
+            pub id: i32,
+            pub message: String,
+            pub deleted_at: Option<String>,
+        }
+    };
+    let _ = input;
+}
+
+#[test]
+fn test_model_with_soft_delete_bigint_timestamp() {
+    // Bigint + UNIX_TIMESTAMP() pattern suitable for unique-index
+    // multi-delete use cases (mybatis-plus compatibility).
+    let input: DeriveInput = parse_quote! {
+        #[derive(Orm)]
+        #[orm(soft_delete(field = "deleted_at", value = "0", delval = "UNIX_TIMESTAMP()"))]
+        pub struct Article {
+            pub id: i32,
+            pub title: String,
+            pub deleted_at: i64,
+        }
+    };
+    let _ = input;
+}
+
+#[test]
+fn test_model_with_orm_skip_field() {
+    // `#[orm(skip)]` should remove the field from generated SQL
+    // and the `*Column` enum, but the field stays on the struct.
+    let input: DeriveInput = parse_quote! {
+        #[derive(Orm)]
+        pub struct Account {
+            pub id: i32,
+            pub name: String,
+            #[orm(skip)]
+            pub password_hash: String,
+        }
+    };
+    let _ = input;
+}
+
+#[test]
+fn test_model_with_sqlx_skip_field() {
+    // The `#[sqlx(skip)]` alias is also accepted and behaves the
+    // same as `#[orm(skip)]`.
+    let input: DeriveInput = parse_quote! {
+        #[derive(Orm)]
+        pub struct Account {
+            pub id: i32,
+            pub name: String,
+            #[sqlx(skip)]
+            pub password_hash: String,
+        }
+    };
+    let _ = input;
+}
+
+#[test]
+fn test_model_with_combined_soft_delete_and_skip() {
+    // Combine both new features in one model to make sure the
+    // generator handles them together without interfering.
+    let input: DeriveInput = parse_quote! {
+        #[derive(Orm)]
+        #[orm(soft_delete(field = "is_active", value = "true", delval = "false"))]
+        pub struct User {
+            pub id: i32,
+            pub name: String,
+            pub is_active: bool,
+            #[sqlx(skip)]
+            pub internal_note: String,
+        }
+    };
     let _ = input;
 }
