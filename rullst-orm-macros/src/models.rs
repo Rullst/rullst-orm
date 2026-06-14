@@ -6,12 +6,13 @@ pub fn generate(parsed: &ParsedModel, relationship_methods: &[TokenStream]) -> T
     let name = &parsed.name;
     let table_name = &parsed.table_name;
     let builder_name = quote::format_ident!("{}QueryBuilder", name);
+    let save_builder_name = quote::format_ident!("{}SaveBuilder", name);
     let observer_trait_name = quote::format_ident!("{}Observer", name);
 
     let enum_def = generate_column_enum(parsed);
     let json_methods = generate_json_methods(parsed);
     let search_method = generate_search_method(parsed, &builder_name);
-    let save_method = generate_save_method(parsed);
+    let save_method = generate_save_method(parsed, &save_builder_name);
     let delete_methods = generate_delete_methods(parsed);
     let query_methods = generate_query_methods(parsed, &builder_name);
 
@@ -258,8 +259,10 @@ fn generate_query_methods(parsed: &ParsedModel, builder_name: &syn::Ident) -> To
     let tenant_scope_logic = if !parsed.tenant_column.is_empty() {
         let col = &parsed.tenant_column;
         quote! {
-            if let Some(tenant) = rullst_orm::tenant::get_tenant_id() {
-                builder = builder.where_eq(#col, tenant);
+            if !builder.skip_tenant {
+                if let Some(tenant) = rullst_orm::tenant::get_tenant_id() {
+                    builder = builder.where_eq(#col, tenant);
+                }
             }
         }
     } else {
@@ -292,10 +295,22 @@ fn generate_query_methods(parsed: &ParsedModel, builder_name: &syn::Ident) -> To
     }
 }
 
-fn generate_save_method(parsed: &ParsedModel) -> TokenStream {
+fn generate_save_method(parsed: &ParsedModel, save_builder_name: &syn::Ident) -> TokenStream {
     let name = &parsed.name;
     let table_name = &parsed.table_name;
     let normal_fields = &parsed.normal_fields;
+
+    // Only declare a `*SaveBuilder` instance in the generated
+    // `save_with_tx_internal` body when the model actually has a
+    // `tenant_column` configured. Without the declaration the
+    // `if !builder.skip_tenant` check would be a reference to an
+    // undeclared binding; with it, models that don't use multi
+    // tenancy stay free of an unused-variable warning.
+    let builder_declaration = if !parsed.tenant_column.is_empty() {
+        quote! { let builder = #save_builder_name::default(); }
+    } else {
+        quote! {}
+    };
 
     let hook_before_save = if !parsed.before_save.is_empty() {
         let method = syn::Ident::new(&parsed.before_save, name.span());
@@ -313,9 +328,11 @@ fn generate_save_method(parsed: &ParsedModel) -> TokenStream {
     let tenant_set_logic = if !parsed.tenant_column.is_empty() {
         let col_ident = syn::Ident::new(&parsed.tenant_column, name.span());
         quote! {
-            if let Some(tenant) = rullst_orm::tenant::get_tenant_id() {
-                if let Ok(val) = tenant.try_into() {
-                    self.#col_ident = val;
+            if !builder.skip_tenant {
+                if let Some(tenant) = rullst_orm::tenant::get_tenant_id() {
+                    if let Ok(val) = tenant.try_into() {
+                        self.#col_ident = val;
+                    }
                 }
             }
         }
@@ -422,6 +439,7 @@ fn generate_save_method(parsed: &ParsedModel) -> TokenStream {
         async fn save_with_tx_internal<'e, E>(&mut self, executor: E) -> Result<(), rullst_orm::Error>
         where E: rullst_orm::_sqlx::Executor<'e, Database = rullst_orm::RullstDatabase>
         {
+            #builder_declaration
             let is_new = self.id == 0;
             if is_new {
                 #tenant_set_logic
