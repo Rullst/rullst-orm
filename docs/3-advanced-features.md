@@ -35,6 +35,25 @@ let results = with_tenant("company_A1", async {
 }).await;
 ```
 
+### Bypassing the tenant scope with `skip_tenant()`
+
+For admin / migration / support scripts, you sometimes need to *ignore* the active tenant scope. Call `skip_tenant()` on the query builder to suppress the auto-injected `WHERE <tenant_column> = ?`:
+
+```rust
+let posts = Post::query()
+    .skip_tenant()       // <-- no WHERE tenant_id = ? is emitted
+    .get()
+    .await?;
+```
+
+`skip_tenant()` composes with every other builder method (`where_*`, `order_by`, `limit`, …) and is purely a query-time opt-out — it does **not** affect `save()`. The auto-stamping of `tenant_id` on inserts still runs inside `with_tenant(...)`, so a `save()` that happens to be called from a tenant scope always records the correct tenant even if the caller forgot to set the field.
+
+A runnable demo lives in `rullst-orm/examples/skip_tenant.rs`:
+
+```bash
+cargo run -p rullst-orm --example skip_tenant
+```
+
 ---
 
 ## 🛡️ Audit Trails

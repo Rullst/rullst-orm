@@ -152,6 +152,7 @@ pub fn generate(
     let name = &parsed.name;
     let column_enum_name = quote::format_ident!("{}Column", name);
     let builder_name = quote::format_ident!("{}QueryBuilder", name);
+    let save_builder_name = quote::format_ident!("{}SaveBuilder", name);
     let table_name = &parsed.table_name;
     let has_soft_deletes = parsed.has_soft_deletes;
     // Pre-render the SQL fragments that depend on the user's soft
@@ -186,6 +187,42 @@ pub fn generate(
         .collect();
     let skipped_columns_lit = skipped_columns.clone();
 
+    // The `*SaveBuilder` mirrors the `skip_tenant` flag the
+    // `*QueryBuilder` already exposes, but for the save path. It is
+    // only generated when the model actually configured
+    // `#[orm(tenant_column = "...")]` — for the other models there
+    // is no auto-stamping to opt out of, so emitting an empty struct
+    // would just be dead code.
+    let save_builder_def = if !parsed.tenant_column.is_empty() {
+        quote! {
+            #[derive(Default, Clone)]
+            pub struct #save_builder_name {
+                /// When `true`, the auto-injected tenant column write
+                /// performed by `save()` is suppressed. Set via
+                /// `<Model>SaveBuilder::skip_tenant()`.
+                pub skip_tenant: bool,
+            }
+
+            impl #save_builder_name {
+                /// Suppresses the auto-injected tenant column write
+                /// that `save()` would otherwise perform on models
+                /// configured with `#[orm(tenant_column = "...")]`.
+                ///
+                /// This is the save-side counterpart of
+                /// `<Model>QueryBuilder::skip_tenant()` and is
+                /// useful for cross-tenant admin scripts that
+                /// already know the correct `tenant_id` value (or
+                /// want to leave it untouched).
+                pub fn skip_tenant(mut self) -> Self {
+                    self.skip_tenant = true;
+                    self
+                }
+            }
+        }
+    } else {
+        quote! {}
+    };
+
     quote! {
         #[derive(Clone)]
         pub struct #builder_name {
@@ -202,10 +239,16 @@ pub fn generate(
             pub errors: Vec<rullst_orm::Error>,
             pub with_trashed: bool,
             pub only_trashed: bool,
+            /// When `true`, the auto-injected tenant `WHERE` clause
+            /// added by `<Model>::query()` is suppressed. Set via
+            /// `Post::query().skip_tenant()`.
+            pub skip_tenant: bool,
             #[cfg(feature = "redis")]
             pub remember_ttl: Option<usize>,
             #(#relation_flags)*
         }
+
+        #save_builder_def
 
         impl rullst_orm::schema::SubqueryBuilder for #builder_name {
             fn to_sql(&self) -> String {
@@ -263,6 +306,7 @@ pub fn generate(
                     errors: vec![],
                     with_trashed: false,
                     only_trashed: false,
+                    skip_tenant: false,
                     #[cfg(feature = "redis")]
                     remember_ttl: None,
                     #(#relation_inits)*
@@ -337,6 +381,18 @@ pub fn generate(
 
             pub fn only_trashed(mut self) -> Self {
                 self.only_trashed = true;
+                self
+            }
+
+            /// Suppresses the auto-injected tenant `WHERE` clause that
+            /// `<Model>::query()` would otherwise add for models
+            /// configured with `#[orm(tenant_column = "...")]`.
+            ///
+            /// This is useful for cross-tenant admin queries, data
+            /// migrations, or any place where the current
+            /// `with_tenant(...)` scope should be ignored.
+            pub fn skip_tenant(mut self) -> Self {
+                self.skip_tenant = true;
                 self
             }
 
