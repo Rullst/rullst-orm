@@ -10,7 +10,7 @@
   </p>
 </div>
 
-🚀 **[Visit the Official Website & Documentation Hub](https://venelouis.github.io/rullst-orm/)** 🚀
+🚀 **[Visit the Official Website & Documentation Hub](https://rullst.github.io/rullst-orm/)** 🚀
 
 Built on top of `sqlx` and procedural macros, **Rullst ORM** brings the delightful, fluent syntax of Active Record frameworks (like Laravel's Eloquent) directly to the high-performance Rust ecosystem.
 
