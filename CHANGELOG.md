@@ -5,10 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [5.0.2] - 2026-06-15 🛡️
 
 ### Security
 - **Runtime Validation for Skipped Fields:** Added a runtime validation layer to the query builder that immediately rejects any attempt to query columns marked with `#[orm(skip)]` or `#[sqlx(skip)]` using raw string builder methods (like `where_eq`). This fails fast with an `Error::Validation` before the SQL string is even passed to the database, ensuring that internal or virtual fields cannot be maliciously or accidentally queried.
+
+### Performance
+- **Zero-Allocation SQL Strings:** Refactored the `rullst-orm-macros` generator to pre-compute complete `INSERT` and `UPDATE` SQL strings (for Postgres, MySQL, and SQLite) at compile time. This entirely removes runtime `format!` overhead and string manipulations during the execution of `.save()` and `.update()`, making database writes substantially faster.
+- **Zero-Allocation Bindings:** Replaced `.clone()` with `.as_str()` in the macro query builder loops, avoiding unnecessary heap allocations when passing dynamic string bindings to SQLx.
+
+### Fixed
+- **Schema Builder `unwrap()` panic:** Removed unsafe `.unwrap()` during `DEFAULT` value string formatting in the schema builder, preventing potential application crashes on malformed default values.
+
+### Tests
+- **Artisan & Audit Coverage:** Added unit test coverage for the Artisan CLI motor (`run_artisan_with_args`), the `create_audit_table` function, and the `TryFrom<RullstValue>` error paths, ensuring all CLI and schema boundary failures are correctly verified.
 
 ## [5.0.1] - 2026-06-13 🛠️
 
