@@ -685,6 +685,8 @@ pub trait SubqueryBuilder {
 }
 
 pub static QUERY_LOGGING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+pub static MAX_QUERY_LIMIT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+pub static QUERY_TIMEOUT_SECS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
 pub fn enable_query_log() {
     QUERY_LOGGING.store(true, std::sync::atomic::Ordering::SeqCst);
@@ -696,6 +698,24 @@ pub fn disable_query_log() {
 
 pub fn is_query_log_enabled() -> bool {
     QUERY_LOGGING.load(std::sync::atomic::Ordering::SeqCst)
+}
+
+pub fn set_max_query_limit(limit: usize) {
+    MAX_QUERY_LIMIT.store(limit, std::sync::atomic::Ordering::SeqCst);
+}
+
+pub fn get_max_query_limit() -> Option<usize> {
+    let limit = MAX_QUERY_LIMIT.load(std::sync::atomic::Ordering::SeqCst);
+    if limit == 0 { None } else { Some(limit) }
+}
+
+pub fn set_query_timeout(secs: u64) {
+    QUERY_TIMEOUT_SECS.store(secs, std::sync::atomic::Ordering::SeqCst);
+}
+
+pub fn get_query_timeout() -> Option<std::time::Duration> {
+    let secs = QUERY_TIMEOUT_SECS.load(std::sync::atomic::Ordering::SeqCst);
+    if secs == 0 { None } else { Some(std::time::Duration::from_secs(secs)) }
 }
 
 #[cfg(test)]

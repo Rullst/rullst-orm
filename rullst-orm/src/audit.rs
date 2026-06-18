@@ -68,6 +68,10 @@ pub async fn log_audit(
 }
 
 pub fn compute_diff(old_json: &str, new_json: &str) -> (Option<String>, Option<String>) {
+    if old_json == new_json {
+        return (None, None);
+    }
+
     let old_val: serde_json::Value =
         serde_json::from_str(old_json).unwrap_or(serde_json::Value::Null);
     let new_val: serde_json::Value =
@@ -76,6 +80,19 @@ pub fn compute_diff(old_json: &str, new_json: &str) -> (Option<String>, Option<S
     let mut diff_old = serde_json::Map::new();
     let mut diff_new = serde_json::Map::new();
 
+    fn is_sensitive(key: &str) -> bool {
+        let k = key.to_lowercase();
+        k.contains("password") || k.contains("token") || k.contains("secret") || k.contains("senha") || k.contains("api_key")
+    }
+
+    fn mask_if_sensitive(key: &str, value: serde_json::Value) -> serde_json::Value {
+        if is_sensitive(key) {
+            serde_json::Value::String("***".to_string())
+        } else {
+            value
+        }
+    }
+
     if let (serde_json::Value::Object(old_obj), serde_json::Value::Object(mut new_obj)) =
         (old_val, new_val)
     {
@@ -83,16 +100,16 @@ pub fn compute_diff(old_json: &str, new_json: &str) -> (Option<String>, Option<S
             if let Some(new_v) = new_obj.remove(&k) {
                 #[allow(clippy::collapsible_if)]
                 if v != new_v {
-                    diff_new.insert(k.clone(), new_v);
-                    diff_old.insert(k, v);
+                    diff_new.insert(k.clone(), mask_if_sensitive(&k, new_v));
+                    diff_old.insert(k.clone(), mask_if_sensitive(&k, v));
                 }
             } else {
                 diff_new.insert(k.clone(), serde_json::Value::Null);
-                diff_old.insert(k, v);
+                diff_old.insert(k.clone(), mask_if_sensitive(&k, v));
             }
         }
         for (k, new_v) in new_obj {
-            diff_new.insert(k.clone(), new_v);
+            diff_new.insert(k.clone(), mask_if_sensitive(&k, new_v));
             diff_old.insert(k, serde_json::Value::Null);
         }
     }

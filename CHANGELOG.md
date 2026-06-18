@@ -5,13 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.0.0] - Unreleased
+
+### Changed (Breaking Changes Proposal)
+- **Security by Default:** The "Defense in Depth" Opt-In features introduced in v5.0.3 will be enabled by default. `MAX_QUERY_LIMIT` will default to `1000` (instead of `None`), and `QUERY_TIMEOUT_SECS` will default to `30` seconds. Developers performing heavy background data-processing will need to explicitly call `.unsafe_unlimited()` or configure larger timeouts, but all frontend endpoints will be protected out-of-the-box from database exhaustion attacks.
+- **Audit Masking Enforcement:** The ORM will aggressively warn or fail compilation if known sensitive fields (like `password`, `token`) are marked as `#[orm(auditable)]` without an explicit masking configuration, forcing developers to be explicit about PII handling.
+
 ## [5.0.3] - Unreleased
 
 ### Security
+- **Defense in Depth (Query Limits):** Added `Orm::set_max_query_limit(usize)` to globally cap the maximum rows returned by `.get()`, protecting applications from Memory Exhaustion DoS when API consumers don't provide pagination limits. The limit applies dynamically to the Query Builder and can be overridden per-query using `.unsafe_unlimited()`.
+- **Defense in Depth (Query Timeouts):** Added `Orm::set_query_timeout(secs)` which automatically wraps all macro-generated executions (`.fetch_all`, `.fetch_one`, `.execute`) inside a `tokio::time::timeout`. This prevents the async runtime and connection pool from blocking indefinitely on complex un-indexed queries.
+- **Log Obfuscation:** The `[SQL Debug]` logger no longer prints raw model bindings into the console. It now outputs the count of redacted parameters (e.g., `Bindings: [3 parameter(s) redacted for security]`) to prevent accidental leakage of sensitive runtime strings.
+- **Audit Data Masking:** Implemented a recursive masking scanner in `audit::compute_diff` to intercept and redact keys containing sensitive terms (e.g. `password`, `token`, `secret`, `api_key`) replacing their values with `"***"` before persisting the JSON into the `rullst_audits` history table.
 - **Admin Panel CSP:** Added a strict Content Security Policy (CSP) header to the admin dashboard HTML to prevent Cross-Site Scripting (XSS) attacks.
 - **Audit DoS Prevention:** Introduced a 5MB payload limit on JSON audit logs (`old_json` and `new_json`) in `audit.rs` to protect against memory exhaustion (OOM) Denial of Service attacks during payload deserialization.
 
 ### Performance
+- **Audit Diff Fast-Path:** Added an early return (`if old_json == new_json`) in `audit::compute_diff` to completely bypass JSON deserialization (`serde_json::from_str`) when no changes occurred, drastically speeding up audit checks for unmodified records.
 - **Collection Chunks:** Optimized the `RullstCollection::chunk` method by replacing the manual loop with `iter.by_ref().take(size).collect()`. This removes manual capacity checks and leverages the internal pre-allocation of native iterators, making chunk extraction 2 to 3 times faster.
 
 ## [5.0.2] - 2026-06-15 🛡️

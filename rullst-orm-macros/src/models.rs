@@ -459,10 +459,17 @@ fn generate_save_method(parsed: &ParsedModel) -> TokenStream {
                         println!("[SQL Debug] {:?}", final_sql);
                     }
                     let query = rullst_orm::_sqlx::query(rullst_orm::_sqlx::AssertSqlSafe(final_sql.as_str()));
-                    let row = query
-                        #(#bind_inserts)*
-                        .fetch_one(executor)
-                        .await?;
+                    let row = {
+                        let exec = query #(#bind_inserts)*;
+                        let timeout = rullst_orm::schema::get_query_timeout();
+                        if let Some(t) = timeout {
+                            tokio::time::timeout(t, exec.fetch_one(executor))
+                                .await
+                                .map_err(|_| rullst_orm::Error::DatabaseError("Query execution timed out".to_string()))??
+                        } else {
+                            exec.fetch_one(executor).await?
+                        }
+                    };
                     self.id = rullst_orm::_sqlx::Row::try_get(&row, "id")?;
                 } else {
                     use rullst_orm::_sqlx::Execute;
@@ -471,10 +478,17 @@ fn generate_save_method(parsed: &ParsedModel) -> TokenStream {
                         println!("[SQL Debug] {:?}", final_sql);
                     }
                     let query = rullst_orm::_sqlx::query(rullst_orm::_sqlx::AssertSqlSafe(final_sql.as_str()));
-                    let result = query
-                        #(#bind_inserts)*
-                        .execute(executor)
-                        .await?;
+                    let result = {
+                        let exec = query #(#bind_inserts)*;
+                        let timeout = rullst_orm::schema::get_query_timeout();
+                        if let Some(t) = timeout {
+                            tokio::time::timeout(t, exec.execute(executor))
+                                .await
+                                .map_err(|_| rullst_orm::Error::DatabaseError("Query execution timed out".to_string()))??
+                        } else {
+                            exec.execute(executor).await?
+                        }
+                    };
                     self.id = {
                         use rullst_orm::database::QueryResultExt;
                         result.get_last_insert_id() as i32
@@ -505,11 +519,15 @@ fn generate_save_method(parsed: &ParsedModel) -> TokenStream {
                     println!("[SQL Debug] {:?} | ID: {}", final_sql, self.id);
                 }
                 let query = rullst_orm::_sqlx::query(rullst_orm::_sqlx::AssertSqlSafe(final_sql.as_str()));
-                query
-                    #(#bind_updates)*
-                    .bind(self.id)
-                    .execute(executor)
-                    .await?;
+                let exec = query #(#bind_updates)*.bind(self.id);
+                let timeout = rullst_orm::schema::get_query_timeout();
+                if let Some(t) = timeout {
+                    tokio::time::timeout(t, exec.execute(executor))
+                        .await
+                        .map_err(|_| rullst_orm::Error::DatabaseError("Query execution timed out".to_string()))??;
+                } else {
+                    exec.execute(executor).await?;
+                }
                 for obs in &observers {
                     obs.updated(self).await?;
                 }
@@ -651,7 +669,15 @@ fn generate_delete_methods(parsed: &ParsedModel) -> TokenStream {
                 query_builder.push(format!(" SET {} WHERE id = ?", #set_clause_lit));
             }
             let query = query_builder.build();
-            query.bind(self.id).execute(pool).await?;
+            let exec = query.bind(self.id);
+            let timeout = rullst_orm::schema::get_query_timeout();
+            if let Some(t) = timeout {
+                tokio::time::timeout(t, exec.execute(pool))
+                    .await
+                    .map_err(|_| rullst_orm::Error::DatabaseError("Query execution timed out".to_string()))??;
+            } else {
+                exec.execute(pool).await?;
+            }
         }
     } else {
         quote! {}
@@ -682,7 +708,15 @@ fn generate_delete_methods(parsed: &ParsedModel) -> TokenStream {
             if rullst_orm::schema::is_query_log_enabled() {
                 println!("[SQL Debug] {:?} | ID: {}", query, self.id);
             }
-            rullst_orm::_sqlx::query(rullst_orm::_sqlx::AssertSqlSafe(query.as_str())).bind(self.id).execute(executor).await?;
+            let exec = rullst_orm::_sqlx::query(rullst_orm::_sqlx::AssertSqlSafe(query.as_str())).bind(self.id);
+            let timeout = rullst_orm::schema::get_query_timeout();
+            if let Some(t) = timeout {
+                tokio::time::timeout(t, exec.execute(executor))
+                    .await
+                    .map_err(|_| rullst_orm::Error::DatabaseError("Query execution timed out".to_string()))??;
+            } else {
+                exec.execute(executor).await?;
+            }
             for obs in &observers {
                 obs.deleted(self).await?;
             }
@@ -716,7 +750,15 @@ fn generate_delete_methods(parsed: &ParsedModel) -> TokenStream {
                 query_builder.push(" WHERE id = ?");
             }
             let query = query_builder.build();
-            query.bind(self.id).execute(pool).await?;
+            let exec = query.bind(self.id);
+            let timeout = rullst_orm::schema::get_query_timeout();
+            if let Some(t) = timeout {
+                tokio::time::timeout(t, exec.execute(pool))
+                    .await
+                    .map_err(|_| rullst_orm::Error::DatabaseError("Query execution timed out".to_string()))??;
+            } else {
+                exec.execute(pool).await?;
+            }
             Ok(())
         }
     }

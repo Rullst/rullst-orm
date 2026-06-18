@@ -286,6 +286,16 @@ impl Orm {
         crate::schema::disable_query_log();
     }
 
+    /// Set a global maximum limit for all queries without an explicit limit override
+    pub fn set_max_query_limit(limit: usize) {
+        crate::schema::set_max_query_limit(limit);
+    }
+
+    /// Set a global maximum execution timeout for all queries
+    pub fn set_query_timeout(secs: u64) {
+        crate::schema::set_query_timeout(secs);
+    }
+
     /// Initialize Redis connection and connection manager for caching and events
     #[cfg(feature = "redis")]
     pub async fn init_redis(redis_url: &str) -> Result<(), crate::Error> {

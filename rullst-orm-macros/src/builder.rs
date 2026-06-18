@@ -252,7 +252,7 @@ pub fn generate(
                 Self {
                     selects: None,
                     is_distinct: false,
-                    limit: None,
+                    limit: rullst_orm::schema::get_max_query_limit(),
                     offset: None,
                     order_by: None,
                     group_by: None,
@@ -695,7 +695,17 @@ pub fn generate(
             }
 
             pub fn limit(mut self, value: usize) -> Self {
-                self.limit = Some(value);
+                if let Some(max_limit) = rullst_orm::schema::get_max_query_limit() {
+                    self.limit = Some(value.min(max_limit));
+                } else {
+                    self.limit = Some(value);
+                }
+                self
+            }
+
+            /// Disables the global max query limit for this specific query, allowing unlimited rows.
+            pub fn unsafe_unlimited(mut self) -> Self {
+                self.limit = None;
                 self
             }
 
@@ -914,7 +924,7 @@ fn generate_execution_methods(
                     }
 
                     if rullst_orm::schema::is_query_log_enabled() {
-                        println!("[SQL Debug] {:?} | Bindings: {:?}", query_str, self.bindings);
+                        println!("[SQL Debug] {:?} | Bindings: [{} parameter(s) redacted for security]", query_str, self.bindings.len());
                     }
                     let mut results: Vec<#name> = {
                         let mut query = rullst_orm::_sqlx::query_as::<_, #name>(rullst_orm::_sqlx::AssertSqlSafe(query_str.as_str()));
@@ -926,7 +936,14 @@ fn generate_execution_methods(
                                 rullst_orm::RullstValue::Bool(b) => { query = query.bind(*b); }
                             }
                         }
-                        query.fetch_all(executor).await?
+                        let timeout = rullst_orm::schema::get_query_timeout();
+                        if let Some(t) = timeout {
+                            tokio::time::timeout(t, query.fetch_all(executor))
+                                .await
+                                .map_err(|_| rullst_orm::Error::DatabaseError("Query execution timed out".to_string()))??
+                        } else {
+                            query.fetch_all(executor).await?
+                        }
                     };
 
                     #[cfg(feature = "redis")]
@@ -971,7 +988,7 @@ fn generate_execution_methods(
 
                     let query_str = total_builder.to_sql();
                     if rullst_orm::schema::is_query_log_enabled() {
-                        println!("[SQL Debug] {:?} | Bindings: {:?}", query_str, total_builder.bindings);
+                        println!("[SQL Debug] {:?} | Bindings: [{} parameter(s) redacted for security]", query_str, total_builder.bindings.len());
                     }
                     let pool = rullst_orm::Orm::read_pool();
                     let total_row: (i64,) = {
@@ -984,7 +1001,14 @@ fn generate_execution_methods(
                                 rullst_orm::RullstValue::Bool(b) => { query = query.bind(*b); }
                             }
                         }
-                        query.fetch_one(pool).await?
+                        let timeout = rullst_orm::schema::get_query_timeout();
+                        if let Some(t) = timeout {
+                            tokio::time::timeout(t, query.fetch_one(pool))
+                                .await
+                                .map_err(|_| rullst_orm::Error::DatabaseError("Query execution timed out".to_string()))??
+                        } else {
+                            query.fetch_one(pool).await?
+                        }
                     };
                     let total = total_row.0;
                     let last_page = (total as f64 / per_page as f64).ceil() as usize;
@@ -1017,7 +1041,7 @@ fn generate_execution_methods(
                     builder.order_by = None;
                     let query_str = builder.to_sql();
                     if rullst_orm::schema::is_query_log_enabled() {
-                        println!("[SQL Debug] {:?} | Bindings: {:?}", query_str, builder.bindings);
+                        println!("[SQL Debug] {:?} | Bindings: [{} parameter(s) redacted for security]", query_str, builder.bindings.len());
                     }
 
                     let row: (i64,) = {
@@ -1030,7 +1054,14 @@ fn generate_execution_methods(
                                 rullst_orm::RullstValue::Bool(b) => { query = query.bind(*b); }
                             }
                         }
-                        query.fetch_one(pool).await?
+                        let timeout = rullst_orm::schema::get_query_timeout();
+                        if let Some(t) = timeout {
+                            tokio::time::timeout(t, query.fetch_one(pool))
+                                .await
+                                .map_err(|_| rullst_orm::Error::DatabaseError("Query execution timed out".to_string()))??
+                        } else {
+                            query.fetch_one(pool).await?
+                        }
                     };
                     Ok(row.0)
                 }
@@ -1121,7 +1152,14 @@ fn generate_execution_methods(
                                 rullst_orm::RullstValue::Bool(b) => { query = query.bind(*b); }
                             }
                         }
-                        query.execute(executor).await?
+                        let timeout = rullst_orm::schema::get_query_timeout();
+                        if let Some(t) = timeout {
+                            tokio::time::timeout(t, query.execute(executor))
+                                .await
+                                .map_err(|_| rullst_orm::Error::DatabaseError("Query execution timed out".to_string()))??
+                        } else {
+                            query.execute(executor).await?
+                        }
                     };
                     Ok(result.rows_affected())
                 }
@@ -1144,7 +1182,14 @@ fn generate_execution_methods(
                                 rullst_orm::RullstValue::Bool(b) => { query = query.bind(*b); }
                             }
                         }
-                        query.fetch_all(pool).await?
+                        let timeout = rullst_orm::schema::get_query_timeout();
+                        if let Some(t) = timeout {
+                            tokio::time::timeout(t, query.fetch_all(pool))
+                                .await
+                                .map_err(|_| rullst_orm::Error::DatabaseError("Query execution timed out".to_string()))??
+                        } else {
+                            query.fetch_all(pool).await?
+                        }
                     };
                     Ok(rows.into_iter().map(|(s,)| s).collect())
                 }
@@ -1167,7 +1212,14 @@ fn generate_execution_methods(
                                 rullst_orm::RullstValue::Bool(b) => { query = query.bind(*b); }
                             }
                         }
-                        query.fetch_all(pool).await?
+                        let timeout = rullst_orm::schema::get_query_timeout();
+                        if let Some(t) = timeout {
+                            tokio::time::timeout(t, query.fetch_all(pool))
+                                .await
+                                .map_err(|_| rullst_orm::Error::DatabaseError("Query execution timed out".to_string()))??
+                        } else {
+                            query.fetch_all(pool).await?
+                        }
                     };
                     Ok(rows.into_iter().map(|(s,)| s).collect())
                 }
