@@ -5,11 +5,24 @@
 )))]
 pub use sqlx::AnyPool as RullstPool;
 
+#[cfg(not(any(
+    feature = "strict-postgres",
+    feature = "strict-mysql",
+    feature = "strict-sqlite"
+)))]
+pub use sqlx::any::AnyPoolOptions as RullstPoolOptions;
+
 #[cfg(feature = "strict-postgres")]
 pub use sqlx::PgPool as RullstPool;
 
+#[cfg(feature = "strict-postgres")]
+pub use sqlx::postgres::PgPoolOptions as RullstPoolOptions;
+
 #[cfg(all(feature = "strict-mysql", not(feature = "strict-postgres")))]
 pub use sqlx::MySqlPool as RullstPool;
+
+#[cfg(all(feature = "strict-mysql", not(feature = "strict-postgres")))]
+pub use sqlx::mysql::MySqlPoolOptions as RullstPoolOptions;
 
 #[cfg(all(
     feature = "strict-sqlite",
@@ -17,6 +30,13 @@ pub use sqlx::MySqlPool as RullstPool;
     not(feature = "strict-mysql")
 ))]
 pub use sqlx::SqlitePool as RullstPool;
+
+#[cfg(all(
+    feature = "strict-sqlite",
+    not(feature = "strict-postgres"),
+    not(feature = "strict-mysql")
+))]
+pub use sqlx::sqlite::SqlitePoolOptions as RullstPoolOptions;
 
 #[cfg(not(any(
     feature = "strict-postgres",
@@ -169,6 +189,8 @@ pub struct Orm;
 impl Orm {
     /// Initialize the global database connection pool using an agnostic URI
     pub async fn init(database_url: &str) -> Result<(), crate::Error> {
+        Self::validate_dsn(database_url);
+
         #[cfg(not(any(
             feature = "strict-postgres",
             feature = "strict-mysql",
@@ -196,6 +218,53 @@ impl Orm {
         let _ = REPLICA_POOLS.set(vec![]);
 
         Ok(())
+    }
+
+    /// Initialize the global database connection pool with specific pool options
+    pub async fn init_with_options(
+        database_url: &str,
+        max_connections: u32,
+        acquire_timeout_secs: u64,
+    ) -> Result<(), crate::Error> {
+        Self::validate_dsn(database_url);
+
+        #[cfg(not(any(
+            feature = "strict-postgres",
+            feature = "strict-mysql",
+            feature = "strict-sqlite"
+        )))]
+        install_default_drivers();
+
+        let pool = RullstPoolOptions::new()
+            .max_connections(max_connections)
+            .acquire_timeout(std::time::Duration::from_secs(acquire_timeout_secs))
+            .connect(database_url)
+            .await?;
+
+        if DB_POOL.set(pool).is_err() {
+            return Err(crate::Error::Internal(
+                "Orm has already been initialized".to_string(),
+            ));
+        }
+
+        let driver = if database_url.starts_with("postgres") {
+            "postgres"
+        } else if database_url.starts_with("mysql") {
+            "mysql"
+        } else {
+            "sqlite"
+        };
+
+        let _ = DB_DRIVER.set(driver.to_string());
+        let _ = REPLICA_POOLS.set(vec![]);
+
+        Ok(())
+    }
+
+    fn validate_dsn(database_url: &str) {
+        if database_url.contains("sslmode=disable") && !database_url.contains("localhost") && !database_url.contains("127.0.0.1") {
+            eprintln!("⚠️ [SECURITY WARNING] Rullst ORM: TLS/SSL disabled on external database connection! This is highly discouraged in production environments.");
+        }
     }
 
     /// Initialize the global database connection pool and its read replicas
