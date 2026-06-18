@@ -361,14 +361,16 @@ pub fn generate(parsed: &ParsedModel) -> GeneratedRelationships {
                             );
                             if driver == "postgres" {
                                 use std::fmt::Write;
-                                let parts: Vec<&str> = pivot_sql.split('?').collect();
-                                let mut pg = String::with_capacity(pivot_sql.len() + parts.len() * 2);
-                                for (i, part) in parts.iter().enumerate() {
-                                    pg.push_str(part);
-                                    if i < parts.len() - 1 {
-                                        write!(pg, "${}", i + 1).unwrap();
-                                    }
+                                let mut pg = String::with_capacity(pivot_sql.len() + 10);
+                                let mut counter = 1;
+                                let mut last_idx = 0;
+                                for (idx, _) in pivot_sql.match_indices('?') {
+                                    pg.push_str(&pivot_sql[last_idx..idx]);
+                                    write!(pg, "${}", counter).unwrap();
+                                    counter += 1;
+                                    last_idx = idx + 1;
                                 }
+                                pg.push_str(&pivot_sql[last_idx..]);
                                 pivot_sql = pg;
                             }
                             let mut pivot_query = rullst_orm::_sqlx::query_as::<_, (i32, i32)>(

@@ -445,14 +445,16 @@ fn generate_save_method(parsed: &ParsedModel) -> TokenStream {
                     let mut final_sql = format!("INSERT INTO {} ({}) VALUES ({}) RETURNING id", #table_name, #insert_columns_str, #insert_placeholders_str);
                     if driver == "postgres" {
                         use std::fmt::Write;
-                        let parts: Vec<&str> = final_sql.split('?').collect();
-                        let mut replaced = String::with_capacity(final_sql.len() + parts.len() * 2);
-                        for (i, part) in parts.iter().enumerate() {
-                            replaced.push_str(part);
-                            if i < parts.len() - 1 {
-                                write!(replaced, "${}", i + 1).unwrap();
-                            }
+                        let mut replaced = String::with_capacity(final_sql.len() + 10);
+                        let mut counter = 1;
+                        let mut last_idx = 0;
+                        for (idx, _) in final_sql.match_indices('?') {
+                            replaced.push_str(&final_sql[last_idx..idx]);
+                            write!(replaced, "${}", counter).unwrap();
+                            counter += 1;
+                            last_idx = idx + 1;
                         }
+                        replaced.push_str(&final_sql[last_idx..]);
                         final_sql = replaced;
                     }
                     if rullst_orm::schema::is_query_log_enabled() {
@@ -505,14 +507,16 @@ fn generate_save_method(parsed: &ParsedModel) -> TokenStream {
                 let mut final_sql = format!("UPDATE {} SET {} WHERE id = ?", #table_name, #update_sets_str);
                 if rullst_orm::Orm::driver() == "postgres" {
                     use std::fmt::Write;
-                    let parts: Vec<&str> = final_sql.split('?').collect();
-                    let mut replaced = String::with_capacity(final_sql.len() + parts.len() * 2);
-                    for (i, part) in parts.iter().enumerate() {
-                        replaced.push_str(part);
-                        if i < parts.len() - 1 {
-                            write!(replaced, "${}", i + 1).unwrap();
-                        }
+                    let mut replaced = String::with_capacity(final_sql.len() + 10);
+                    let mut counter = 1;
+                    let mut last_idx = 0;
+                    for (idx, _) in final_sql.match_indices('?') {
+                        replaced.push_str(&final_sql[last_idx..idx]);
+                        write!(replaced, "${}", counter).unwrap();
+                        counter += 1;
+                        last_idx = idx + 1;
                     }
+                    replaced.push_str(&final_sql[last_idx..]);
                     final_sql = replaced;
                 }
                 if rullst_orm::schema::is_query_log_enabled() {
