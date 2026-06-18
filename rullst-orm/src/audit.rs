@@ -25,17 +25,15 @@ pub async fn log_audit(
         return Err(crate::Error::Validation("Audit model_type or event string too long".to_string()));
     }
 
-    if let Some(val) = &old_values {
-        if val.len() > MAX_PAYLOAD_LEN {
+    if let Some(val) = &old_values
+        && val.len() > MAX_PAYLOAD_LEN {
             old_values = Some(r#"{"error":"payload_too_large"}"#.to_string());
         }
-    }
 
-    if let Some(val) = &new_values {
-        if val.len() > MAX_PAYLOAD_LEN {
+    if let Some(val) = &new_values
+        && val.len() > MAX_PAYLOAD_LEN {
             new_values = Some(r#"{"error":"payload_too_large"}"#.to_string());
         }
-    }
 
     let pool = Orm::pool();
     let driver = Orm::driver();
