@@ -87,21 +87,14 @@ impl<T> RullstCollection<T> for Vec<T> {
         }
 
         let mut chunks = Vec::with_capacity(self.len().div_ceil(size));
-        let mut current_chunk = Vec::with_capacity(size.min(self.len()));
-        let mut remaining = self.len();
+        let mut iter = self.into_iter();
 
-        for item in self {
-            current_chunk.push(item);
-            remaining -= 1;
-
-            if current_chunk.len() == size {
-                chunks.push(current_chunk);
-                current_chunk = Vec::with_capacity(size.min(remaining));
+        loop {
+            let chunk: Vec<T> = iter.by_ref().take(size).collect();
+            if chunk.is_empty() {
+                break;
             }
-        }
-
-        if !current_chunk.is_empty() {
-            chunks.push(current_chunk);
+            chunks.push(chunk);
         }
 
         chunks
