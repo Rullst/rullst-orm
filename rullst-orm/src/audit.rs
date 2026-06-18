@@ -22,18 +22,22 @@ pub async fn log_audit(
     const MAX_PAYLOAD_LEN: usize = 5 * 1024 * 1024; // 5 MB
 
     if model_type.len() > 255 || event.len() > 50 {
-        return Err(crate::Error::Validation("Audit model_type or event string too long".to_string()));
+        return Err(crate::Error::Validation(
+            "Audit model_type or event string too long".to_string(),
+        ));
     }
 
     if let Some(val) = &old_values
-        && val.len() > MAX_PAYLOAD_LEN {
-            old_values = Some(r#"{"error":"payload_too_large"}"#.to_string());
-        }
+        && val.len() > MAX_PAYLOAD_LEN
+    {
+        old_values = Some(r#"{"error":"payload_too_large"}"#.to_string());
+    }
 
     if let Some(val) = &new_values
-        && val.len() > MAX_PAYLOAD_LEN {
-            new_values = Some(r#"{"error":"payload_too_large"}"#.to_string());
-        }
+        && val.len() > MAX_PAYLOAD_LEN
+    {
+        new_values = Some(r#"{"error":"payload_too_large"}"#.to_string());
+    }
 
     let pool = Orm::pool();
     let driver = Orm::driver();
@@ -80,7 +84,11 @@ pub fn compute_diff(old_json: &str, new_json: &str) -> (Option<String>, Option<S
 
     fn is_sensitive(key: &str) -> bool {
         let k = key.to_lowercase();
-        k.contains("password") || k.contains("token") || k.contains("secret") || k.contains("senha") || k.contains("api_key")
+        k.contains("password")
+            || k.contains("token")
+            || k.contains("secret")
+            || k.contains("senha")
+            || k.contains("api_key")
     }
 
     fn mask_if_sensitive(key: &str, value: serde_json::Value) -> serde_json::Value {
@@ -130,7 +138,7 @@ pub async fn log_audit_diff(
     new_json: &str,
 ) -> Result<(), crate::Error> {
     const MAX_PAYLOAD_LEN: usize = 5 * 1024 * 1024; // 5 MB
-    
+
     if old_json.len() > MAX_PAYLOAD_LEN || new_json.len() > MAX_PAYLOAD_LEN {
         return log_audit(
             model_type,

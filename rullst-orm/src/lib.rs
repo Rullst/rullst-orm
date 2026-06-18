@@ -262,8 +262,13 @@ impl Orm {
     }
 
     fn validate_dsn(database_url: &str) {
-        if database_url.contains("sslmode=disable") && !database_url.contains("localhost") && !database_url.contains("127.0.0.1") {
-            eprintln!("⚠️ [SECURITY WARNING] Rullst ORM: TLS/SSL disabled on external database connection! This is highly discouraged in production environments.");
+        if database_url.contains("sslmode=disable")
+            && !database_url.contains("localhost")
+            && !database_url.contains("127.0.0.1")
+        {
+            eprintln!(
+                "⚠️ [SECURITY WARNING] Rullst ORM: TLS/SSL disabled on external database connection! This is highly discouraged in production environments."
+            );
         }
     }
 

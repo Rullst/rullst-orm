@@ -715,7 +715,11 @@ pub fn set_query_timeout(secs: u64) {
 
 pub fn get_query_timeout() -> Option<std::time::Duration> {
     let secs = QUERY_TIMEOUT_SECS.load(std::sync::atomic::Ordering::SeqCst);
-    if secs == 0 { None } else { Some(std::time::Duration::from_secs(secs)) }
+    if secs == 0 {
+        None
+    } else {
+        Some(std::time::Duration::from_secs(secs))
+    }
 }
 
 #[cfg(test)]
