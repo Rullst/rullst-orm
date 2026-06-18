@@ -16,9 +16,27 @@ pub async fn log_audit(
     model_type: &str,
     model_id: i32,
     event: &str,
-    old_values: Option<String>,
-    new_values: Option<String>,
+    mut old_values: Option<String>,
+    mut new_values: Option<String>,
 ) -> Result<(), crate::Error> {
+    const MAX_PAYLOAD_LEN: usize = 5 * 1024 * 1024; // 5 MB
+
+    if model_type.len() > 255 || event.len() > 50 {
+        return Err(crate::Error::Validation("Audit model_type or event string too long".to_string()));
+    }
+
+    if let Some(val) = &old_values {
+        if val.len() > MAX_PAYLOAD_LEN {
+            old_values = Some(r#"{"error":"payload_too_large"}"#.to_string());
+        }
+    }
+
+    if let Some(val) = &new_values {
+        if val.len() > MAX_PAYLOAD_LEN {
+            new_values = Some(r#"{"error":"payload_too_large"}"#.to_string());
+        }
+    }
+
     let pool = Orm::pool();
     let driver = Orm::driver();
 
@@ -96,6 +114,19 @@ pub async fn log_audit_diff(
     old_json: &str,
     new_json: &str,
 ) -> Result<(), crate::Error> {
+    const MAX_PAYLOAD_LEN: usize = 5 * 1024 * 1024; // 5 MB
+    
+    if old_json.len() > MAX_PAYLOAD_LEN || new_json.len() > MAX_PAYLOAD_LEN {
+        return log_audit(
+            model_type,
+            model_id,
+            event,
+            Some(r#"{"error":"payload_too_large_for_diff"}"#.to_string()),
+            Some(r#"{"error":"payload_too_large_for_diff"}"#.to_string()),
+        )
+        .await;
+    }
+
     let (final_old, final_new) = compute_diff(old_json, new_json);
     if final_old.is_none() && final_new.is_none() {
         return Ok(()); // Nothing changed

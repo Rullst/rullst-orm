@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [5.0.3] - Unreleased
 
+### Security
+- **Admin Panel CSP:** Added a strict Content Security Policy (CSP) header to the admin dashboard HTML to prevent Cross-Site Scripting (XSS) attacks.
+- **Audit DoS Prevention:** Introduced a 5MB payload limit on JSON audit logs (`old_json` and `new_json`) in `audit.rs` to protect against memory exhaustion (OOM) Denial of Service attacks during payload deserialization.
+
 ### Performance
 - **Collection Chunks:** Optimized the `RullstCollection::chunk` method by replacing the manual loop with `iter.by_ref().take(size).collect()`. This removes manual capacity checks and leverages the internal pre-allocation of native iterators, making chunk extraction 2 to 3 times faster.
 
