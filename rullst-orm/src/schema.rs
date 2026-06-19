@@ -8,12 +8,17 @@ const ALLOWED_OPERATORS: &[&str] = &["=", "!=", "<>", "<", ">", "<=", ">="];
 /// for qualified names like `table.column`.
 pub fn validate_identifier(name: &str) -> Result<(), Error> {
     if name.is_empty() {
-        return Err(Error::Internal("SQL identifier cannot be empty".to_string()));
+        return Err(Error::Internal(
+            "SQL identifier cannot be empty".to_string(),
+        ));
     }
 
     let bytes = name.as_bytes();
     if bytes[0] == b'.' || bytes[bytes.len() - 1] == b'.' {
-        return Err(Error::Internal(format!("Invalid SQL identifier '{}': must not start or end with a dot", name)));
+        return Err(Error::Internal(format!(
+            "Invalid SQL identifier '{}': must not start or end with a dot",
+            name
+        )));
     }
 
     let mut dot_count = 0;
@@ -21,13 +26,19 @@ pub fn validate_identifier(name: &str) -> Result<(), Error> {
         if b == b'.' {
             dot_count += 1;
             if dot_count > 1 {
-                return Err(Error::Internal(format!("Invalid SQL identifier '{}': at most one dot is allowed", name)));
+                return Err(Error::Internal(format!(
+                    "Invalid SQL identifier '{}': at most one dot is allowed",
+                    name
+                )));
             }
         } else if !b.is_ascii_alphanumeric() && b != b'_' && b != b'-' {
-            return Err(Error::Internal(format!("Invalid SQL identifier '{}': only alphanumeric characters, underscores, hyphens and dots are allowed", name)));
+            return Err(Error::Internal(format!(
+                "Invalid SQL identifier '{}': only alphanumeric characters, underscores, hyphens and dots are allowed",
+                name
+            )));
         }
     }
-    
+
     Ok(())
 }
 
@@ -676,7 +687,8 @@ pub trait SubqueryBuilder {
 }
 
 pub static QUERY_LOGGING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
-pub static MAX_QUERY_LIMIT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(1000);
+pub static MAX_QUERY_LIMIT: std::sync::atomic::AtomicUsize =
+    std::sync::atomic::AtomicUsize::new(1000);
 pub static QUERY_TIMEOUT_SECS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(30);
 
 pub fn enable_query_log() {

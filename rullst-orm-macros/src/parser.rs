@@ -378,7 +378,10 @@ pub fn parse(input: &DeriveInput) -> Result<ParsedModel, syn::Error> {
             {
                 return Err(syn::Error::new(
                     field.span(),
-                    format!("Sensitive field `{}` must be explicitly marked with `#[orm(masked)]` when `#[orm(auditable)]` is enabled.", field_name_str),
+                    format!(
+                        "Sensitive field `{}` must be explicitly marked with `#[orm(masked)]` when `#[orm(auditable)]` is enabled.",
+                        field_name_str
+                    ),
                 ));
             }
         }
