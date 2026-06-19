@@ -274,10 +274,8 @@ pub fn parse(input: &DeriveInput) -> Result<ParsedModel, syn::Error> {
             .as_deref()
             .map(|c| c == field_name_str.to_lowercase())
             .unwrap_or(false)
+            || field_name_str == "deleted_at"
         {
-            has_soft_deletes = true;
-            detected_soft_delete_column = Some(field_name_str.clone());
-        } else if field_name_str == "deleted_at" {
             has_soft_deletes = true;
             detected_soft_delete_column = Some(field_name_str.clone());
         }
