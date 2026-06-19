@@ -154,13 +154,15 @@ fn generate_json_methods(parsed: &ParsedModel) -> TokenStream {
 
         pub fn from_json_array(json_str: &str) -> Result<Vec<Self>, rullst_orm::_serde_json::Error> {
             let value: rullst_orm::_serde_json::Value = rullst_orm::_serde_json::from_str(json_str)?;
-            let mut results = vec![];
-            if let Some(arr) = value.as_array() {
+            if let rullst_orm::_serde_json::Value::Array(arr) = value {
+                let mut results = Vec::with_capacity(arr.len());
                 for item in arr {
-                    results.push(Self::from_json_value(item.clone())?);
+                    results.push(Self::from_json_value(item)?);
                 }
+                Ok(results)
+            } else {
+                Ok(vec![])
             }
-            Ok(results)
         }
 
         pub fn to_cache_json(&self) -> String {

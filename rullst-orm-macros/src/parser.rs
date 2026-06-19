@@ -279,7 +279,7 @@ pub fn parse(input: &DeriveInput) -> Result<ParsedModel, syn::Error> {
             detected_soft_delete_column = Some(field_name_str.clone());
         } else if field_name_str == "deleted_at" {
             has_soft_deletes = true;
-            detected_soft_delete_column = Some(field_name_str);
+            detected_soft_delete_column = Some(field_name_str.clone());
         }
 
         let mut is_relation = false;
@@ -292,6 +292,7 @@ pub fn parse(input: &DeriveInput) -> Result<ParsedModel, syn::Error> {
         let mut morph_name = String::new();
         let mut is_hidden = false;
         let mut is_skipped = false;
+        let mut is_masked = false;
 
         for attr in &field.attrs {
             // The macro accepts `#[orm(...)]` as well as the more
@@ -315,6 +316,8 @@ pub fn parse(input: &DeriveInput) -> Result<ParsedModel, syn::Error> {
                         // `*Column` enum. The field is still part of the
                         // struct so user code can still read/write it.
                         is_skipped = true;
+                    } else if trimmed == "masked" {
+                        is_masked = true;
                     } else {
                         let parts: Vec<&str> = trimmed.split('=').collect();
                         if parts.len() == 2 {
@@ -363,6 +366,20 @@ pub fn parse(input: &DeriveInput) -> Result<ParsedModel, syn::Error> {
                         }
                     }
                 }
+            }
+        }
+
+        if auditable && !is_masked && !is_skipped && !is_relation {
+            let lower_name = field_name_str.to_lowercase();
+            if lower_name.contains("password")
+                || lower_name.contains("token")
+                || lower_name.contains("secret")
+                || lower_name.contains("api_key")
+            {
+                return Err(syn::Error::new(
+                    field.span(),
+                    format!("Sensitive field `{}` must be explicitly marked with `#[orm(masked)]` when `#[orm(auditable)]` is enabled.", field_name_str),
+                ));
             }
         }
 

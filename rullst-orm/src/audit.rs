@@ -89,6 +89,10 @@ pub fn compute_diff(old_json: &str, new_json: &str) -> (Option<String>, Option<S
             || k.contains("secret")
             || k.contains("senha")
             || k.contains("api_key")
+            || k.contains("cvv")
+            || k.contains("ssn")
+            || k.contains("credit_card")
+            || k.contains("auth_code")
     }
 
     fn mask_if_sensitive(key: &str, value: serde_json::Value) -> serde_json::Value {

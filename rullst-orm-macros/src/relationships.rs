@@ -351,28 +351,27 @@ pub fn generate(parsed: &ParsedModel) -> GeneratedRelationships {
                             let pool = rullst_orm::Orm::read_pool();
                             let driver = rullst_orm::Orm::driver();
                             // Q1: pivot table pairs
-                            let placeholders_str = vec!["?"; parent_ids.len()].join(", ");
-                            let mut pivot_sql = format!(
+                            rullst_orm::schema::validate_identifier(#foreign_key).expect("Invalid foreign_key in pivot table relation");
+                            rullst_orm::schema::validate_identifier(#related_key).expect("Invalid related_key in pivot table relation");
+                            rullst_orm::schema::validate_table_name(#pivot_table).expect("Invalid pivot_table name");
+                            let placeholders_str = if driver == "postgres" {
+                                let mut ph = String::with_capacity(parent_ids.len() * 4);
+                                for i in 1..=parent_ids.len() {
+                                    if i > 1 { ph.push_str(", "); }
+                                    use std::fmt::Write;
+                                    write!(&mut ph, "${}", i).unwrap();
+                                }
+                                ph
+                            } else {
+                                vec!["?"; parent_ids.len()].join(", ")
+                            };
+                            let pivot_sql = format!(
                                 "SELECT {fk}, {rk} FROM {pt} WHERE {fk} IN ({ph})",
                                 fk = #foreign_key,
                                 rk = #related_key,
                                 pt = #pivot_table,
                                 ph = placeholders_str,
                             );
-                            if driver == "postgres" {
-                                use std::fmt::Write;
-                                let mut pg = String::with_capacity(pivot_sql.len() + 10);
-                                let mut counter = 1;
-                                let mut last_idx = 0;
-                                for (idx, _) in pivot_sql.match_indices('?') {
-                                    pg.push_str(&pivot_sql[last_idx..idx]);
-                                    write!(pg, "${}", counter).unwrap();
-                                    counter += 1;
-                                    last_idx = idx + 1;
-                                }
-                                pg.push_str(&pivot_sql[last_idx..]);
-                                pivot_sql = pg;
-                            }
                             let mut pivot_query = rullst_orm::_sqlx::query_as::<_, (i32, i32)>(
                                 rullst_orm::_sqlx::AssertSqlSafe(pivot_sql.as_str())
                             );

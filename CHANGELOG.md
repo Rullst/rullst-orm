@@ -5,13 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [6.0.0] - Unreleased
+## [6.0.0] - 2026-06-19
 
-### Changed (Breaking Changes Proposal)
+### Changed (Breaking Changes)
 - **Security by Default:** The "Defense in Depth" Opt-In features introduced in v5.0.3 will be enabled by default. `MAX_QUERY_LIMIT` will default to `1000` (instead of `None`), and `QUERY_TIMEOUT_SECS` will default to `30` seconds. Developers performing heavy background data-processing will need to explicitly call `.unsafe_unlimited()` or configure larger timeouts, but all frontend endpoints will be protected out-of-the-box from database exhaustion attacks.
 - **Audit Masking Enforcement:** The ORM will aggressively warn or fail compilation if known sensitive fields (like `password`, `token`) are marked as `#[orm(auditable)]` without an explicit masking configuration, forcing developers to be explicit about PII handling.
 
-## [5.0.3] - Unreleased
+### Added / Improved
+- **Security:** Patched a potential SQL Injection vector in `belongs_to_many` eager loading by enforcing strict runtime identifier validation for relation macro arguments (`foreign_key`, `related_key`, `pivot_table`).
+- **Security:** Expanded Audit Data Masking restricted keyword list to include `cvv`, `ssn`, `credit_card`, and `auth_code` to better protect financial and PII data by default.
+- **Performance:** Optimized `belongs_to_many` bulk eager loading for Postgres databases by constructing `$1, $2` parameters dynamically, eliminating redundant O(N) string parsing and allocations.
+- **Performance:** Optimized `chunk_with_tx` transaction paginations by reusing the builder instance and modifying offsets in-place, preventing expensive internal builder cloning loops.
+- **Performance:** Completely rewrote the `validate_identifier` core security function to use a single O(N) linear byte scan instead of multiple UTF-8 character allocations. This drastically reduces CPU overhead when chaining dozens of query builder methods (`where_eq`, `join`, etc.).
+- **Performance:** Replaced iterator collection in `RullstCollection::chunk` with a manual loop to guarantee strict O(1) memory capacity pre-allocation per chunk, avoiding hidden reallocation overheads during batch processing.
+- **Performance:** Refactored JSON array deserialization (`from_json_array`) inside the generated Model macros to consume the underlying `serde_json::Value` by ownership, preventing catastrophic recursive memory cloning (`.clone()`) and re-allocations when hydrating large datasets from Cache/Redis.
+
+## [5.0.3] - 2026-06-18
 
 ### Security
 - **Defense in Depth (Query Limits):** Added `Orm::set_max_query_limit(usize)` to globally cap the maximum rows returned by `.get()`, protecting applications from Memory Exhaustion DoS when API consumers don't provide pagination limits. The limit applies dynamically to the Query Builder and can be overridden per-query using `.unsafe_unlimited()`.

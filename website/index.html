@@ -10,7 +10,7 @@
   <body>
     <header class="glass">
       <div class="logo">
-        ✨ Rullst ORM
+        ✨ Rullst ORM <span style="font-size: 0.5em; background: var(--primary); padding: 2px 8px; border-radius: 12px; color: white; margin-left: 10px; align-self: center;">v6.0.0</span>
       </div>
       <div class="nav-links">
         <a href="#features">Features</a>
@@ -81,7 +81,7 @@
           <div class="card glass">
             <span class="card-icon">🛡️</span>
             <h3>Automated Audit Trails</h3>
-            <p>Add <code>#[orm(auditable)]</code> and instantly track JSON diffs of `old_values` and `new_values` natively on every row modification for compliance.</p>
+            <p>Add <code>#[orm(auditable)]</code> and instantly track JSON diffs of `old_values` and `new_values` on every modification, with <strong>strict compile-time PII masking</strong> for perfect compliance.</p>
           </div>
           <div class="card glass">
             <span class="card-icon">🔎</span>
@@ -102,7 +102,7 @@
       </section>
 
       <section id="benchmarks" class="features">
-        <h2 class="section-title">Verified by Jules Static Analysis (v5.0.0 Audit)</h2>
+        <h2 class="section-title">Verified by Jules Static Analysis (v6.0.0 Audit)</h2>
         <div class="grid">
           <div class="card glass">
             <span class="card-icon">🚀</span>
@@ -122,7 +122,7 @@
           <div class="card glass">
             <span class="card-icon">🔒</span>
             <h3>Zero Vulnerabilities</h3>
-            <p>Certified <strong>10/10 on Security</strong>. 0 known vulnerabilities across 248 transitive dependencies via cargo audit. Zero Clippy warnings. Strict runtime regex validation against structural identifiers guarantees immunity to SQL Injection.</p>
+            <p>Certified <strong>10/10 on Security</strong>. 0 known vulnerabilities across 248 dependencies via cargo audit. Strict validation guarantees immunity to SQL Injection. All endpoints are protected with <strong>Security-by-Default</strong> query limits and timeouts.</p>
           </div>
         </div>
       </section>

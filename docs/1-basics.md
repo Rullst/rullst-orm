@@ -93,7 +93,7 @@ let users = User::query()
 
 ### Execution Methods
 Terminate your query builder chain to hit the database:
-- `.get().await?` -> Returns `Vec<Model>`
+- `.get().await?` -> Returns `Vec<Model>` *(Note: Limited to 1000 rows and 30s timeout by default for security. Use `.unsafe_unlimited()` to bypass the row limit).*
 - `.first().await?` -> Returns `Option<Model>` (adds `LIMIT 1`)
 - `.count().await?` -> Returns `i64`
 - `.paginate(page, per_page).await?` -> Returns a struct containing metadata and the slice of data.

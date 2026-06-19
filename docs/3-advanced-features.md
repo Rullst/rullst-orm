@@ -52,6 +52,8 @@ pub struct Post {
 ```
 Whenever a `Post` is saved or deleted, Rullst compares the previous database state with the newly provided struct. If fields changed, it creates a JSON diff (`old_values` / `new_values`) and saves it inside the `rullst_audits` table.
 
+> **Note on PII / Sensitive Fields:** If an `#[orm(auditable)]` model contains known sensitive fields (e.g., `password`, `token`, `secret`, `api_key`), you **must** explicitly flag them with `#[orm(masked)]` or `#[orm(skip)]`. The ORM will enforce this at compile time to ensure no sensitive fields are accidentally logged without acknowledging the masking configuration.
+
 *(Make sure to run the `make:audit` migration to instantiate the table first!)*
 
 ---

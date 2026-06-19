@@ -1094,9 +1094,9 @@ fn generate_execution_methods(
                     Fut: std::future::Future<Output = ()> + Send,
                 {
                     let mut page = 1;
+                    let mut builder = self.clone();
+                    builder.limit = Some(size);
                     loop {
-                        let mut builder = self.clone();
-                        builder.limit = Some(size);
                         builder.offset = Some((page - 1) * size);
                         let results = builder.get_with_tx(tx).await?;
                         let count = results.len();

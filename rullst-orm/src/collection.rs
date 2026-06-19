@@ -90,11 +90,18 @@ impl<T> RullstCollection<T> for Vec<T> {
         let mut iter = self.into_iter();
 
         loop {
-            let chunk: Vec<T> = iter.by_ref().take(size).collect();
-            if chunk.is_empty() {
+            let mut current_chunk = Vec::with_capacity(std::cmp::min(size, iter.len()));
+            for _ in 0..size {
+                if let Some(item) = iter.next() {
+                    current_chunk.push(item);
+                } else {
+                    break;
+                }
+            }
+            if current_chunk.is_empty() {
                 break;
             }
-            chunks.push(chunk);
+            chunks.push(current_chunk);
         }
 
         chunks
