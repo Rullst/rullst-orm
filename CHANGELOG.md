@@ -14,9 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Concurrent Observer Hooks:** Replaced sequential `await` loops with `futures::future::try_join_all` for immutable `Observer` lifecycle hooks (`created`, `updated`, `saved`, `deleting`, `deleted`). This eliminates I/O bottlenecks and allows hooks (like triggering emails or cache invalidation) to execute concurrently.
 
 ### CI/CD
-- **Kani Rust Verifier:** Added `kani.yml` to mathematically prove the absence of crashes in the audit log masking algorithms (`#[kani::proof]`).
-- **Fuzz Testing:** Added a dedicated fuzzing harness (`cargo-fuzz`) and workflow to continuously blast random byte arrays against the ORM JSON parser to ensure 100% memory safety under malformed inputs.
-- **Miri Memory Analysis:** Added `miri.yml` to automatically catch Undefined Behavior (UB), use-after-free, and strict aliasing violations in the test suite.
+- **Kani Rust Verifier:** Added `kani.yml` to mathematically prove the absence of crashes in the audit log masking algorithms (`#[kani::proof]`). The verification task is sharded across multiple machines by package.
+- **Distributed Fuzz Testing:** Added a dedicated fuzzing harness (`cargo-fuzz`) and a manual trigger workflow to continuously blast random byte arrays against the ORM JSON parser. The fuzzing load is distributed across an 8-shard Ubuntu matrix for maximal bug detection.
+- **Distributed Miri Memory Analysis:** Added `miri.yml` to automatically catch Undefined Behavior (UB), use-after-free, and strict aliasing violations in the test suite. It is manually triggered and uses matrix sharding to parallelize execution across workspace crates.
 - **Distributed Mutation Testing:** Added an ultra-resilient manual trigger workflow (`mutants.yml`) integrating `cargo-mutants`. To drastically reduce execution time, the test suite distributes mutation tasks in parallel across an 8-shard Ubuntu matrix.
 - **Dependency Audit Pipeline:** Added `cargo-deny` action to the CI pipeline to proactively block vulnerabilities, enforce compatible open-source licenses, and ban duplicate dependencies.
 - **Coverage Reports:** Integrated `cargo-llvm-cov` and Codecov to automatically generate and upload test coverage reports on every push.

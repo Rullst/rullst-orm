@@ -2,13 +2,15 @@ name: Miri Memory Analysis
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 3 * * 0' # Todos os domingos às 03:00
 
 jobs:
   miri:
-    name: Run Miri (Undefined Behavior Check)
+    name: Run Miri (Undefined Behavior Check) - ${{ matrix.package }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ['rullst-orm', 'rullst-orm-macros']
 
     steps:
       - name: Checkout code
@@ -21,5 +23,4 @@ jobs:
           cargo miri setup
 
       - name: Run Miri Tests
-        # MIRIFLAGS=-Zmiri-disable-isolation é necessário se os testes precisarem acessar arquivos/rede/relógio
-        run: MIRIFLAGS="-Zmiri-disable-isolation" cargo miri test --workspace
+        run: MIRIFLAGS="-Zmiri-disable-isolation" cargo miri test -p ${{ matrix.package }}
