@@ -45,7 +45,7 @@ jobs:
         run: cargo clippy --workspace --all-features --all-targets -- -D warnings
 
       - name: Install cargo-llvm-cov
-        uses: taiki-e/install-action@cargo-llvm-cov
+        uses: taiki-e/install-action@9e1e5806d4a4822de933115878265be9aaa786d9 # cargo-llvm-cov
 
       - name: Run Tests & Generate Coverage
         run: cargo llvm-cov --workspace --all-features --lcov --output-path lcov.info
