@@ -96,6 +96,7 @@ The documentation is kept lean and straight to the point. Dive into the modules 
 - [2. Relationships](docs/2-relationships.md): Has Many, Belongs To, Polymorphic relations, and Eager Loading.
 - [3. Advanced Features](docs/3-advanced-features.md): Multi-Tenancy, Audit Trails, Redis Caching, and Observers.
 - [4. Migrations & Schema](docs/4-migrations-schema.md): Building tables programmatically and using the Artisan CLI.
+- [5. Security & Testing](docs/5-security-and-testing.md): Execution order for Miri, Kani, Fuzzing, and Mutation tools.
 
 ---
 
