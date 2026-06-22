@@ -1,0 +1,25 @@
+name: Miri Memory Analysis
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * 0' # Todos os domingos às 03:00
+
+jobs:
+  miri:
+    name: Run Miri (Undefined Behavior Check)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Miri
+        run: |
+          rustup toolchain install nightly --component miri
+          rustup default nightly
+          cargo miri setup
+
+      - name: Run Miri Tests
+        # MIRIFLAGS=-Zmiri-disable-isolation é necessário se os testes precisarem acessar arquivos/rede/relógio
+        run: MIRIFLAGS="-Zmiri-disable-isolation" cargo miri test --workspace

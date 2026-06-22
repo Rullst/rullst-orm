@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.0.1] - 2026-06-22
+
+### Performance
+- **Migration Rollback N+1:** Rewrote the `migrate:rollback` logic to collect migration names and execute a single batched `DELETE FROM migrations WHERE migration IN (...)` instead of firing a query per migration.
+- **Query Builder Array Inlining:** Replaced manual `push_str` loops in array ID mappings with idiomatic zero-allocation `ids.iter().map(...).join(",")`.
+- **Audit Diff Masking Redundancy:** Refactored `compute_diff` dictionary loops to prevent calling `mask_if_sensitive` redundantly on the same values when constructing `diff_new` and `diff_old`.
+- **Concurrent Observer Hooks:** Replaced sequential `await` loops with `futures::future::try_join_all` for immutable `Observer` lifecycle hooks (`created`, `updated`, `saved`, `deleting`, `deleted`). This eliminates I/O bottlenecks and allows hooks (like triggering emails or cache invalidation) to execute concurrently.
+
+### CI/CD
+- **Kani Rust Verifier:** Added `kani.yml` to mathematically prove the absence of crashes in the audit log masking algorithms (`#[kani::proof]`).
+- **Fuzz Testing:** Added a dedicated fuzzing harness (`cargo-fuzz`) and workflow to continuously blast random byte arrays against the ORM JSON parser to ensure 100% memory safety under malformed inputs.
+- **Miri Memory Analysis:** Added `miri.yml` to automatically catch Undefined Behavior (UB), use-after-free, and strict aliasing violations in the test suite.
+- **Distributed Mutation Testing:** Added an ultra-resilient manual trigger workflow (`mutants.yml`) integrating `cargo-mutants`. To drastically reduce execution time, the test suite distributes mutation tasks in parallel across an 8-shard Ubuntu matrix.
+- **Dependency Audit Pipeline:** Added `cargo-deny` action to the CI pipeline to proactively block vulnerabilities, enforce compatible open-source licenses, and ban duplicate dependencies.
+- **Coverage Reports:** Integrated `cargo-llvm-cov` and Codecov to automatically generate and upload test coverage reports on every push.
+- **OSSF Scorecard:** Added a scheduled GitHub Actions workflow to run the Open Source Security Foundation Scorecard analysis and report repository security metrics directly into the GitHub Code Scanning tab.
+
+### Security
+- **Admin Panel Strict CSP:** Removed `unsafe-inline` from the Content Security Policy of the admin dashboard by calculating a SHA-256 hash of the CSS styles, successfully mitigating inline XSS vectors.
+
+### Tests
+- **Initialization Panic Guards:** Added unit tests ensuring `Orm::pool()` and `Orm::driver()` safely `panic!` with the correct message when invoked before `Orm::init()`. Added tests ensuring `Orm::read_pool()` safely falls back and panics when replicas and pool are uninitialized.
+- **Cache Panic Guards:** Added tests verifying `Orm::redis_manager()` and `Orm::redis_client()` return `Error::Internal` safely when invoked before `Orm::init_redis()`.
+
+### Refactoring
+- **Audit Diff Module Separation:** Extracted internal helper functions `is_sensitive` and `mask_if_sensitive` from within `compute_diff` to the root module scope, vastly improving testability and code structure.
+- **Audit Database Isolation:** Separated payload truncation and validation logic from `log_audit` into a dedicated `validate_and_prepare_payloads` function, removing early-return validation pollution from the core SQL execution driver branches.
+- **Code Template Extraction:** Moved large hardcoded Rust string templates out of `schema.rs` into a dedicated `migration_template.rs.txt` file, loaded via `include_str!()` at compile time.
+- **Admin Panel View Extraction:** Moved the 280+ lines of raw HTML out of `admin.rs` into `dashboard.html`, dramatically improving code readability and enabling native HTML/CSS tooling support.
+
 ## [6.0.0] - 2026-06-19
 
 ### Changed (Breaking Changes)

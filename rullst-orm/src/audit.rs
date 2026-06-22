@@ -12,13 +12,12 @@ pub struct AuditLog {
     pub created_at: Option<String>,
 }
 
-pub async fn log_audit(
+fn validate_and_prepare_payloads(
     model_type: &str,
-    model_id: i32,
     event: &str,
     mut old_values: Option<String>,
     mut new_values: Option<String>,
-) -> Result<(), crate::Error> {
+) -> Result<(Option<String>, Option<String>), crate::Error> {
     const MAX_PAYLOAD_LEN: usize = 5 * 1024 * 1024; // 5 MB
 
     if model_type.len() > 255 || event.len() > 50 {
@@ -38,6 +37,18 @@ pub async fn log_audit(
     {
         new_values = Some(r#"{"error":"payload_too_large"}"#.to_string());
     }
+
+    Ok((old_values, new_values))
+}
+
+pub async fn log_audit(
+    model_type: &str,
+    model_id: i32,
+    event: &str,
+    old_values: Option<String>,
+    new_values: Option<String>,
+) -> Result<(), crate::Error> {
+    let (old_values, new_values) = validate_and_prepare_payloads(model_type, event, old_values, new_values)?;
 
     let pool = Orm::pool();
     let driver = Orm::driver();
@@ -69,6 +80,27 @@ pub async fn log_audit(
     Ok(())
 }
 
+fn is_sensitive(key: &str) -> bool {
+    let k = key.to_lowercase();
+    k.contains("password")
+        || k.contains("token")
+        || k.contains("secret")
+        || k.contains("senha")
+        || k.contains("api_key")
+        || k.contains("cvv")
+        || k.contains("ssn")
+        || k.contains("credit_card")
+        || k.contains("auth_code")
+}
+
+fn mask_if_sensitive(key: &str, value: serde_json::Value) -> serde_json::Value {
+    if is_sensitive(key) {
+        serde_json::Value::String("***".to_string())
+    } else {
+        value
+    }
+}
+
 pub fn compute_diff(old_json: &str, new_json: &str) -> (Option<String>, Option<String>) {
     if old_json == new_json {
         return (None, None);
@@ -82,27 +114,6 @@ pub fn compute_diff(old_json: &str, new_json: &str) -> (Option<String>, Option<S
     let mut diff_old = serde_json::Map::new();
     let mut diff_new = serde_json::Map::new();
 
-    fn is_sensitive(key: &str) -> bool {
-        let k = key.to_lowercase();
-        k.contains("password")
-            || k.contains("token")
-            || k.contains("secret")
-            || k.contains("senha")
-            || k.contains("api_key")
-            || k.contains("cvv")
-            || k.contains("ssn")
-            || k.contains("credit_card")
-            || k.contains("auth_code")
-    }
-
-    fn mask_if_sensitive(key: &str, value: serde_json::Value) -> serde_json::Value {
-        if is_sensitive(key) {
-            serde_json::Value::String("***".to_string())
-        } else {
-            value
-        }
-    }
-
     if let (serde_json::Value::Object(old_obj), serde_json::Value::Object(mut new_obj)) =
         (old_val, new_val)
     {
@@ -110,16 +121,20 @@ pub fn compute_diff(old_json: &str, new_json: &str) -> (Option<String>, Option<S
             if let Some(new_v) = new_obj.remove(&k) {
                 #[allow(clippy::collapsible_if)]
                 if v != new_v {
-                    diff_new.insert(k.clone(), mask_if_sensitive(&k, new_v));
-                    diff_old.insert(k.clone(), mask_if_sensitive(&k, v));
+                    let masked_v = mask_if_sensitive(&k, v);
+                    let masked_new_v = mask_if_sensitive(&k, new_v);
+                    diff_new.insert(k.clone(), masked_new_v);
+                    diff_old.insert(k, masked_v);
                 }
             } else {
+                let masked_v = mask_if_sensitive(&k, v);
                 diff_new.insert(k.clone(), serde_json::Value::Null);
-                diff_old.insert(k.clone(), mask_if_sensitive(&k, v));
+                diff_old.insert(k, masked_v);
             }
         }
         for (k, new_v) in new_obj {
-            diff_new.insert(k.clone(), mask_if_sensitive(&k, new_v));
+            let masked_new_v = mask_if_sensitive(&k, new_v);
+            diff_new.insert(k.clone(), masked_new_v);
             diff_old.insert(k, serde_json::Value::Null);
         }
     }
@@ -308,5 +323,21 @@ mod tests {
         let (old_diff3, new_diff3) = super::compute_diff(old_json3, new_json3);
         assert_eq!(old_diff3.unwrap(), r#"{"age":null}"#);
         assert_eq!(new_diff3.unwrap(), r#"{"age":30}"#);
+    }
+}
+
+#[cfg(kani)]
+mod kani_proofs {
+    use super::*;
+
+    #[kani::proof]
+    #[kani::unwind(10)]
+    fn proof_is_sensitive_never_panics() {
+        // Gera uma string simbólica de até 10 caracteres
+        let mut bytes: [u8; 10] = kani::any();
+        if let Ok(s) = std::str::from_utf8(&bytes) {
+            // Garante que is_sensitive não dá panic para nenhuma combinação válida de UTF-8
+            let _ = is_sensitive(s);
+        }
     }
 }

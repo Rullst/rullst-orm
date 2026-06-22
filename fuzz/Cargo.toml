@@ -1,0 +1,20 @@
+[package]
+name = "rullst-orm-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+
+[dependencies.rullst-orm]
+path = "../rullst-orm"
+
+[[bin]]
+name = "fuzz_audit"
+path = "fuzz_targets/fuzz_audit.rs"
+test = false
+doc = false

@@ -218,13 +218,7 @@ fn generate_search_method(parsed: &ParsedModel, builder_name: &syn::Ident) -> To
                 if ids.is_empty() {
                     base_builder = base_builder.where_eq("id", 0); // impossible match
                 } else {
-                    let mut sql_ids = String::new();
-                    for (i, id) in ids.iter().enumerate() {
-                        sql_ids.push_str(&id.to_string());
-                        if i < ids.len() - 1 {
-                            sql_ids.push_str(",");
-                        }
-                    }
+                    let sql_ids = ids.iter().map(|id| id.to_string()).collect::<Vec<_>>().join(",");
                     base_builder = base_builder.where_raw(format!("id IN ({})", sql_ids).as_str(), vec![] as Vec<rullst_orm::RullstValue>);
                 }
                 return base_builder;
@@ -498,9 +492,8 @@ fn generate_save_method(parsed: &ParsedModel) -> TokenStream {
                         result.get_last_insert_id() as i32
                     }
                 }
-                for obs in &observers {
-                    obs.created(self).await?;
-                }
+                let futures = observers.iter().map(|obs| obs.created(&*self));
+                rullst_orm::_futures::future::try_join_all(futures).await?;
             } else {
                 for obs in &observers {
                     obs.updating(self).await?;
@@ -534,13 +527,11 @@ fn generate_save_method(parsed: &ParsedModel) -> TokenStream {
                 } else {
                     exec.execute(executor).await?;
                 }
-                for obs in &observers {
-                    obs.updated(self).await?;
-                }
+                let futures = observers.iter().map(|obs| obs.updated(&*self));
+                rullst_orm::_futures::future::try_join_all(futures).await?;
             }
-            for obs in &observers {
-                obs.saved(self).await?;
-            }
+            let futures = observers.iter().map(|obs| obs.saved(&*self));
+            rullst_orm::_futures::future::try_join_all(futures).await?;
             #[cfg(feature = "redis")]
             {
                 use rullst_orm::_redis::AsyncCommands;
@@ -707,9 +698,8 @@ fn generate_delete_methods(parsed: &ParsedModel) -> TokenStream {
                 let list = Self::observers().read().unwrap_or_else(|poisoned| poisoned.into_inner());
                 list.clone()
             };
-            for obs in &observers {
-                obs.deleting(self).await?;
-            }
+            let futures = observers.iter().map(|obs| obs.deleting(&*self));
+            rullst_orm::_futures::future::try_join_all(futures).await?;
             #delete_logic
             if rullst_orm::schema::is_query_log_enabled() {
                 println!("[SQL Debug] {:?} | ID: {}", query, self.id);
@@ -723,9 +713,8 @@ fn generate_delete_methods(parsed: &ParsedModel) -> TokenStream {
             } else {
                 exec.execute(executor).await?;
             }
-            for obs in &observers {
-                obs.deleted(self).await?;
-            }
+            let futures = observers.iter().map(|obs| obs.deleted(&*self));
+            rullst_orm::_futures::future::try_join_all(futures).await?;
             #[cfg(feature = "redis")]
             {
                 use rullst_orm::_redis::AsyncCommands;

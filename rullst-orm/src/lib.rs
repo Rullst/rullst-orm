@@ -483,4 +483,22 @@ mod tests {
         let err = Orm::redis_manager().unwrap_err();
         assert!(matches!(err, crate::Error::Internal(_)));
     }
+
+    #[test]
+    #[should_panic(expected = "Orm must be initialized before querying")]
+    fn test_pool_uninitialized() {
+        let _ = Orm::pool();
+    }
+
+    #[test]
+    #[should_panic(expected = "Orm must be initialized before querying")]
+    fn test_driver_uninitialized() {
+        let _ = Orm::driver();
+    }
+
+    #[test]
+    #[should_panic(expected = "Orm must be initialized before querying")]
+    fn test_read_pool_uninitialized() {
+        let _ = Orm::read_pool();
+    }
 }

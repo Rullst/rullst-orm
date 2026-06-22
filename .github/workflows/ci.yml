@@ -45,8 +45,21 @@ jobs:
       - name: Run Clippy (deny warnings)
         run: cargo clippy --workspace --all-features --all-targets -- -D warnings
 
-      - name: Run Tests
-        run: cargo test --workspace --all-features
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: Run Tests & Generate Coverage
+        run: cargo llvm-cov --workspace --all-features --lcov --output-path lcov.info
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: lcov.info
+          fail_ci_if_error: false
+
+      - name: Run cargo-deny
+        uses: EmbarkStudios/cargo-deny-action@v2
 
       - name: Install cargo-audit
         run: cargo install --locked cargo-audit || true

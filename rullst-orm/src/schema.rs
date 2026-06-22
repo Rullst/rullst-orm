@@ -405,33 +405,10 @@ fn create_migration_files(name: &str) -> Result<(), Error> {
         .map_err(|e| Error::Internal(format!("Failed to create migrations directory: {}", e)))?;
 
     let new_file_path = format!("src/migrations/{}.rs", file_name);
-    let migration_code = format!(
-        r#"use rullst_orm::schema::{{Schema, Blueprint, Migration}};
-use rullst_orm::async_trait;
-
-pub struct MigrationImpl;
-
-#[async_trait]
-impl Migration for MigrationImpl {{
-    fn name(&self) -> &'static str {{
-        "m{timestamp}_{name}"
-    }}
-
-    async fn up(&self) -> Result<(), crate::Error> {{
-        Schema::create("{name}", |table| {{
-            table.id();
-            table.timestamps();
-        }}).await
-    }}
-
-    async fn down(&self) -> Result<(), crate::Error> {{
-        Schema::drop_if_exists("{name}").await
-    }}
-}}
-"#,
-        timestamp = now,
-        name = snake_name
-    );
+    let template = include_str!("migration_template.rs.txt");
+    let migration_code = template
+        .replace("{timestamp}", &now)
+        .replace("{name}", &snake_name);
 
     fs::write(&new_file_path, migration_code)
         .map_err(|e| Error::Internal(format!("Failed to write migration file: {}", e)))?;
@@ -599,14 +576,12 @@ async fn rollback_migrations(migrations: Vec<Box<dyn Migration>>) -> Result<(), 
         rollback_map.insert(m.name().to_string(), m);
     }
 
+    let mut rolled_back = Vec::new();
     for (name,) in to_rollback {
         if let Some(m) = rollback_map.get(&name) {
             println!("Rolling back: {}", name);
             m.down().await?;
-            sqlx::query("DELETE FROM migrations WHERE migration = ?")
-                .bind(&name)
-                .execute(pool)
-                .await?;
+            rolled_back.push(name.clone());
             println!("Rolled back:  {}", name);
         } else {
             println!(
@@ -614,6 +589,16 @@ async fn rollback_migrations(migrations: Vec<Box<dyn Migration>>) -> Result<(), 
                 name
             );
         }
+    }
+
+    if !rolled_back.is_empty() {
+        let mut query_builder = sqlx::query_builder::QueryBuilder::new("DELETE FROM migrations WHERE migration IN (");
+        let mut separated = query_builder.separated(", ");
+        for name in rolled_back {
+            separated.push_bind(name);
+        }
+        separated.push_unseparated(")");
+        query_builder.build().execute(pool).await?;
     }
 
     Ok(())
