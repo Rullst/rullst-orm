@@ -3,8 +3,12 @@ name: Kani Rust Verifier
 on:
   workflow_dispatch:
 
+permissions: read-all
+
 jobs:
   kani:
+    permissions:
+      contents: read
     name: Run Kani Model Checking - ${{ matrix.package }}
     runs-on: ubuntu-latest
     strategy:
@@ -14,7 +18,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Verify with Kani
         uses: model-checking/kani-github-action@v1.2

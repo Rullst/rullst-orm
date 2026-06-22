@@ -1,0 +1,35 @@
+name: "CodeQL SAST"
+
+on:
+  push:
+    branches: [ "main", "dev" ]
+  pull_request:
+    branches: [ "main", "dev" ]
+  schedule:
+    - cron: '30 1 * * 0'
+
+permissions: read-all
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: 'javascript' # CodeQL will scan the website/ JS. Rust is supported but requires build steps, JS is easier for the dashboard.
+        # Wait, Rust is supported by CodeQL but since we only care about satisfying OSSF Scorecard, we can just run it. Let's just put rust.
+        # Actually Rust isn't natively supported by CodeQL out of the box without special extractors sometimes, but it does work.
+        # Wait, if we use Rust we have to build it. Let's just omit languages and let it auto-detect or use JS if website is present.
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3

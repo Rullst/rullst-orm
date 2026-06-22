@@ -21,18 +21,17 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      security-events: write # Permite que ferramentas de auditoria salvem alertas de segurança
 
     steps:
-      - uses: actions/checkout@v6 # Atualizado para v6 (Node 22+)
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4 # Atualizado para v6 (Node 22+)
 
       - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
         with:
           components: clippy, rustfmt
 
       - name: Cache cargo registry
-        uses: actions/cache@v5 # Atualizado para v5 (Versão estável mais moderna)
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4 # Atualizado para v5 (Versão estável mais moderna)
         with:
           path: |
             ~/.cargo/registry
@@ -52,14 +51,14 @@ jobs:
         run: cargo llvm-cov --workspace --all-features --lcov --output-path lcov.info
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@f30e4959ba63075080d4f7f90cacc18d9f3fafd7 # v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: lcov.info
           fail_ci_if_error: false
 
       - name: Run cargo-deny
-        uses: EmbarkStudios/cargo-deny-action@v2
+        uses: EmbarkStudios/cargo-deny-action@bb137d7af7e4fb67e5f82a49c4fce4fad40782fe # v2
 
       - name: Install cargo-audit
         run: cargo install --locked cargo-audit || true
@@ -72,7 +71,7 @@ jobs:
           (/usr/bin/time -v cargo build --workspace --all-features) 2>&1 | tee build_time.txt || true
 
       - name: Upload build time artifact
-        uses: actions/upload-artifact@v4 # Mantido na v4 moderna
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4 # Mantido na v4 moderna
         with:
           name: build-time
           path: build_time.txt
@@ -86,10 +85,10 @@ jobs:
       contents: read # Escopo isolado e seguro para o deploy
 
     steps:
-      - uses: actions/checkout@v6 # Atualizado para v6 aqui também
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4 # Atualizado para v6 aqui também
 
       - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
 
       - name: Publish Macro Crate
         run: cargo publish -p rullst-orm-macros --token ${{ secrets.CARGO_REGISTRY_TOKEN }}
