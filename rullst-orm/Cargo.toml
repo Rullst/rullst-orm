@@ -4,7 +4,7 @@ version = "6.0.0"
 edition = "2024"
 description = "An Active Record ORM for Rust."
 license = "MIT"
-repository = "https://github.com/venelouis/rullst-orm"
+repository = "https://github.com/Rullst/rullst-orm"
 keywords = ["orm", "database", "sqlx", "orm", "active-record"]
 categories = ["database"]
 readme = "../README.md"
@@ -34,3 +34,6 @@ criterion = { version = "0.8.2", features = ["async_tokio"] }
 [[bench]]
 name = "orm_bench"
 harness = false
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }

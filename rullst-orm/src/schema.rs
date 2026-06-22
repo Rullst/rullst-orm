@@ -592,7 +592,8 @@ async fn rollback_migrations(migrations: Vec<Box<dyn Migration>>) -> Result<(), 
     }
 
     if !rolled_back.is_empty() {
-        let mut query_builder = sqlx::query_builder::QueryBuilder::new("DELETE FROM migrations WHERE migration IN (");
+        let mut query_builder =
+            sqlx::query_builder::QueryBuilder::new("DELETE FROM migrations WHERE migration IN (");
         let mut separated = query_builder.separated(", ");
         for name in rolled_back {
             separated.push_bind(name);

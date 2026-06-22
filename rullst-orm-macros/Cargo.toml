@@ -4,7 +4,7 @@ version = "6.0.0"
 edition = "2024"
 description = "Procedural macros for the rullst-orm ORM."
 license = "MIT"
-repository = "https://github.com/venelouis/rullst-orm"
+repository = "https://github.com/Rullst/rullst-orm"
 readme = "../README.md"
 
 [lib]

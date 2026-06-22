@@ -48,7 +48,8 @@ pub async fn log_audit(
     old_values: Option<String>,
     new_values: Option<String>,
 ) -> Result<(), crate::Error> {
-    let (old_values, new_values) = validate_and_prepare_payloads(model_type, event, old_values, new_values)?;
+    let (old_values, new_values) =
+        validate_and_prepare_payloads(model_type, event, old_values, new_values)?;
 
     let pool = Orm::pool();
     let driver = Orm::driver();

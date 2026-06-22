@@ -5,9 +5,9 @@
   <p>
     <a href="https://crates.io/crates/rullst-orm"><img src="https://img.shields.io/crates/v/rullst-orm?style=flat-square&color=orange" alt="Crates.io" /></a>
     <a href="https://docs.rs/rullst-orm"><img src="https://img.shields.io/docsrs/rullst-orm?style=flat-square&color=blue" alt="Docs.rs" /></a>
-    <a href="https://github.com/venelouis/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/venelouis/rullst-orm/ci.yml?style=flat-square&label=Build" alt="Build Status" /></a>
-    <a href="https://codecov.io/gh/venelouis/rullst-orm"><img src="https://codecov.io/gh/venelouis/rullst-orm/graph/badge.svg" alt="Codecov" /></a>
-    <a href="https://securityscorecards.dev/viewer/?uri=github.com/venelouis/rullst-orm"><img src="https://api.securityscorecards.dev/projects/github.com/venelouis/rullst-orm/badge" alt="OSSF Scorecard" /></a>
+    <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/ci.yml?style=flat-square&label=Build" alt="Build Status" /></a>
+    <a href="https://codecov.io/gh/Rullst/rullst-orm"><img src="https://codecov.io/gh/Rullst/rullst-orm/graph/badge.svg" alt="Codecov" /></a>
+    <a href="https://securityscorecards.dev/viewer/?uri=github.com/Rullst/rullst-orm"><img src="https://api.securityscorecards.dev/projects/github.com/Rullst/rullst-orm/badge" alt="OSSF Scorecard" /></a>
     <img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square" alt="License: MIT" />
   </p>
 </div>
