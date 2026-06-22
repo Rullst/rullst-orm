@@ -27,4 +27,4 @@ jobs:
           cargo miri setup
 
       - name: Run Miri Tests
-        run: MIRIFLAGS="-Zmiri-disable-isolation" cargo miri test -p ${{ matrix.package }}
+        run: MIRIFLAGS="-Zmiri-disable-isolation" cargo miri test -p ${{ matrix.package }} --lib
