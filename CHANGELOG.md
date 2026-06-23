@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [6.0.1] - 2026-06-22
+## [6.0.1] - unreleased
 
 ### Performance
 - **Migration Rollback N+1:** Rewrote the `migrate:rollback` logic to collect migration names and execute a single batched `DELETE FROM migrations WHERE migration IN (...)` instead of firing a query per migration.
@@ -28,6 +28,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Tests
 - **Initialization Panic Guards:** Added unit tests ensuring `Orm::pool()` and `Orm::driver()` safely `panic!` with the correct message when invoked before `Orm::init()`. Added tests ensuring `Orm::read_pool()` safely falls back and panics when replicas and pool are uninitialized.
 - **Cache Panic Guards:** Added tests verifying `Orm::redis_manager()` and `Orm::redis_client()` return `Error::Internal` safely when invoked before `Orm::init_redis()`.
+
+### Fixed
+- **Fuzzing Harness Unicode Panic:** Fixed an issue where the `fuzz_audit` testing harness incorrectly split random multi-byte UTF-8 string payloads using raw byte arithmetic (`len() / 2`), causing an artificial panic on characters like `Ο`. Safely refactored to use `floor_char_boundary()` to ensure the ORM is accurately tested against non-ASCII fuzz data without panicking the harness itself.
 
 ### Refactoring
 - **Audit Diff Module Separation:** Extracted internal helper functions `is_sensitive` and `mask_if_sensitive` from within `compute_diff` to the root module scope, vastly improving testability and code structure.
