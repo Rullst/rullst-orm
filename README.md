@@ -4,6 +4,7 @@
 
   <p>
     <a href="https://crates.io/crates/rullst-orm"><img src="https://img.shields.io/crates/v/rullst-orm?style=flat-square&color=orange" alt="Crates.io" /></a>
+    <a href="https://crates.io/crates/rullst-orm"><img src="https://img.shields.io/crates/d/rullst-orm?style=flat-square&color=orange" alt="Downloads" /></a>
     <a href="https://docs.rs/rullst-orm"><img src="https://img.shields.io/docsrs/rullst-orm?style=flat-square&color=blue" alt="Docs.rs" /></a>
     <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/ci.yml?style=flat-square&label=Build" alt="Build Status" /></a>
     <a href="https://codecov.io/gh/Rullst/rullst-orm"><img src="https://codecov.io/gh/Rullst/rullst-orm/graph/badge.svg" alt="Codecov" /></a>
