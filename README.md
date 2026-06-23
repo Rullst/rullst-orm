@@ -8,6 +8,12 @@
     <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/ci.yml?style=flat-square&label=Build" alt="Build Status" /></a>
     <a href="https://codecov.io/gh/Rullst/rullst-orm"><img src="https://codecov.io/gh/Rullst/rullst-orm/graph/badge.svg" alt="Codecov" /></a>
     <a href="https://securityscorecards.dev/viewer/?uri=github.com/Rullst/rullst-orm"><img src="https://api.securityscorecards.dev/projects/github.com/Rullst/rullst-orm/badge" alt="OSSF Scorecard" /></a>
+    <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/miri.yml?style=flat-square&label=Miri%20UB%20Check" alt="Miri" /></a>
+    <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/kani.yml?style=flat-square&label=Kani%20Verifier" alt="Kani" /></a>
+    <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/fuzz.yml?style=flat-square&label=Fuzzing" alt="Fuzzing" /></a>
+    <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/mutants.yml?style=flat-square&label=Mutants" alt="Mutants" /></a>
+    <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/auto-audit.yml?style=flat-square&label=Cargo%20Audit" alt="Auto-Audit" /></a>
+    <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/codeql.yml?style=flat-square&label=CodeQL%20SAST" alt="CodeQL SAST" /></a>
     <img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square" alt="License: MIT" />
   </p>
 </div>
