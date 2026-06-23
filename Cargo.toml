@@ -3,4 +3,5 @@ members = [
     "rullst-orm",
     "rullst-orm-macros",
 ]
+exclude = ["fuzz"]
 resolver = "2"
