@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [6.0.2] - Unreleased
 
 ### Added
+- **OpenSSF Gold Badge:** Achieved the OpenSSF Best Practices Gold badge, demonstrating rigorous adherence to open-source security, quality, and maintainability standards.
+- **Extensive Fuzz Testing:** Expanded the `cargo-fuzz` suite with new targets (`fuzz_schema`, `fuzz_scout`, `fuzz_builder`, `fuzz_parser`) covering strict identifier validations, search query generation, dynamic query builder bindings, and the internal AST procedural macro parser. The CI matrix automatically loops through all fuzz targets.
 - **Security & Quality Badges:** Integrated `cargo-semver-checks` workflow and status badge, and the `Deps.rs` dependency status badge.
 - **Robust Testing & Coverage:** Added new unit tests for query limits/timeouts, DSN security validation, sensitive field masking, and validation error cases, as well as a comprehensive integration test suite covering Artisan commands and seeders.
 - **Compile-Time Table Name Validation:** Added compile-time validation in the macro parser to ensure that table names cannot be empty.
