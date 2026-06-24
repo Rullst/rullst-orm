@@ -102,9 +102,9 @@ mod tests {
     #[cfg(feature = "redis")]
     #[test]
     fn test_redis_error_from() {
-        let redis_err = redis::RedisError::from((redis::ErrorKind::IoError, "redis io error"));
+        let redis_err = redis::RedisError::from((redis::ErrorKind::Io, "redis io error"));
         let err: RullstError = redis_err.into();
         assert!(matches!(err, RullstError::CacheError(_)));
-        assert_eq!(err.to_string(), "Cache error: IoError: redis io error");
+        assert_eq!(err.to_string(), "Cache error: redis io error - Io");
     }
 }
