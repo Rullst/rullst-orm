@@ -444,12 +444,37 @@ mod tests {
 
     #[test]
     fn test_rullst_value_conversions() {
+        // From
         let v: RullstValue = "test".into();
         assert!(matches!(v, RullstValue::String(_)));
+        let v_string: RullstValue = "test".to_string().into();
+        assert!(matches!(v_string, RullstValue::String(_)));
         let v_int: RullstValue = 100.into();
         assert!(matches!(v_int, RullstValue::Int(100)));
         let v_bool: RullstValue = false.into();
         assert!(matches!(v_bool, RullstValue::Bool(false)));
+        let v_float: RullstValue = 3.14.into();
+        assert!(matches!(v_float, RullstValue::Float(_)));
+
+        // TryFrom String
+        let v_str_conv = RullstValue::String("hello".to_string());
+        assert_eq!(String::try_from(v_str_conv).unwrap(), "hello");
+        assert!(String::try_from(RullstValue::Int(10)).is_err());
+
+        // TryFrom i32
+        let v_int_conv = RullstValue::Int(42);
+        assert_eq!(i32::try_from(v_int_conv).unwrap(), 42);
+        assert!(i32::try_from(RullstValue::Bool(true)).is_err());
+
+        // TryFrom f64
+        let v_float_conv = RullstValue::Float(2.71);
+        assert_eq!(f64::try_from(v_float_conv).unwrap(), 2.71);
+        assert!(f64::try_from(RullstValue::Int(10)).is_err());
+
+        // TryFrom bool
+        let v_bool_conv = RullstValue::Bool(true);
+        assert_eq!(bool::try_from(v_bool_conv).unwrap(), true);
+        assert!(bool::try_from(RullstValue::Int(10)).is_err());
     }
 
     #[test]
@@ -501,4 +526,33 @@ mod tests {
     fn test_read_pool_uninitialized() {
         let _ = Orm::read_pool();
     }
+
+    #[test]
+    fn test_validate_dsn() {
+        // Safe case
+        Orm::validate_dsn("sqlite::memory:");
+        // Security warning case (printed to stderr, shouldn't panic)
+        Orm::validate_dsn("postgres://external-db.com/mydb?sslmode=disable");
+    }
+
+    #[cfg(feature = "redis")]
+    #[tokio::test]
+    async fn test_init_redis_failure() {
+        let err = Orm::init_redis("redis://127.0.0.1:0").await.unwrap_err();
+        assert!(matches!(err, crate::Error::CacheError(_)));
+    }
+
+    #[test]
+    fn test_orm_max_query_limit_and_timeout() {
+        Orm::set_max_query_limit(15);
+        assert_eq!(crate::schema::get_max_query_limit(), Some(15));
+        Orm::set_max_query_limit(0);
+        assert_eq!(crate::schema::get_max_query_limit(), None);
+
+        Orm::set_query_timeout(5);
+        assert_eq!(crate::schema::get_query_timeout(), Some(std::time::Duration::from_secs(5)));
+        Orm::set_query_timeout(0);
+        assert_eq!(crate::schema::get_query_timeout(), None);
+    }
 }
+

@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.0.2] - Unreleased
+
+### Added
+- **Security & Quality Badges:** Integrated `cargo-semver-checks` workflow and status badge, and the `Deps.rs` dependency status badge.
+- **Robust Testing & Coverage:** Added new unit tests for query limits/timeouts, DSN security validation, sensitive field masking, and validation error cases, as well as a comprehensive integration test suite covering Artisan commands and seeders.
+- **Compile-Time Table Name Validation:** Added compile-time validation in the macro parser to ensure that table names cannot be empty.
+
+### Fixed
+- **Redis Graceful Fallback:** Made Redis event publishing inside `.save()` and `.delete()` optional, preventing database operations from failing when the `redis` feature is enabled but no Redis server/client is initialized.
+
 ## [6.0.1] - 2026-06-23
 
 ### Performance

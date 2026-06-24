@@ -15,6 +15,8 @@
     <!-- <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/mutants.yml?style=flat-square&label=Mutants" alt="Mutants" /></a> -->
     <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/auto-audit.yml?style=flat-square&label=Cargo%20Audit" alt="Auto-Audit" /></a>
     <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/codeql.yml?style=flat-square&label=CodeQL%20SAST" alt="CodeQL SAST" /></a>
+    <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/semver.yml?style=flat-square&label=SemVer%20Checks" alt="cargo-semver-checks" /></a>
+    <a href="https://deps.rs/repo/github/Rullst/rullst-orm"><img src="https://deps.rs/repo/github/Rullst/rullst-orm/status.svg?style=flat-square" alt="Dependency Status" /></a>
     <img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square" alt="License: MIT" />
   </p>
 </div>

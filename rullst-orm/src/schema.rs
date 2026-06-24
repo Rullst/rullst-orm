@@ -906,4 +906,28 @@ mod tests {
         assert!(result.is_err());
         assert!(matches!(result, Err(crate::Error::Internal(_))));
     }
+
+    #[test]
+    fn test_max_query_limit_and_timeout_globals() {
+        // Test limit
+        set_max_query_limit(50);
+        assert_eq!(get_max_query_limit(), Some(50));
+        set_max_query_limit(0);
+        assert_eq!(get_max_query_limit(), None);
+
+        // Test timeout
+        set_query_timeout(10);
+        assert_eq!(get_query_timeout(), Some(std::time::Duration::from_secs(10)));
+        set_query_timeout(0);
+        assert_eq!(get_query_timeout(), None);
+    }
+
+    #[tokio::test]
+    async fn test_run_artisan_entrypoint() {
+        // Calling run_artisan with empty lists. It parses std::env::args() and prints help
+        // because the arguments of cargo test won't match any of the commands.
+        let result = run_artisan(vec![], vec![]).await;
+        assert!(result.is_ok());
+    }
 }
+

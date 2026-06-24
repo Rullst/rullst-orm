@@ -85,5 +85,26 @@ mod tests {
         let sqlx_err = sqlx::Error::RowNotFound;
         let err: RullstError = sqlx_err.into();
         assert!(matches!(err, RullstError::RecordNotFound));
+
+        let sqlx_other_err = sqlx::Error::PoolClosed;
+        let err2: RullstError = sqlx_other_err.into();
+        assert!(matches!(err2, RullstError::DatabaseError(_)));
+    }
+
+    #[test]
+    fn test_serde_json_error_from() {
+        let json_err = serde_json::from_str::<serde_json::Value>("{invalid}").unwrap_err();
+        let err: RullstError = json_err.into();
+        assert!(matches!(err, RullstError::SerializationError(_)));
+        assert!(err.to_string().contains("Serialization error:"));
+    }
+
+    #[cfg(feature = "redis")]
+    #[test]
+    fn test_redis_error_from() {
+        let redis_err = redis::RedisError::from((redis::ErrorKind::IoError, "redis io error"));
+        let err: RullstError = redis_err.into();
+        assert!(matches!(err, RullstError::CacheError(_)));
+        assert_eq!(err.to_string(), "Cache error: IoError: redis io error");
     }
 }

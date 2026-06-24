@@ -325,6 +325,56 @@ mod tests {
         assert_eq!(old_diff3.unwrap(), r#"{"age":null}"#);
         assert_eq!(new_diff3.unwrap(), r#"{"age":30}"#);
     }
+
+    #[test]
+    fn test_validate_and_prepare_payloads() {
+        // Normal case
+        let res = super::validate_and_prepare_payloads("User", "create", Some("old".to_string()), Some("new".to_string()));
+        assert!(res.is_ok());
+
+        // Model type too long
+        let long_model = "A".repeat(256);
+        let res = super::validate_and_prepare_payloads(&long_model, "create", None, None);
+        assert!(res.is_err());
+
+        // Event too long
+        let long_event = "A".repeat(51);
+        let res = super::validate_and_prepare_payloads("User", &long_event, None, None);
+        assert!(res.is_err());
+
+        // Payload too large
+        let large_payload = Some("A".repeat(5 * 1024 * 1024 + 1));
+        let (old_val, new_val) = super::validate_and_prepare_payloads("User", "create", large_payload.clone(), large_payload).unwrap();
+        assert_eq!(old_val.unwrap(), r#"{"error":"payload_too_large"}"#);
+        assert_eq!(new_val.unwrap(), r#"{"error":"payload_too_large"}"#);
+    }
+
+    #[test]
+    fn test_is_sensitive() {
+        assert!(super::is_sensitive("password"));
+        assert!(super::is_sensitive("PASSWORD"));
+        assert!(super::is_sensitive("user_token"));
+        assert!(super::is_sensitive("client_secret"));
+        assert!(super::is_sensitive("senha"));
+        assert!(super::is_sensitive("api_key"));
+        assert!(super::is_sensitive("card_cvv"));
+        assert!(super::is_sensitive("ssn_number"));
+        assert!(super::is_sensitive("credit_card"));
+        assert!(super::is_sensitive("auth_code"));
+        assert!(!super::is_sensitive("name"));
+        assert!(!super::is_sensitive("email"));
+        assert!(!super::is_sensitive("age"));
+    }
+
+    #[test]
+    fn test_mask_if_sensitive() {
+        let val = serde_json::Value::String("my-secret-val".to_string());
+        let masked = super::mask_if_sensitive("password", val.clone());
+        assert_eq!(masked, serde_json::Value::String("***".to_string()));
+
+        let unmasked = super::mask_if_sensitive("username", val);
+        assert_eq!(unmasked, serde_json::Value::String("my-secret-val".to_string()));
+    }
 }
 
 #[cfg(kani)]

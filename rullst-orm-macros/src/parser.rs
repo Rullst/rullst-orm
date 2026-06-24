@@ -213,7 +213,15 @@ pub fn parse(input: &DeriveInput) -> Result<ParsedModel, syn::Error> {
                         let key = parts[0].trim();
                         let val = parts[1].trim().trim_matches('"');
                         match key {
-                            "table" => table_name = val.to_string(),
+                            "table" => {
+                                if val.trim().is_empty() {
+                                    return Err(syn::Error::new_spanned(
+                                        attr,
+                                        "table name cannot be empty",
+                                    ));
+                                }
+                                table_name = val.to_string();
+                            }
                             "global_scope" => global_scope = val.to_string(),
                             "tenant_column" => tenant_column = val.to_string(),
                             "before_save" => before_save = val.to_string(),

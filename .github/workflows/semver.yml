@@ -1,0 +1,42 @@
+name: SemVer Checks
+
+on:
+  push:
+    branches: [ "main", "dev" ]
+  pull_request:
+    branches: [ "main", "dev" ]
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  semver:
+    name: cargo-semver-checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v4
+
+      - name: Set up Rust (stable)
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-semver-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install cargo-semver-checks
+        uses: taiki-e/install-action@9e1e5806d4a4822de933115878265be9aaa786d9
+        with:
+          tool: cargo-semver-checks
+
+      # Checks rullst-orm and rullst-orm-macros for breaking API changes
+      # against the last published version on crates.io.
+      - name: Run cargo-semver-checks
+        run: cargo semver-checks --workspace

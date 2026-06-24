@@ -46,3 +46,212 @@ pub fn rullst_macro(input: TokenStream) -> TokenStream {
 
     TokenStream::from(expanded)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use syn::parse_quote;
+
+    fn run_macro_generator(input: &DeriveInput) {
+        let parsed = parser::parse(input).unwrap();
+        let rels = relationships::generate(&parsed);
+        let _builder = builder::generate(
+            &parsed,
+            &rels.flags,
+            &rels.inits,
+            &rels.methods,
+            &rels.eager_loads,
+        );
+        let _factory = factory_observer::generate(&parsed);
+        let _models = models::generate(&parsed, &rels.model_methods);
+    }
+
+    #[test]
+    fn test_basic_model() {
+        let input: DeriveInput = parse_quote! {
+            #[derive(Orm)]
+            #[orm(table = "users")]
+            pub struct User {
+                pub id: i32,
+                pub name: String,
+                pub email: String,
+            }
+        };
+        run_macro_generator(&input);
+    }
+
+    #[test]
+    fn test_model_with_relations() {
+        let input: DeriveInput = parse_quote! {
+            #[derive(Orm)]
+            pub struct Post {
+                pub id: i32,
+                pub title: String,
+                #[orm(has_many = "Comment", foreign_key = "post_id", local_key = "id")]
+                comments: Option<Vec<Comment>>,
+                #[orm(has_one = "Author", foreign_key = "post_id", local_key = "id")]
+                author: Option<Author>,
+                #[orm(belongs_to = "User", foreign_key = "user_id", local_key = "id")]
+                user: Option<User>,
+                #[orm(belongs_to_many = "Tag", pivot_table = "post_tags", foreign_key = "post_id", related_key = "tag_id")]
+                tags: Option<Vec<Tag>>,
+                #[orm(morph_one = "Image", morph_name = "imageable")]
+                image: Option<Image>,
+                #[orm(morph_many = "Comment", morph_name = "commentable")]
+                morph_comments: Option<Vec<Comment>>,
+            }
+        };
+        run_macro_generator(&input);
+    }
+
+    #[test]
+    fn test_model_with_soft_deletes() {
+        let input: DeriveInput = parse_quote! {
+            #[derive(Orm)]
+            pub struct User {
+                pub id: i32,
+                pub name: String,
+                pub deleted_at: Option<String>,
+            }
+        };
+        run_macro_generator(&input);
+    }
+
+    #[test]
+    fn test_model_with_hidden_fields() {
+        let input: DeriveInput = parse_quote! {
+            #[derive(Orm)]
+            pub struct User {
+                pub id: i32,
+                pub name: String,
+                #[orm(hidden)]
+                pub password: String,
+            }
+        };
+        run_macro_generator(&input);
+    }
+
+    #[test]
+    fn test_model_with_explicit_soft_delete_config() {
+        let input: DeriveInput = parse_quote! {
+            #[derive(Orm)]
+            #[orm(soft_delete(field = "is_deleted", value = "0", delval = "1"))]
+            pub struct Post {
+                pub id: i32,
+                pub title: String,
+                pub is_deleted: i32,
+            }
+        };
+        run_macro_generator(&input);
+    }
+
+    #[test]
+    fn test_model_with_soft_delete_null_sentinel() {
+        let input: DeriveInput = parse_quote! {
+            #[derive(Orm)]
+            #[orm(soft_delete(field = "deleted_at", value = "null", delval = "now()"))]
+            pub struct Audit {
+                pub id: i32,
+                pub message: String,
+                pub deleted_at: Option<String>,
+            }
+        };
+        run_macro_generator(&input);
+    }
+
+    #[test]
+    fn test_model_with_soft_delete_bigint_timestamp() {
+        let input: DeriveInput = parse_quote! {
+            #[derive(Orm)]
+            #[orm(soft_delete(field = "deleted_at", value = "0", delval = "UNIX_TIMESTAMP()"))]
+            pub struct Article {
+                pub id: i32,
+                pub title: String,
+                pub deleted_at: i64,
+            }
+        };
+        run_macro_generator(&input);
+    }
+
+    #[test]
+    fn test_model_with_orm_skip_field() {
+        let input: DeriveInput = parse_quote! {
+            #[derive(Orm)]
+            pub struct Account {
+                pub id: i32,
+                pub name: String,
+                #[orm(skip)]
+                pub password_hash: String,
+            }
+        };
+        run_macro_generator(&input);
+    }
+
+    #[test]
+    fn test_model_with_sqlx_skip_field() {
+        let input: DeriveInput = parse_quote! {
+            #[derive(Orm)]
+            pub struct Account {
+                pub id: i32,
+                pub name: String,
+                #[sqlx(skip)]
+                pub password_hash: String,
+            }
+        };
+        run_macro_generator(&input);
+    }
+
+    #[test]
+    fn test_model_with_combined_soft_delete_and_skip() {
+        let input: DeriveInput = parse_quote! {
+            #[derive(Orm)]
+            #[orm(soft_delete(field = "is_active", value = "true", delval = "false"))]
+            pub struct User {
+                pub id: i32,
+                pub name: String,
+                pub is_active: bool,
+                #[sqlx(skip)]
+                pub internal_note: String,
+            }
+        };
+        run_macro_generator(&input);
+    }
+
+    #[test]
+    fn test_parser_errors() {
+        // lowercase relation model
+        let input: DeriveInput = parse_quote! {
+            #[derive(Orm)]
+            pub struct Post {
+                pub id: i32,
+                #[orm(has_many = "comment")]
+                comments: Option<Vec<Comment>>,
+            }
+        };
+        let res = parser::parse(&input);
+        println!("PARSE RESULT FOR LOWERCASE RELATION: {:?}", res.as_ref().map(|p| &p.table_name));
+        assert!(res.is_err());
+
+        // empty table name
+        let input: DeriveInput = parse_quote! {
+            #[derive(Orm)]
+            #[orm(table = "")]
+            pub struct Post {
+                pub id: i32,
+            }
+        };
+        assert!(parser::parse(&input).is_err());
+
+        // empty has_many
+        let input: DeriveInput = parse_quote! {
+            #[derive(Orm)]
+            pub struct Post {
+                pub id: i32,
+                #[orm(has_many = "")]
+                comments: Option<Vec<Comment>>,
+            }
+        };
+        assert!(parser::parse(&input).is_err());
+    }
+}
+

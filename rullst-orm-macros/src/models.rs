@@ -535,17 +535,18 @@ fn generate_save_method(parsed: &ParsedModel) -> TokenStream {
             #[cfg(feature = "redis")]
             {
                 use rullst_orm::_redis::AsyncCommands;
-                let mut conn = rullst_orm::Orm::redis_manager()?;
-                let payload = self.to_json();
-                if is_new {
-                    let topic = format!("orm:events:{}:created", #table_name);
-                    let _: Result<usize, _> = conn.publish(&topic, &payload).await;
-                } else {
-                    let topic = format!("orm:events:{}:updated", #table_name);
+                if let Ok(mut conn) = rullst_orm::Orm::redis_manager() {
+                    let payload = self.to_json();
+                    if is_new {
+                        let topic = format!("orm:events:{}:created", #table_name);
+                        let _: Result<usize, _> = conn.publish(&topic, &payload).await;
+                    } else {
+                        let topic = format!("orm:events:{}:updated", #table_name);
+                        let _: Result<usize, _> = conn.publish(&topic, &payload).await;
+                    }
+                    let topic = format!("orm:events:{}:saved", #table_name);
                     let _: Result<usize, _> = conn.publish(&topic, &payload).await;
                 }
-                let topic = format!("orm:events:{}:saved", #table_name);
-                let _: Result<usize, _> = conn.publish(&topic, &payload).await;
             }
             #audit_after_save
             #scout_update
@@ -718,10 +719,11 @@ fn generate_delete_methods(parsed: &ParsedModel) -> TokenStream {
             #[cfg(feature = "redis")]
             {
                 use rullst_orm::_redis::AsyncCommands;
-                let mut conn = rullst_orm::Orm::redis_manager()?;
-                let payload = self.to_json();
-                let topic = format!("orm:events:{}:deleted", #table_name);
-                let _: Result<usize, _> = conn.publish(&topic, &payload).await;
+                if let Ok(mut conn) = rullst_orm::Orm::redis_manager() {
+                    let payload = self.to_json();
+                    let topic = format!("orm:events:{}:deleted", #table_name);
+                    let _: Result<usize, _> = conn.publish(&topic, &payload).await;
+                }
             }
             #audit_after_delete
             #scout_delete

@@ -33,8 +33,8 @@ mod tests {
         let _ = get_search_engine(); // must not panic
     }
 
-    #[test]
-    fn test_set_search_engine_is_idempotent() {
+    #[tokio::test]
+    async fn test_set_search_engine_is_idempotent() {
         // A second set_search_engine call is silently ignored by OnceLock.
         // This test verifies that calling it multiple times does not panic.
         struct Noop;
@@ -55,6 +55,11 @@ mod tests {
                 Ok(vec![])
             }
         }
+        let noop = Noop;
+        let _ = noop.update("t", 1, serde_json::json!({})).await;
+        let _ = noop.delete("t", 1).await;
+        let _ = noop.search("t", "q").await;
+
         set_search_engine(Box::new(Noop));
         set_search_engine(Box::new(Noop)); // second call must not panic
 
