@@ -3,8 +3,8 @@
 
 #![cfg(not(any(feature = "strict-postgres", feature = "strict-mysql")))]
 
-use rullst_orm::schema::{Blueprint, Migration, run_artisan_with_args, Schema};
-use rullst_orm::{Orm, Seeder, Error};
+use rullst_orm::schema::{Blueprint, Migration, Schema, run_artisan_with_args};
+use rullst_orm::{Error, Orm, Seeder};
 use std::fs;
 
 // Define a dummy migration
@@ -37,9 +37,7 @@ impl Seeder for DummySeeder {
     async fn run(&self) -> Result<(), Error> {
         // Just execute a query
         let pool = Orm::pool();
-        sqlx::query("SELECT 1")
-            .execute(pool)
-            .await?;
+        sqlx::query("SELECT 1").execute(pool).await?;
         Ok(())
     }
 }
@@ -61,18 +59,31 @@ async fn integration_extra_suite() {
         .expect("Orm::seed should succeed");
 
     // 2b. Test begin_transaction
-    let tx = Orm::begin_transaction().await.expect("begin_transaction should succeed");
+    let tx = Orm::begin_transaction()
+        .await
+        .expect("begin_transaction should succeed");
     tx.rollback().await.expect("rollback should succeed");
 
     // 3. Test validate_dsn via direct init call error path (already initialized)
     let init_err = Orm::init(&format!("sqlite:{}?mode=rwc", DB_FILE)).await;
-    assert!(init_err.is_err(), "Expected error when initializing already initialized Orm");
+    assert!(
+        init_err.is_err(),
+        "Expected error when initializing already initialized Orm"
+    );
 
-    let init_options_err = Orm::init_with_options(&format!("sqlite:{}?mode=rwc", DB_FILE), 5, 5).await;
-    assert!(init_options_err.is_err(), "Expected error when initializing already initialized Orm");
+    let init_options_err =
+        Orm::init_with_options(&format!("sqlite:{}?mode=rwc", DB_FILE), 5, 5).await;
+    assert!(
+        init_options_err.is_err(),
+        "Expected error when initializing already initialized Orm"
+    );
 
-    let init_replicas_err = Orm::init_with_replicas(&format!("sqlite:{}?mode=rwc", DB_FILE), vec![]).await;
-    assert!(init_replicas_err.is_err(), "Expected error when initializing already initialized Orm");
+    let init_replicas_err =
+        Orm::init_with_replicas(&format!("sqlite:{}?mode=rwc", DB_FILE), vec![]).await;
+    assert!(
+        init_replicas_err.is_err(),
+        "Expected error when initializing already initialized Orm"
+    );
 
     // 4. Test run_artisan_with_args commands
     // 4a. make:migration command with no args
@@ -87,7 +98,11 @@ async fn integration_extra_suite() {
     // 4b. make:migration command with name
     let m_name = "test_table";
     run_artisan_with_args(
-        &["artisan".to_string(), "make:migration".to_string(), m_name.to_string()],
+        &[
+            "artisan".to_string(),
+            "make:migration".to_string(),
+            m_name.to_string(),
+        ],
         vec![Box::new(DummyMigration)],
         vec![Box::new(DummySeeder)],
     )
@@ -157,14 +172,26 @@ async fn integration_extra_suite() {
         .await
         .expect("create_audit_table should succeed");
 
-    rullst_orm::audit::log_audit("User", 1, "create", None, Some(r#"{"name":"Alice"}"#.to_string()))
-        .await
-        .expect("log_audit should succeed");
+    rullst_orm::audit::log_audit(
+        "User",
+        1,
+        "create",
+        None,
+        Some(r#"{"name":"Alice"}"#.to_string()),
+    )
+    .await
+    .expect("log_audit should succeed");
 
     // log_audit_diff with normal values
-    rullst_orm::audit::log_audit_diff("User", 1, "update", r#"{"name":"Alice"}"#, r#"{"name":"Bob"}"#)
-        .await
-        .expect("log_audit_diff should succeed");
+    rullst_orm::audit::log_audit_diff(
+        "User",
+        1,
+        "update",
+        r#"{"name":"Alice"}"#,
+        r#"{"name":"Bob"}"#,
+    )
+    .await
+    .expect("log_audit_diff should succeed");
 
     // log_audit_diff with large values (> 5MB)
     let large_json = format!(r#"{{"data":"{}"}}"#, "A".repeat(5 * 1024 * 1024 + 1));

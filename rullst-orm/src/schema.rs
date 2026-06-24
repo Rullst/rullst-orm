@@ -917,7 +917,10 @@ mod tests {
 
         // Test timeout
         set_query_timeout(10);
-        assert_eq!(get_query_timeout(), Some(std::time::Duration::from_secs(10)));
+        assert_eq!(
+            get_query_timeout(),
+            Some(std::time::Duration::from_secs(10))
+        );
         set_query_timeout(0);
         assert_eq!(get_query_timeout(), None);
     }
@@ -930,4 +933,3 @@ mod tests {
         assert!(result.is_ok());
     }
 }
-

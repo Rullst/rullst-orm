@@ -329,7 +329,12 @@ mod tests {
     #[test]
     fn test_validate_and_prepare_payloads() {
         // Normal case
-        let res = super::validate_and_prepare_payloads("User", "create", Some("old".to_string()), Some("new".to_string()));
+        let res = super::validate_and_prepare_payloads(
+            "User",
+            "create",
+            Some("old".to_string()),
+            Some("new".to_string()),
+        );
         assert!(res.is_ok());
 
         // Model type too long
@@ -344,7 +349,13 @@ mod tests {
 
         // Payload too large
         let large_payload = Some("A".repeat(5 * 1024 * 1024 + 1));
-        let (old_val, new_val) = super::validate_and_prepare_payloads("User", "create", large_payload.clone(), large_payload).unwrap();
+        let (old_val, new_val) = super::validate_and_prepare_payloads(
+            "User",
+            "create",
+            large_payload.clone(),
+            large_payload,
+        )
+        .unwrap();
         assert_eq!(old_val.unwrap(), r#"{"error":"payload_too_large"}"#);
         assert_eq!(new_val.unwrap(), r#"{"error":"payload_too_large"}"#);
     }
@@ -373,7 +384,10 @@ mod tests {
         assert_eq!(masked, serde_json::Value::String("***".to_string()));
 
         let unmasked = super::mask_if_sensitive("username", val);
-        assert_eq!(unmasked, serde_json::Value::String("my-secret-val".to_string()));
+        assert_eq!(
+            unmasked,
+            serde_json::Value::String("my-secret-val".to_string())
+        );
     }
 }
 

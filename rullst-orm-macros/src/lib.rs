@@ -229,7 +229,10 @@ mod tests {
             }
         };
         let res = parser::parse(&input);
-        println!("PARSE RESULT FOR LOWERCASE RELATION: {:?}", res.as_ref().map(|p| &p.table_name));
+        println!(
+            "PARSE RESULT FOR LOWERCASE RELATION: {:?}",
+            res.as_ref().map(|p| &p.table_name)
+        );
         assert!(res.is_err());
 
         // empty table name
@@ -254,4 +257,3 @@ mod tests {
         assert!(parser::parse(&input).is_err());
     }
 }
-

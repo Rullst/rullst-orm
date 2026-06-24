@@ -550,9 +550,11 @@ mod tests {
         assert_eq!(crate::schema::get_max_query_limit(), None);
 
         Orm::set_query_timeout(5);
-        assert_eq!(crate::schema::get_query_timeout(), Some(std::time::Duration::from_secs(5)));
+        assert_eq!(
+            crate::schema::get_query_timeout(),
+            Some(std::time::Duration::from_secs(5))
+        );
         Orm::set_query_timeout(0);
         assert_eq!(crate::schema::get_query_timeout(), None);
     }
 }
-
