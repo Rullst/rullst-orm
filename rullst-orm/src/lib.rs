@@ -453,7 +453,7 @@ mod tests {
         assert!(matches!(v_int, RullstValue::Int(100)));
         let v_bool: RullstValue = false.into();
         assert!(matches!(v_bool, RullstValue::Bool(false)));
-        let v_float: RullstValue = 3.14.into();
+        let v_float: RullstValue = std::f64::consts::PI.into();
         assert!(matches!(v_float, RullstValue::Float(_)));
 
         // TryFrom String
@@ -473,7 +473,7 @@ mod tests {
 
         // TryFrom bool
         let v_bool_conv = RullstValue::Bool(true);
-        assert_eq!(bool::try_from(v_bool_conv).unwrap(), true);
+        assert!(bool::try_from(v_bool_conv).unwrap());
         assert!(bool::try_from(RullstValue::Int(10)).is_err());
     }
 
