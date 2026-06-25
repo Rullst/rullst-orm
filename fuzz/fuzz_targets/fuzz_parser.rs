@@ -9,6 +9,13 @@ mod internal_parser {
 
 fuzz_target!(|data: &[u8]| {
     if let Ok(s) = std::str::from_utf8(data) {
+        // syn::parse2 will stack overflow on deeply nested structures.
+        // We restrict the number of nesting tokens to avoid this.
+        let nesting = s.chars().filter(|c| "<({[|".contains(*c)).count();
+        if nesting > 64 {
+            return;
+        }
+
         // We attempt to parse the random string as a Rust TokenStream
         if let Ok(ts) = s.parse::<proc_macro2::TokenStream>() {
             // Attempt to parse it as a struct definition (DeriveInput)
