@@ -9,12 +9,12 @@ jobs:
   fuzz:
     permissions:
       contents: read
-    name: Run cargo-fuzz (Shard ${{ matrix.shard }}/8)
+    name: Fuzz ${{ matrix.target }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8]
+        target: [fuzz_audit, fuzz_builder, fuzz_parser, fuzz_schema, fuzz_scout]
 
     steps:
       - name: Checkout code
@@ -26,9 +26,5 @@ jobs:
       - name: Install cargo-fuzz
         run: cargo install cargo-fuzz
 
-      - name: Run all fuzzers
-        run: |
-          for target in $(cargo fuzz list); do
-            echo "Running fuzzer: $target"
-            cargo fuzz run $target -- -max_total_time=60
-          done
+      - name: Run fuzzer
+        run: cargo fuzz run ${{ matrix.target }} -- -max_total_time=18000
