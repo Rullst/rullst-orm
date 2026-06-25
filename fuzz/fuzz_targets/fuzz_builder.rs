@@ -14,10 +14,12 @@ fuzz_target!(|data: &[u8]| {
         // We do not actually execute the query (which would require a DB connection),
         // we just build the query and ensure the builder doesn't panic.
         
-        let _builder = FuzzUser::query()
+        let builder = FuzzUser::query()
             .where_like("name", s)
             .where_eq("email", s)
             .order_by_desc(s)
             .limit(10);
+            
+        let _sql = builder.to_sql();
     }
 });

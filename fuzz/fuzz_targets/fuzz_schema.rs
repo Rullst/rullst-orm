@@ -15,5 +15,7 @@ fuzz_target!(|data: &[u8]| {
         
         // Fuzz JoinClause::on validation (second argument)
         jc.on("id", "=", s);
+        
+        let _sql = jc.to_sql();
     }
 });
