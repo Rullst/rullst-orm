@@ -17,7 +17,7 @@
     <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/codeql.yml?style=flat-square&label=CodeQL%20SAST" alt="CodeQL SAST" /></a>
     <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/semver.yml?style=flat-square&label=SemVer%20Checks" alt="cargo-semver-checks" /></a>
     <a href="https://deps.rs/repo/github/Rullst/rullst-orm"><img src="https://deps.rs/repo/github/Rullst/rullst-orm/status.svg?style=flat-square" alt="Dependency Status" /></a>
-    <a href="https://www.bestpractices.dev/projects/13359"><img src="https://img.shields.io/badge/OpenSSF_Best_Practices-Gold-gold?style=flat-square" alt="OpenSSF Best Practices Gold" /></a>
+    <a href="https://www.bestpractices.dev/projects/13359"><img src="https://www.bestpractices.dev/projects/13359/badge" alt="OpenSSF Best Practices" /></a>
     <img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square" alt="License: MIT" />
   </p>
 </div>
