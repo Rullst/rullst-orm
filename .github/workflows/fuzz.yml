@@ -28,3 +28,11 @@ jobs:
 
       - name: Run fuzzer
         run: cargo fuzz run ${{ matrix.target }} -- -max_total_time=18000
+
+      - name: Upload crash artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-artifacts-${{ matrix.target }}
+          path: fuzz/artifacts/${{ matrix.target }}/
+          retention-days: 7
