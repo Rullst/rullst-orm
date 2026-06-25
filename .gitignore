@@ -24,3 +24,4 @@ lib.rs.recovered*
 # Scratch source files
 largest_chunk.rs
 fuzz/target/
+*.exe
