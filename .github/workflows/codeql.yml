@@ -21,10 +21,10 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      uses: actions/checkout@v7
 
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@dd903d2e4f5405488e5ef1422510ee31c8b32357 # v3
+      uses: github/codeql-action/init@v4
       with:
         languages: 'javascript' # CodeQL will scan the website/ JS. Rust is supported but requires build steps, JS is easier for the dashboard.
         # Wait, Rust is supported by CodeQL but since we only care about satisfying OSSF Scorecard, we can just run it. Let's just put rust.
@@ -32,4 +32,4 @@ jobs:
         # Wait, if we use Rust we have to build it. Let's just omit languages and let it auto-detect or use JS if website is present.
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@dd903d2e4f5405488e5ef1422510ee31c8b32357 # v3
+      uses: github/codeql-action/analyze@v4
