@@ -214,17 +214,32 @@ impl Blueprint {
     }
 
     pub fn build(&self) -> Result<String, Error> {
+        let driver = crate::Orm::driver();
         let mut defs = vec![];
         for col in &self.columns {
             // Defensive re-validation: column names must always be safe
             // identifiers regardless of how the Column was constructed.
             validate_identifier(&col.name)?;
-            let mut def = format!("{} {}", col.name, col.col_type);
+
+            let mut col_type_str = col.col_type.clone();
+            if driver == "postgres" && col.is_auto_increment {
+                if col.col_type == "INTEGER" || col.col_type == "INT" {
+                    col_type_str = "SERIAL".to_string();
+                } else if col.col_type == "BIGINT" {
+                    col_type_str = "BIGSERIAL".to_string();
+                }
+            }
+
+            let mut def = format!("{} {}", col.name, col_type_str);
             if col.is_primary_key {
                 def.push_str(" PRIMARY KEY");
             }
             if col.is_auto_increment {
-                def.push_str(" AUTOINCREMENT");
+                if driver == "sqlite" {
+                    def.push_str(" AUTOINCREMENT");
+                } else if driver == "mysql" {
+                    def.push_str(" AUTO_INCREMENT");
+                }
             }
             if !col.is_nullable && !col.is_primary_key {
                 def.push_str(" NOT NULL");
