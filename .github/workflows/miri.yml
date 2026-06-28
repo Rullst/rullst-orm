@@ -23,8 +23,7 @@ jobs:
       - name: Install Miri
         run: |
           rustup toolchain install nightly --component miri
-          rustup default nightly
-          cargo miri setup
+          cargo +nightly miri setup
 
       - name: Run Miri Tests
-        run: MIRIFLAGS="-Zmiri-disable-isolation" cargo miri test -p ${{ matrix.package }} --lib
+        run: MIRIFLAGS="-Zmiri-disable-isolation" cargo +nightly miri test -p ${{ matrix.package }} --lib
