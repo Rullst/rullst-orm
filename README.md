@@ -10,12 +10,18 @@
     <a href="https://codecov.io/gh/Rullst/rullst-orm"><img src="https://codecov.io/gh/Rullst/rullst-orm/graph/badge.svg" alt="Codecov" /></a>
     <a href="https://securityscorecards.dev/viewer/?uri=github.com/Rullst/rullst-orm"><img src="https://api.securityscorecards.dev/projects/github.com/Rullst/rullst-orm/badge" alt="OSSF Scorecard" /></a>
     <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/miri.yml?style=flat-square&label=Miri%20UB%20Check" alt="Miri" /></a>
-    <!-- <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/kani.yml?style=flat-square&label=Kani%20Verifier" alt="Kani" /></a> -->
+    <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/kani.yml?style=flat-square&label=Kani%20Verifier" alt="Kani" /></a>
     <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/fuzz.yml?style=flat-square&label=Fuzzing" alt="Fuzzing" /></a>
-    <!-- <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/mutants.yml?style=flat-square&label=Mutants" alt="Mutants" /></a> -->
+    <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/mutants.yml?style=flat-square&label=Mutants" alt="Mutants" /></a>
+    <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/deploy-docs.yml?style=flat-square&label=Docs" alt="Docs Deploy" /></a>
     <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/auto-audit.yml?style=flat-square&label=Cargo%20Audit" alt="Auto-Audit" /></a>
     <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/codeql.yml?style=flat-square&label=CodeQL%20SAST" alt="CodeQL SAST" /></a>
     <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/semver.yml?style=flat-square&label=SemVer%20Checks" alt="cargo-semver-checks" /></a>
+    <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/cargo-deny.yml?style=flat-square&label=Cargo%20Deny" alt="Cargo Deny" /></a>
+    <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/cargo-machete.yml?style=flat-square&label=Cargo%20Machete" alt="Cargo Machete" /></a>
+    <img src="https://img.shields.io/badge/Property_Testing-Proptest-blue?style=flat-square" alt="Property Testing" />
+    <img src="https://img.shields.io/badge/Unsafe_Policy-0%25_Unsafe-success?style=flat-square" alt="Unsafe Policy" />
+    <img src="https://img.shields.io/badge/Panic_Policy-Zero_Panics-success?style=flat-square" alt="Panic Policy" />
     <a href="https://deps.rs/repo/github/Rullst/rullst-orm"><img src="https://deps.rs/repo/github/Rullst/rullst-orm/status.svg?style=flat-square" alt="Dependency Status" /></a>
     <a href="https://www.bestpractices.dev/projects/13359"><img src="https://www.bestpractices.dev/projects/13359/badge" alt="OpenSSF Best Practices" /></a>
     <img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square" alt="License: MIT" />

@@ -135,8 +135,8 @@ pub fn compute_diff(old_json: &str, new_json: &str) -> (Option<String>, Option<S
         }
         for (k, new_v) in new_obj {
             let masked_new_v = mask_if_sensitive(&k, new_v);
-            diff_new.insert(k.clone(), masked_new_v);
-            diff_old.insert(k, serde_json::Value::Null);
+            diff_old.insert(k.clone(), serde_json::Value::Null);
+            diff_new.insert(k, masked_new_v);
         }
     }
 

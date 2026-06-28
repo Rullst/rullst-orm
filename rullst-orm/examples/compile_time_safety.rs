@@ -48,7 +48,6 @@ async fn main() -> Result<(), rullst_orm::Error> {
 
     // 1. Select specific columns
     // We want only the Id and FullName. Age will be mapped as 0/default by sqlx
-    // if not selected, but let's test the generator!
     let users = User::query()
         .select_cols(&[UserColumn::Id, UserColumn::FullName, UserColumn::Age])
         .where_col(UserColumn::Age, 25)

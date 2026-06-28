@@ -864,6 +864,43 @@ pub fn generate(
                 self.format_postgres(&sql)
             }
 
+            pub fn to_count_sql(&self) -> String {
+                let estimated_capacity = 50 + #table_name.len() + self.joins.iter().map(|j| j.len() + 1).sum::<usize>()
+                    + self.wheres.iter().map(|(o, c)| o.len() + c.len() + 4).sum::<usize>();
+                let mut sql = String::with_capacity(estimated_capacity);
+
+                sql.push_str("SELECT COUNT(*)");
+                self.push_from(&mut sql);
+                self.push_joins(&mut sql);
+                let first_where = self.push_wheres(&mut sql);
+                self.push_soft_deletes(&mut sql, first_where);
+                self.push_group_by(&mut sql);
+                self.push_havings(&mut sql);
+                // COUNT doesn't need ORDER BY, LIMIT, OFFSET
+
+                self.format_postgres(&sql)
+            }
+
+            pub fn to_pluck_sql(&self, column: &str) -> String {
+                let estimated_capacity = 50 + #table_name.len() + self.joins.iter().map(|j| j.len() + 1).sum::<usize>()
+                    + self.wheres.iter().map(|(o, c)| o.len() + c.len() + 4).sum::<usize>();
+                let mut sql = String::with_capacity(estimated_capacity);
+
+                sql.push_str("SELECT ");
+                if self.is_distinct { sql.push_str("DISTINCT "); }
+                sql.push_str(column);
+                
+                self.push_from(&mut sql);
+                self.push_joins(&mut sql);
+                let first_where = self.push_wheres(&mut sql);
+                self.push_soft_deletes(&mut sql, first_where);
+                self.push_group_by(&mut sql);
+                self.push_havings(&mut sql);
+                self.push_order_by(&mut sql);
+                self.push_limit_offset(&mut sql);
+
+                self.format_postgres(&sql)
+            }
 
             #(#execution_methods)*
             #(#magic_methods)*
@@ -911,7 +948,18 @@ fn generate_execution_methods(
                     {
                         if let Some(ttl) = self.remember_ttl {
                             use rullst_orm::_redis::AsyncCommands;
-                            let cache_key = format!("orm:cache:{}:{:?}", #table_name, (&query_str, &self.bindings));
+                            use std::hash::{Hash, Hasher};
+                            let mut hasher = std::collections::hash_map::DefaultHasher::new();
+                            query_str.hash(&mut hasher);
+                            for binding in &self.bindings {
+                                match binding {
+                                    rullst_orm::RullstValue::String(s) => s.hash(&mut hasher),
+                                    rullst_orm::RullstValue::Int(i) => i.hash(&mut hasher),
+                                    rullst_orm::RullstValue::Float(f) => f.to_bits().hash(&mut hasher),
+                                    rullst_orm::RullstValue::Bool(b) => b.hash(&mut hasher),
+                                }
+                            }
+                            let cache_key = format!("orm:cache:{}:{:x}", #table_name, hasher.finish());
                             let mut conn = rullst_orm::Orm::redis_manager()?;
                             if let Ok(cached_data) = conn.get::<_, String>(&cache_key).await {
                                 if !cached_data.is_empty() {
@@ -952,7 +1000,18 @@ fn generate_execution_methods(
                     {
                         if let Some(ttl) = self.remember_ttl {
                             use rullst_orm::_redis::AsyncCommands;
-                            let cache_key = format!("orm:cache:{}:{:?}", #table_name, (&query_str, &self.bindings));
+                            use std::hash::{Hash, Hasher};
+                            let mut hasher = std::collections::hash_map::DefaultHasher::new();
+                            query_str.hash(&mut hasher);
+                            for binding in &self.bindings {
+                                match binding {
+                                    rullst_orm::RullstValue::String(s) => s.hash(&mut hasher),
+                                    rullst_orm::RullstValue::Int(i) => i.hash(&mut hasher),
+                                    rullst_orm::RullstValue::Float(f) => f.to_bits().hash(&mut hasher),
+                                    rullst_orm::RullstValue::Bool(b) => b.hash(&mut hasher),
+                                }
+                            }
+                            let cache_key = format!("orm:cache:{}:{:x}", #table_name, hasher.finish());
                             let serialized = #name::to_cache_json_array(&results);
                             let mut conn = rullst_orm::Orm::redis_manager()?;
                             let _: Result<(), rullst_orm::_redis::RedisError> = conn.set_ex(&cache_key, serialized, ttl as u64).await;
@@ -1036,19 +1095,14 @@ fn generate_execution_methods(
                         return Err(self.errors[0].clone());
                     }
                     let pool = rullst_orm::Orm::read_pool();
-                    let mut builder = self.clone();
-                    builder.selects = Some("COUNT(*)".to_string());
-                    builder.limit = None;
-                    builder.offset = None;
-                    builder.order_by = None;
-                    let query_str = builder.to_sql();
+                    let query_str = self.to_count_sql();
                     if rullst_orm::schema::is_query_log_enabled() {
-                        println!("[SQL Debug] {:?} | Bindings: [{} parameter(s) redacted for security]", query_str, builder.bindings.len());
+                        println!("[SQL Debug] {:?} | Bindings: [{} parameter(s) redacted for security]", query_str, self.bindings.len());
                     }
 
                     let row: (i64,) = {
                         let mut query = rullst_orm::_sqlx::query_as::<_, (i64,)>(rullst_orm::_sqlx::AssertSqlSafe(query_str.as_str()));
-                        for binding in &builder.bindings {
+                        for binding in &self.bindings {
                             match binding {
                                 rullst_orm::RullstValue::String(s) => { query = query.bind(s.clone()); }
                                 rullst_orm::RullstValue::Int(i) => { query = query.bind(*i); }
@@ -1171,12 +1225,10 @@ fn generate_execution_methods(
                         return Err(self.errors[0].clone());
                     }
                     let pool = rullst_orm::Orm::read_pool();
-                    let mut builder = self.clone();
-                    builder.selects = Some(column.to_string());
-                    let query_str = builder.to_sql();
+                    let query_str = self.to_pluck_sql(column);
                     let rows: Vec<(String,)> = {
                         let mut query = rullst_orm::_sqlx::query_as::<_, (String,)>(rullst_orm::_sqlx::AssertSqlSafe(query_str.as_str()));
-                        for binding in &builder.bindings {
+                        for binding in &self.bindings {
                             match binding {
                                 rullst_orm::RullstValue::String(s) => { query = query.bind(s.clone()); }
                                 rullst_orm::RullstValue::Int(i) => { query = query.bind(*i); }
@@ -1201,12 +1253,10 @@ fn generate_execution_methods(
                         return Err(self.errors[0].clone());
                     }
                     let pool = rullst_orm::Orm::read_pool();
-                    let mut builder = self.clone();
-                    builder.selects = Some(column.to_string());
-                    let query_str = builder.to_sql();
+                    let query_str = self.to_pluck_sql(column);
                     let rows: Vec<(i32,)> = {
                         let mut query = rullst_orm::_sqlx::query_as::<_, (i32,)>(rullst_orm::_sqlx::AssertSqlSafe(query_str.as_str()));
-                        for binding in &builder.bindings {
+                        for binding in &self.bindings {
                             match binding {
                                 rullst_orm::RullstValue::String(s) => { query = query.bind(s.clone()); }
                                 rullst_orm::RullstValue::Int(i) => { query = query.bind(*i); }

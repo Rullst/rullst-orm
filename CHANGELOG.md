@@ -8,11 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [6.0.2] - Unreleased
 
 ### Added
+- **Supply Chain Security & Machete:** Integração do `cargo-deny` para bloqueio de licenças não-conformes e vulnerabilidades, e do `cargo-machete` para detecção de dependências ociosas, mantendo o *build* limpo e rápido. Adição de novas *badges* de `Unsafe Policy (100% Safe)`, `Panic Policy (Zero Panics)` e `Property Testing` no `README.md`.
+- **Testes Matriciais com Docker:** Implementação de testes de integração rodando instâncias reais de bancos de dados efêmeros (`PostgreSQL` e `MySQL`) usando a biblioteca `testcontainers-rs` durante o workflow de testes para garantir máxima paridade com o SQL em produção.
+- **Testes de Concorrência e Estresse:** Inclusão de testes de exaustão de pool e concorrência disparando centenas de `tokio::spawn` para garantir liberação adequada das conexões `sqlx` por baixo do padrão Active Record.
+- **Proptest (Property-Based Testing):** Adição de verificações estocásticas via `proptest` para submeter strings randômicas e limites numéricos no Query Builder e assegurar que as funções internas não gerem pânicos (panic-free by design).
 - **OpenSSF Gold Badge:** Achieved the OpenSSF Best Practices Gold badge, demonstrating rigorous adherence to open-source security, quality, and maintainability standards.
-- **Extensive Fuzz Testing:** Expanded the `cargo-fuzz` suite with new targets (`fuzz_schema`, `fuzz_scout`, `fuzz_builder`, `fuzz_parser`) covering strict identifier validations, search query generation, dynamic query builder bindings, and the internal AST procedural macro parser. The CI matrix automatically loops through all fuzz targets.
+- **Extensive Fuzz Testing:** Expanded the `cargo-fuzz` suite com novos alvos e matrizes.
 - **Security & Quality Badges:** Integrated `cargo-semver-checks` workflow and status badge, and the `Deps.rs` dependency status badge.
 - **Robust Testing & Coverage:** Added new unit tests for query limits/timeouts, DSN security validation, sensitive field masking, and validation error cases, as well as a comprehensive integration test suite covering Artisan commands and seeders.
 - **Compile-Time Table Name Validation:** Added compile-time validation in the macro parser to ensure that table names cannot be empty.
+
+### Performance
+- **Zero-Allocation Cache Keys:** Substituição da formatação pesada em string debug `{:?}` nos _bindings_ da query por um `DefaultHasher` de 64 bits para compor as chaves de cache no Redis, reduzindo drasticamente as alocações de memória e o tamanho das chaves em rotas _hot path_.
+- **Zero-Clone Count & Pluck SQL:** Os métodos `.count()`, `.pluck_string()` e `.pluck_i32()` agora constroem sua query final nativamente num _buffer_ de string através dos métodos internos `to_count_sql()` e `to_pluck_sql()`, eliminando a necessidade custosa de chamar `.clone()` na `struct` inteira (o que copiava dúzias de _Vecs_ no `QueryBuilder`).
+- **O(N) Array Chunking:** O método `.chunk()` do `RullstCollection` foi reescrito de um _loop_ iterador custoso para a utilização da primitiva nativa `.split_off()`, ganhando extrema velocidade sem _memory shifting_. Adicionalmente foi corrigido um bug na separação de restos matemáticos da divisão.
+- **Implode String Capacity:** O método `.implode()` do `RullstCollection` agora pré-aloca rigidamente a capacidade do _buffer_ de _string_ em tempo de execução, erradicando todas as realocações fragmentadas de memória.
+- **Zero-Clone Loops:** Refatoração de *loops* nos motores de `Audit` e `Schema` (especificamente em `compute_diff` e `rollback_migrations`) para consumirem dados estritamente de memória (*owned*), abolindo cópias desnecessárias de _strings_.
 
 ### Fixed
 - **Redis Graceful Fallback:** Made Redis event publishing inside `.save()` and `.delete()` optional, preventing database operations from failing when the `redis` feature is enabled but no Redis server/client is initialized.

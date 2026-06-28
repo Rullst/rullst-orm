@@ -576,13 +576,13 @@ async fn rollback_migrations(migrations: Vec<Box<dyn Migration>>) -> Result<(), 
         rollback_map.insert(m.name().to_string(), m);
     }
 
-    let mut rolled_back = Vec::new();
+    let mut rolled_back = Vec::with_capacity(to_rollback.len());
     for (name,) in to_rollback {
         if let Some(m) = rollback_map.get(&name) {
             println!("Rolling back: {}", name);
             m.down().await?;
-            rolled_back.push(name.clone());
             println!("Rolled back:  {}", name);
+            rolled_back.push(name);
         } else {
             println!(
                 "Warning: migration {} found in database but not in compiled binary.",
