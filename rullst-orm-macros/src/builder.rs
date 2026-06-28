@@ -1289,21 +1289,43 @@ mod tests {
 
     #[test]
     fn test_soft_delete_where_clause() {
-        let cfg_null = SoftDeleteConfig { column: "deleted_at".into(), value: "null".into(), delval: "1".into() };
-        assert_eq!(soft_delete_where_clause(&cfg_null, false), "deleted_at IS NULL");
-        assert_eq!(soft_delete_where_clause(&cfg_null, true), "deleted_at IS NOT NULL");
+        let cfg_null = SoftDeleteConfig {
+            column: "deleted_at".into(),
+            value: "null".into(),
+            delval: "1".into(),
+        };
+        assert_eq!(
+            soft_delete_where_clause(&cfg_null, false),
+            "deleted_at IS NULL"
+        );
+        assert_eq!(
+            soft_delete_where_clause(&cfg_null, true),
+            "deleted_at IS NOT NULL"
+        );
 
-        let cfg_lit = SoftDeleteConfig { column: "is_deleted".into(), value: "0".into(), delval: "1".into() };
+        let cfg_lit = SoftDeleteConfig {
+            column: "is_deleted".into(),
+            value: "0".into(),
+            delval: "1".into(),
+        };
         assert_eq!(soft_delete_where_clause(&cfg_lit, false), "is_deleted = 0");
         assert_eq!(soft_delete_where_clause(&cfg_lit, true), "is_deleted != 0");
     }
 
     #[test]
     fn test_soft_delete_restore_clause() {
-        let cfg_null = SoftDeleteConfig { column: "deleted_at".into(), value: "null".into(), delval: "1".into() };
+        let cfg_null = SoftDeleteConfig {
+            column: "deleted_at".into(),
+            value: "null".into(),
+            delval: "1".into(),
+        };
         assert_eq!(soft_delete_restore_clause(&cfg_null), "deleted_at = NULL");
 
-        let cfg_lit = SoftDeleteConfig { column: "is_deleted".into(), value: "0".into(), delval: "1".into() };
+        let cfg_lit = SoftDeleteConfig {
+            column: "is_deleted".into(),
+            value: "0".into(),
+            delval: "1".into(),
+        };
         assert_eq!(soft_delete_restore_clause(&cfg_lit), "is_deleted = 0");
     }
 }
