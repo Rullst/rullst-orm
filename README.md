@@ -34,7 +34,7 @@ Built on top of `sqlx` and procedural macros, **Rullst ORM** brings the delightf
 | **Cargo Audit** | <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/auto-audit.yml?style=flat-square&label=" alt="Auto-Audit" /></a> | Continuous scanning for crate vulnerabilities |
 | **Cargo SemVer** | <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/semver.yml?style=flat-square&label=" alt="cargo-semver-checks" /></a> | Strict SemVer API breakage checks |
 | **Cargo Machete** | <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/cargo-machete.yml?style=flat-square&label=" alt="Cargo Machete" /></a> | Detecting unused and bloated dependencies |
-| **Unsafe Policy** | <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/unsafe-policy.yml?style=flat-square&label=" alt="Unsafe Policy" /></a> | 100% memory safe. No unsafe code blocks |
+| **Unsafe Policy** | <a href="https://github.com/Rullst/rullst-orm/actions/workflows/unsafe-policy.yml"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/unsafe-policy.yml?style=flat-square&label=0%25%20Unsafe" alt="Unsafe Policy" /></a> | 100% memory safe. No unsafe code blocks |
 | **Panic Policy** | <img src="https://img.shields.io/badge/-Zero_Panics-success?style=flat-square" alt="Panic Policy" /> | Graceful error handling across the framework |
 
 </div>
