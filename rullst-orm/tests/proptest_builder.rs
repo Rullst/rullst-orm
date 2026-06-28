@@ -30,9 +30,9 @@ proptest! {
         init_orm();
 
         let builder = PropUser::query()
-            .where_like("name", &name)
-            .where_eq("email", &email)
-            .order_by_desc(&name)
+            .where_like("name", name.as_str())
+            .where_eq("email", email.as_str())
+            .order_by_desc(name.as_str())
             .limit(limit)
             .offset(offset);
 
