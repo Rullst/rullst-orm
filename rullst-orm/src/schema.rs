@@ -214,7 +214,10 @@ impl Blueprint {
     }
 
     pub fn build(&self) -> Result<String, Error> {
-        let driver = crate::DB_DRIVER.get().map(|s| s.as_str()).unwrap_or("sqlite");
+        let driver = crate::DB_DRIVER
+            .get()
+            .map(|s| s.as_str())
+            .unwrap_or("sqlite");
         let mut defs = vec![];
         for col in &self.columns {
             // Defensive re-validation: column names must always be safe
