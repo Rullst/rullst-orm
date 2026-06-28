@@ -28,16 +28,16 @@ proptest! {
         offset in 0..1000usize
     ) {
         init_orm();
-        
+
         let builder = PropUser::query()
             .where_like("name", &*name)
             .where_eq("email", &*email)
             .order_by_desc(&*name)
             .limit(limit)
             .offset(offset);
-            
+
         let sql = builder.to_sql();
-        
+
         prop_assert!(!sql.is_empty());
     }
 }

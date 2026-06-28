@@ -88,7 +88,7 @@ impl<T> RullstCollection<T> for Vec<T> {
 
         let mut chunks = Vec::with_capacity(self.len().div_ceil(size));
         let mut vec = self;
-        
+
         while !vec.is_empty() {
             let rem = vec.len() % size;
             let take = if rem == 0 { size } else { rem };

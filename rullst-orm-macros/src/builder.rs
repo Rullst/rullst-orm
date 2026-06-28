@@ -889,7 +889,7 @@ pub fn generate(
                 sql.push_str("SELECT ");
                 if self.is_distinct { sql.push_str("DISTINCT "); }
                 sql.push_str(column);
-                
+
                 self.push_from(&mut sql);
                 self.push_joins(&mut sql);
                 let first_where = self.push_wheres(&mut sql);

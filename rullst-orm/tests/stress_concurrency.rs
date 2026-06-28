@@ -2,8 +2,8 @@
 
 use rullst_orm::schema::{Blueprint, Schema};
 use rullst_orm::{FromRow, Orm};
-use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU32, Ordering};
 use tokio::task::JoinHandle;
 
 #[derive(Debug, Clone, FromRow, Orm)]
@@ -17,7 +17,7 @@ struct StressUser {
 async fn test_pool_exhaustion_and_concurrency() {
     let db_file = "stress_suite.db";
     let _ = std::fs::remove_file(db_file);
-    
+
     // Conexão com SQLite para o stress test (extremamente rápido e local)
     Orm::init(&format!("sqlite:{}?mode=rwc", db_file))
         .await
@@ -39,28 +39,28 @@ async fn test_pool_exhaustion_and_concurrency() {
 
     for i in 0..concurrency_level {
         let counter_clone = Arc::clone(&counter);
-        
+
         let handle = tokio::spawn(async move {
             let mut user = StressUser {
                 id: 0,
                 name: format!("Worker {}", i),
             };
-            
+
             // 1. Acquire connection from pool & INSERT
             user.save().await.expect("Failed to save under stress");
             assert!(user.id > 0);
-            
+
             // 2. Acquire connection from pool & SELECT
             let found = StressUser::find(user.id).await.unwrap().unwrap();
             assert_eq!(found.name, format!("Worker {}", i));
-            
+
             // 3. Acquire connection from pool & UPDATE
             user.name = format!("Worker {} - done", i);
             user.save().await.expect("Failed to update under stress");
-            
+
             counter_clone.fetch_add(1, Ordering::SeqCst);
         });
-        
+
         handles.push(handle);
     }
 

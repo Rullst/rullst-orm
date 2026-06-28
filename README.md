@@ -7,23 +7,6 @@
     <a href="https://crates.io/crates/rullst-orm"><img src="https://img.shields.io/crates/d/rullst-orm?style=flat-square&color=orange" alt="Downloads" /></a>
     <a href="https://docs.rs/rullst-orm"><img src="https://img.shields.io/docsrs/rullst-orm?style=flat-square&color=blue" alt="Docs.rs" /></a>
     <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/ci.yml?style=flat-square&label=Build" alt="Build Status" /></a>
-    <a href="https://codecov.io/gh/Rullst/rullst-orm"><img src="https://codecov.io/gh/Rullst/rullst-orm/graph/badge.svg" alt="Codecov" /></a>
-    <a href="https://securityscorecards.dev/viewer/?uri=github.com/Rullst/rullst-orm"><img src="https://api.securityscorecards.dev/projects/github.com/Rullst/rullst-orm/badge" alt="OSSF Scorecard" /></a>
-    <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/miri.yml?style=flat-square&label=Miri%20UB%20Check" alt="Miri" /></a>
-    <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/kani.yml?style=flat-square&label=Kani%20Verifier" alt="Kani" /></a>
-    <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/fuzz.yml?style=flat-square&label=Fuzzing" alt="Fuzzing" /></a>
-    <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/mutants.yml?style=flat-square&label=Mutants" alt="Mutants" /></a>
-    <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/deploy-docs.yml?style=flat-square&label=Docs" alt="Docs Deploy" /></a>
-    <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/auto-audit.yml?style=flat-square&label=Cargo%20Audit" alt="Auto-Audit" /></a>
-    <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/codeql.yml?style=flat-square&label=CodeQL%20SAST" alt="CodeQL SAST" /></a>
-    <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/semver.yml?style=flat-square&label=SemVer%20Checks" alt="cargo-semver-checks" /></a>
-    <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/cargo-deny.yml?style=flat-square&label=Cargo%20Deny" alt="Cargo Deny" /></a>
-    <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/cargo-machete.yml?style=flat-square&label=Cargo%20Machete" alt="Cargo Machete" /></a>
-    <img src="https://img.shields.io/badge/Property_Testing-Proptest-blue?style=flat-square" alt="Property Testing" />
-    <img src="https://img.shields.io/badge/Unsafe_Policy-0%25_Unsafe-success?style=flat-square" alt="Unsafe Policy" />
-    <img src="https://img.shields.io/badge/Panic_Policy-Zero_Panics-success?style=flat-square" alt="Panic Policy" />
-    <a href="https://deps.rs/repo/github/Rullst/rullst-orm"><img src="https://deps.rs/repo/github/Rullst/rullst-orm/status.svg?style=flat-square" alt="Dependency Status" /></a>
-    <a href="https://www.bestpractices.dev/projects/13359"><img src="https://www.bestpractices.dev/projects/13359/badge" alt="OpenSSF Best Practices" /></a>
     <img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square" alt="License: MIT" />
   </p>
 </div>
@@ -31,6 +14,30 @@
 🚀 **[Visit the Official Website & Documentation Hub](https://rullst.github.io/rullst-orm/)** 🚀
 
 Built on top of `sqlx` and procedural macros, **Rullst ORM** brings the delightful, fluent syntax of Active Record frameworks (like Laravel's Eloquent) directly to the high-performance Rust ecosystem.
+
+<div align="center">
+  <h3>🛡️ Enterprise-Grade Security</h3>
+  <p>Rullst-ORM is built with a "Zero-Panic Policy" and tested against the most rigorous standards in the industry.<br>Our continuous pipeline guarantees absolute safety for production edge infrastructure:</p>
+
+| Security Audit | Status | Description |
+| :--- | :---: | :--- |
+| **OSSF Scorecard** | <a href="https://securityscorecards.dev/viewer/?uri=github.com/Rullst/rullst-orm"><img src="https://api.securityscorecards.dev/projects/github.com/Rullst/rullst-orm/badge" alt="OSSF Scorecard" /></a> | Supply-chain security & best practices |
+| **Codecov** | <a href="https://codecov.io/gh/Rullst/rullst-orm"><img src="https://codecov.io/gh/Rullst/rullst-orm/graph/badge.svg" alt="Codecov" /></a> | Strict code coverage enforcement |
+| **OpenSSF** | <a href="https://www.bestpractices.dev/projects/13359"><img src="https://www.bestpractices.dev/projects/13359/badge" alt="OpenSSF Best Practices" /></a> | Open source security standards |
+| **Continuous Fuzzing** | <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/fuzz.yml?style=flat-square&label=" alt="Fuzzing" /></a> | Fuzzing against edge cases & panics |
+| **Property Testing** | <img src="https://img.shields.io/badge/-Proptest-blue?style=flat-square" alt="Property Testing" /> | Validating complex logic against edge cases |
+| **Miri UB Detection** | <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/miri.yml?style=flat-square&label=" alt="Miri" /></a> | Detecting Undefined Behavior and memory leaks |
+| **Kani Verifier** | <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/kani.yml?style=flat-square&label=" alt="Kani" /></a> | Automated reasoning and formal verification |
+| **Mutation Testing** | <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/mutants.yml?style=flat-square&label=" alt="Mutants" /></a> | Mutation testing for test suite robustness |
+| **CodeQL SAST** | <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/codeql.yml?style=flat-square&label=" alt="CodeQL SAST" /></a> | Advanced semantic code analysis |
+| **Cargo Deny** | <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/cargo-deny.yml?style=flat-square&label=" alt="Cargo Deny" /></a> | Banning unmaintained/vulnerable crates |
+| **Cargo Audit** | <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/auto-audit.yml?style=flat-square&label=" alt="Auto-Audit" /></a> | Continuous scanning for crate vulnerabilities |
+| **Cargo SemVer** | <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/semver.yml?style=flat-square&label=" alt="cargo-semver-checks" /></a> | Strict SemVer API breakage checks |
+| **Cargo Machete** | <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/cargo-machete.yml?style=flat-square&label=" alt="Cargo Machete" /></a> | Detecting unused and bloated dependencies |
+| **Unsafe Policy** | <img src="https://img.shields.io/badge/-0%25_Unsafe-success?style=flat-square" alt="Unsafe Policy" /> | 100% memory safe. No unsafe code blocks |
+| **Panic Policy** | <img src="https://img.shields.io/badge/-Zero_Panics-success?style=flat-square" alt="Panic Policy" /> | Graceful error handling across the framework |
+
+</div>
 
 ## 🚀 Why Rullst ORM?
 

@@ -14,7 +14,6 @@ path = "../rullst-orm"
 libfuzzer-sys = "0.4"
 syn = { version = "2", features = ["full"] }
 proc-macro2 = "1"
-sqlx = { version = "0.9", features = ["sqlite", "postgres", "mysql", "any", "runtime-tokio", "macros", "json"] }
 tokio = { version = "1.23.1", features = ["full"] }
 
 [lints.rust]

@@ -16,11 +16,17 @@ struct User {
 #[tokio::test]
 async fn test_matrix_postgres_crud() {
     // 1. Inicia o container do PostgreSQL
-    let container = Postgres::default().start().await.expect("Failed to start Postgres container");
-    
+    let container = Postgres::default()
+        .start()
+        .await
+        .expect("Failed to start Postgres container");
+
     let host_ip = container.get_host().await.expect("Failed to get host IP");
-    let host_port = container.get_host_port_ipv4(5432).await.expect("Failed to get port");
-    
+    let host_port = container
+        .get_host_port_ipv4(5432)
+        .await
+        .expect("Failed to get port");
+
     let connection_string = format!(
         "postgres://postgres:postgres@{}:{}/postgres",
         host_ip, host_port
@@ -46,7 +52,7 @@ async fn test_matrix_postgres_crud() {
         name: "Alice PG".into(),
         email: "alice@pg.com".into(),
     };
-    
+
     // INSERT
     user.save().await.expect("save new user to postgres");
     assert!(user.id > 0, "id must be assigned after save (RETURNING id)");
@@ -61,7 +67,7 @@ async fn test_matrix_postgres_crud() {
     // UPDATE
     user.name = "Alice PG Updated".into();
     user.save().await.expect("update user in postgres");
-    
+
     let updated = User::find(user.id).await.unwrap().unwrap();
     assert_eq!(updated.name, "Alice PG Updated");
 

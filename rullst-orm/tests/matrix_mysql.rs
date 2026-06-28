@@ -2,9 +2,9 @@
 
 use rullst_orm::schema::{Blueprint, Schema};
 use rullst_orm::{FromRow, Orm};
+use testcontainers::ImageExt;
 use testcontainers::runners::AsyncRunner;
 use testcontainers_modules::mysql::Mysql;
-use testcontainers::ImageExt;
 
 #[derive(Debug, Clone, FromRow, Orm)]
 #[orm(table = "mysql_users")]
@@ -23,14 +23,14 @@ async fn test_matrix_mysql_crud() {
         .start()
         .await
         .expect("Failed to start MySQL container");
-    
+
     let host_ip = container.get_host().await.expect("Failed to get host IP");
-    let host_port = container.get_host_port_ipv4(3306).await.expect("Failed to get port");
-    
-    let connection_string = format!(
-        "mysql://root:root@{}:{}/testdb",
-        host_ip, host_port
-    );
+    let host_port = container
+        .get_host_port_ipv4(3306)
+        .await
+        .expect("Failed to get port");
+
+    let connection_string = format!("mysql://root:root@{}:{}/testdb", host_ip, host_port);
 
     // 2. Inicializa o ORM com o MySQL real
     Orm::init(&connection_string)
@@ -52,10 +52,13 @@ async fn test_matrix_mysql_crud() {
         name: "Alice MySQL".into(),
         email: "alice@mysql.com".into(),
     };
-    
+
     // INSERT
     user.save().await.expect("save new user to mysql");
-    assert!(user.id > 0, "id must be assigned after save (LAST_INSERT_ID)");
+    assert!(
+        user.id > 0,
+        "id must be assigned after save (LAST_INSERT_ID)"
+    );
 
     // SELECT
     let found = User::find(user.id)
@@ -67,7 +70,7 @@ async fn test_matrix_mysql_crud() {
     // UPDATE
     user.name = "Alice MySQL Updated".into();
     user.save().await.expect("update user in mysql");
-    
+
     let updated = User::find(user.id).await.unwrap().unwrap();
     assert_eq!(updated.name, "Alice MySQL Updated");
 
