@@ -2,6 +2,7 @@
 name = "rullst-orm"
 version = "6.0.2"
 edition = "2024"
+rust-version = "1.96.0"
 description = "An Active Record ORM for Rust."
 license = "MIT"
 repository = "https://github.com/Rullst/rullst-orm"
@@ -33,6 +34,7 @@ criterion = { version = "0.8.2", features = ["async_tokio"] }
 testcontainers = "0.27.3"
 testcontainers-modules = { version = "0.15.0", features = ["postgres", "mysql"] }
 proptest = "1.11.0"
+mutants = "0.0.3"
 
 [[bench]]
 name = "orm_bench"

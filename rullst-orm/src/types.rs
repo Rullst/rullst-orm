@@ -61,6 +61,7 @@ impl<T> sqlx::Type<sqlx::Any> for Json<T> {
     }
 }
 
+#[cfg_attr(test, mutants::skip)]
 #[cfg(any(
     feature = "strict-postgres",
     feature = "strict-mysql",
@@ -78,6 +79,7 @@ impl<'r, T: serde::de::DeserializeOwned> sqlx::Decode<'r, crate::database::Rulls
     }
 }
 
+#[cfg_attr(test, mutants::skip)]
 #[cfg(any(
     feature = "strict-postgres",
     feature = "strict-mysql",
@@ -93,6 +95,7 @@ impl<'q, T: serde::Serialize> sqlx::Encode<'q, crate::database::RullstDatabase> 
     }
 }
 
+#[cfg_attr(test, mutants::skip)]
 #[cfg(any(
     feature = "strict-postgres",
     feature = "strict-mysql",

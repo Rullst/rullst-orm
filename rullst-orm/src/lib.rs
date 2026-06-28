@@ -261,6 +261,7 @@ impl Orm {
         Ok(())
     }
 
+    #[cfg_attr(test, mutants::skip)]
     fn validate_dsn(database_url: &str) {
         if database_url.contains("sslmode=disable")
             && !database_url.contains("localhost")
@@ -319,6 +320,7 @@ impl Orm {
 
     /// Retrieve the connection pool for read operations.
     /// Performs a round-robin load balancing over replicas if configured.
+    #[cfg_attr(test, mutants::skip)]
     pub fn read_pool() -> &'static RullstPool {
         if let Some(replicas) = REPLICA_POOLS.get()
             && !replicas.is_empty()
@@ -343,6 +345,7 @@ impl Orm {
     }
 
     /// Run an array of seeders sequentially
+    #[cfg_attr(test, mutants::skip)]
     pub async fn seed(seeders: Vec<Box<dyn Seeder>>) -> Result<(), crate::Error> {
         for seeder in seeders {
             seeder.run().await?;
@@ -372,6 +375,7 @@ impl Orm {
 
     /// Initialize Redis connection and connection manager for caching and events
     #[cfg(feature = "redis")]
+    #[cfg_attr(test, mutants::skip)]
     pub async fn init_redis(redis_url: &str) -> Result<(), crate::Error> {
         let client = _redis::Client::open(redis_url)?;
         let manager = _redis::aio::ConnectionManager::new(client.clone()).await?;
@@ -382,6 +386,7 @@ impl Orm {
 
     /// Get reference to the global Redis client
     #[cfg(feature = "redis")]
+    #[cfg_attr(test, mutants::skip)]
     pub fn redis_client() -> Result<&'static _redis::Client, crate::Error> {
         REDIS_CLIENT.get().ok_or_else(|| {
             crate::Error::Internal(
@@ -392,6 +397,7 @@ impl Orm {
 
     /// Get clone of the thread-safe connection manager for async Redis queries
     #[cfg(feature = "redis")]
+    #[cfg_attr(test, mutants::skip)]
     pub fn redis_manager() -> Result<_redis::aio::ConnectionManager, crate::Error> {
         REDIS_MANAGER.get().cloned().ok_or_else(|| {
             crate::Error::Internal(

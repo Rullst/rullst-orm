@@ -21,10 +21,10 @@ Built on top of `sqlx` and procedural macros, **Rullst ORM** brings the delightf
 
 | Security Audit | Status | Description |
 | :--- | :---: | :--- |
-| **OSSF Scorecard** | <a href="https://securityscorecards.dev/viewer/?uri=github.com/Rullst/rullst-orm"><img src="https://api.securityscorecards.dev/projects/github.com/Rullst/rullst-orm/badge" alt="OSSF Scorecard" /></a> | Supply-chain security & best practices |
-| **Codecov** | <a href="https://codecov.io/gh/Rullst/rullst-orm"><img src="https://codecov.io/gh/Rullst/rullst-orm/graph/badge.svg" alt="Codecov" /></a> | Strict code coverage enforcement |
-| **Matrix DB Tests** | <a href="https://github.com/Rullst/rullst-orm/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/ci.yml?style=flat-square&label=Testcontainers" alt="Testcontainers" /></a> | Dockerized PostgreSQL & MySQL integration tests |
-| **OpenSSF** | <a href="https://www.bestpractices.dev/projects/13359"><img src="https://www.bestpractices.dev/projects/13359/badge" alt="OpenSSF Best Practices" /></a> | Open source security standards |
+| **OSSF Scorecard** | <a href="https://securityscorecards.dev/viewer/?uri=github.com/Rullst/rullst-orm"><img src="https://img.shields.io/ossf-scorecard/github.com/Rullst/rullst-orm?style=flat-square&label=" alt="OSSF Scorecard" /></a> | Supply-chain security & best practices |
+| **Codecov** | <a href="https://codecov.io/gh/Rullst/rullst-orm"><img src="https://img.shields.io/codecov/c/github/Rullst/rullst-orm?style=flat-square&label=" alt="Codecov" /></a> | Strict code coverage enforcement |
+| **Matrix DB Tests** | <a href="https://github.com/Rullst/rullst-orm/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/ci.yml?style=flat-square&label=" alt="Testcontainers" /></a> | Dockerized PostgreSQL & MySQL integration tests |
+| **OpenSSF** | <a href="https://www.bestpractices.dev/projects/13359"><img src="https://img.shields.io/cii/level/13359?style=flat-square&label=" alt="OpenSSF Best Practices" /></a> | Open source security standards |
 | **Continuous Fuzzing** | <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/fuzz.yml?style=flat-square&label=" alt="Fuzzing" /></a> | Fuzzing against edge cases & panics |
 | **Property Testing** | <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/proptest.yml?style=flat-square&label=" alt="Proptest" /></a> | Validating complex logic against edge cases |
 | **Miri UB Detection** | <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/miri.yml?style=flat-square&label=" alt="Miri" /></a> | Detecting Undefined Behavior and memory leaks |
@@ -37,6 +37,9 @@ Built on top of `sqlx` and procedural macros, **Rullst ORM** brings the delightf
 | **Cargo Machete** | <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/cargo-machete.yml?style=flat-square&label=" alt="Cargo Machete" /></a> | Detecting unused and bloated dependencies |
 | **Unsafe Policy** | <a href="https://github.com/Rullst/rullst-orm/actions/workflows/unsafe-policy.yml"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/unsafe-policy.yml?style=flat-square&label=0%25%20Unsafe" alt="Unsafe Policy" /></a> | 100% memory safe. No unsafe code blocks |
 | **Panic Policy** | <img src="https://img.shields.io/badge/-Zero_Panics-success?style=flat-square" alt="Panic Policy" /> | Graceful error handling across the framework |
+
+> [!WARNING]
+> **Kani Verifier** is currently configured to allow failures (`continue-on-error`). It lacks upstream support for Rust 1.94+ (required by `sqlx 0.9.0`), so its badge may show as passing even if the pipeline was skipped or failed due to compiler incompatibility. Once Kani updates its compiler base, it will automatically run and pass again.
 
 </div>
 

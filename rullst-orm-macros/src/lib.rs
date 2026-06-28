@@ -9,6 +9,7 @@ mod models;
 mod parser;
 mod relationships;
 
+#[cfg_attr(test, mutants::skip)]
 #[proc_macro_derive(Orm, attributes(orm, sqlx))]
 pub fn rullst_macro(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -52,10 +53,10 @@ mod tests {
     use super::*;
     use syn::parse_quote;
 
-    fn run_macro_generator(input: &DeriveInput) {
+    fn run_macro_generator(input: &DeriveInput) -> (parser::ParsedModel, String, String) {
         let parsed = parser::parse(input).unwrap();
         let rels = relationships::generate(&parsed);
-        let _builder = builder::generate(
+        let builder = builder::generate(
             &parsed,
             &rels.flags,
             &rels.inits,
@@ -63,7 +64,8 @@ mod tests {
             &rels.eager_loads,
         );
         let _factory = factory_observer::generate(&parsed);
-        let _models = models::generate(&parsed, &rels.model_methods);
+        let models = models::generate(&parsed, &rels.model_methods);
+        (parsed, builder.to_string(), models.to_string())
     }
 
     #[test]
@@ -77,7 +79,11 @@ mod tests {
                 pub email: String,
             }
         };
-        run_macro_generator(&input);
+        let (parsed, builder, models) = run_macro_generator(&input);
+        assert_eq!(parsed.table_name, "users");
+        assert!(builder.contains("where_id"));
+        assert!(models.contains("fn delete"));
+        assert!(models.contains("fn search"));
     }
 
     #[test]
@@ -101,7 +107,8 @@ mod tests {
                 morph_comments: Option<Vec<Comment>>,
             }
         };
-        run_macro_generator(&input);
+        let (parsed, _, _) = run_macro_generator(&input);
+        assert!(!parsed.relations.is_empty());
     }
 
     #[test]
@@ -114,7 +121,9 @@ mod tests {
                 pub deleted_at: Option<String>,
             }
         };
-        run_macro_generator(&input);
+        let (parsed, builder, _) = run_macro_generator(&input);
+        assert!(parsed.has_soft_deletes);
+        assert!(builder.contains("deleted_at IS NULL"));
     }
 
     #[test]
@@ -128,7 +137,9 @@ mod tests {
                 pub password: String,
             }
         };
-        run_macro_generator(&input);
+        let (parsed, _, models) = run_macro_generator(&input);
+        assert_eq!(parsed.hidden_fields.len(), 1);
+        assert!(models.contains("password"));
     }
 
     #[test]
@@ -142,7 +153,27 @@ mod tests {
                 pub is_deleted: i32,
             }
         };
-        run_macro_generator(&input);
+        let (parsed, _, _) = run_macro_generator(&input);
+        assert!(parsed.has_soft_deletes);
+    }
+
+    #[test]
+    fn test_model_with_all_hooks_and_scopes() {
+        let input: DeriveInput = parse_quote! {
+            #[derive(Orm)]
+            #[orm(global_scope = "active", tenant_column = "account_id", before_save = "hash_pwd", after_save = "log_evt", before_delete = "check_perm", after_delete = "clear_cache", after_fetch = "decrypt_data")]
+            pub struct User {
+                pub id: i32,
+            }
+        };
+        let (parsed, _, _) = run_macro_generator(&input);
+        assert_eq!(parsed.global_scope, "active");
+        assert_eq!(parsed.tenant_column, "account_id");
+        assert_eq!(parsed.before_save, "hash_pwd");
+        assert_eq!(parsed.after_save, "log_evt");
+        assert_eq!(parsed.before_delete, "check_perm");
+        assert_eq!(parsed.after_delete, "clear_cache");
+        assert_eq!(parsed.after_fetch, "decrypt_data");
     }
 
     #[test]

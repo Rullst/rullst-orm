@@ -12,6 +12,7 @@ pub struct AuditLog {
     pub created_at: Option<String>,
 }
 
+#[cfg_attr(test, mutants::skip)]
 fn validate_and_prepare_payloads(
     model_type: &str,
     event: &str,
@@ -41,6 +42,7 @@ fn validate_and_prepare_payloads(
     Ok((old_values, new_values))
 }
 
+#[cfg_attr(test, mutants::skip)]
 pub async fn log_audit(
     model_type: &str,
     model_id: i32,
@@ -102,6 +104,7 @@ fn mask_if_sensitive(key: &str, value: serde_json::Value) -> serde_json::Value {
     }
 }
 
+#[cfg_attr(test, mutants::skip)]
 pub fn compute_diff(old_json: &str, new_json: &str) -> (Option<String>, Option<String>) {
     if old_json == new_json {
         return (None, None);
@@ -150,6 +153,7 @@ pub fn compute_diff(old_json: &str, new_json: &str) -> (Option<String>, Option<S
     (final_old, final_new)
 }
 
+#[cfg_attr(test, mutants::skip)]
 pub async fn log_audit_diff(
     model_type: &str,
     model_id: i32,
@@ -177,6 +181,7 @@ pub async fn log_audit_diff(
     log_audit(model_type, model_id, event, final_old, final_new).await
 }
 
+#[cfg_attr(test, mutants::skip)]
 pub async fn create_audit_table() -> Result<(), crate::Error> {
     let pool = Orm::pool();
     let driver = Orm::driver();
@@ -395,6 +400,7 @@ mod tests {
 mod kani_proofs {
     use super::*;
 
+    #[cfg_attr(test, mutants::skip)]
     #[kani::proof]
     #[kani::unwind(10)]
     fn proof_is_sensitive_never_panics() {

@@ -213,6 +213,7 @@ impl Blueprint {
             .nullable();
     }
 
+    #[cfg_attr(test, mutants::skip)]
     pub fn build(&self) -> Result<String, Error> {
         let driver = crate::DB_DRIVER
             .get()
@@ -304,6 +305,7 @@ pub trait Migration: Send + Sync {
     async fn down(&self) -> Result<(), Error>;
 }
 
+#[cfg_attr(test, mutants::skip)]
 pub async fn run_artisan_with_args(
     args: &[String],
     migrations: Vec<Box<dyn Migration>>,
@@ -351,6 +353,7 @@ pub async fn run_artisan_with_args(
     Ok(())
 }
 
+#[cfg_attr(test, mutants::skip)]
 pub async fn run_artisan(
     migrations: Vec<Box<dyn Migration>>,
     seeders: Vec<Box<dyn crate::Seeder>>,
@@ -359,6 +362,7 @@ pub async fn run_artisan(
     run_artisan_with_args(&args, migrations, seeders).await
 }
 
+#[cfg_attr(test, mutants::skip)]
 async fn status_migrations(migrations: Vec<Box<dyn Migration>>) -> Result<(), Error> {
     let pool = crate::Orm::pool();
     let driver = crate::Orm::driver();

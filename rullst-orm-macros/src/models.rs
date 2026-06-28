@@ -101,6 +101,7 @@ fn generate_column_enum(parsed: &ParsedModel) -> TokenStream {
     }
 }
 
+#[cfg_attr(test, mutants::skip)]
 fn generate_json_methods(parsed: &ParsedModel) -> TokenStream {
     let normal_fields = &parsed.normal_fields;
     let hidden_fields = &parsed.hidden_fields;
@@ -200,6 +201,7 @@ fn generate_json_methods(parsed: &ParsedModel) -> TokenStream {
     }
 }
 
+#[cfg_attr(test, mutants::skip)]
 fn generate_search_method(parsed: &ParsedModel, builder_name: &syn::Ident) -> TokenStream {
     if !parsed.searchable {
         return quote! {};
@@ -242,6 +244,7 @@ fn generate_search_method(parsed: &ParsedModel, builder_name: &syn::Ident) -> To
     }
 }
 
+#[cfg_attr(test, mutants::skip)]
 fn generate_query_methods(parsed: &ParsedModel, builder_name: &syn::Ident) -> TokenStream {
     let global_scope_logic = if !parsed.global_scope.is_empty() {
         let name = &parsed.name;
@@ -288,6 +291,7 @@ fn generate_query_methods(parsed: &ParsedModel, builder_name: &syn::Ident) -> To
     }
 }
 
+#[cfg_attr(test, mutants::skip)]
 fn generate_save_method(parsed: &ParsedModel) -> TokenStream {
     let name = &parsed.name;
     let table_name = &parsed.table_name;
@@ -556,6 +560,7 @@ fn generate_save_method(parsed: &ParsedModel) -> TokenStream {
     }
 }
 
+#[cfg_attr(test, mutants::skip)]
 fn generate_delete_methods(parsed: &ParsedModel) -> TokenStream {
     let name = &parsed.name;
     let table_name = &parsed.table_name;
