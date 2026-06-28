@@ -1,0 +1,22 @@
+name: Unsafe Policy
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  unsafe-check:
+    name: 0% Unsafe Code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - name: Check for unsafe blocks
+        run: |
+          if grep -rnw 'rullst-orm/src' -e 'unsafe'; then
+            echo "Unsafe code found!"
+            exit 1
+          else
+            echo "100% Memory Safe. No unsafe code detected."
+          fi
