@@ -59,7 +59,7 @@ mod tests {
     async fn test_with_tenant_panic_cleanup() {
         let result = tokio::spawn(async {
             with_tenant("faulty_tenant", async {
-                panic!("Something went wrong!");
+                std::panic::panic_any("Something went wrong!");
             })
             .await;
         })
