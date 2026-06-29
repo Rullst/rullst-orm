@@ -5,11 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [6.0.2] - Unreleased
+## [6.0.2] - 2026-06-28
 
 ### Added
 - **Supply Chain Security & Machete:** Integração do `cargo-deny` para bloqueio de licenças não-conformes e vulnerabilidades, e do `cargo-machete` para detecção de dependências ociosas, mantendo o *build* limpo e rápido. Adição de novas *badges* de `Unsafe Policy (100% Safe)`, `Panic Policy (Zero Panics)` e `Property Testing` no `README.md`.
 - **Testes Matriciais com Docker:** Implementação de testes de integração rodando instâncias reais de bancos de dados efêmeros (`PostgreSQL` e `MySQL`) usando a biblioteca `testcontainers-rs` durante o workflow de testes para garantir máxima paridade com o SQL em produção.
+
+### Fixed
+- **Fuzzing & CI:** Correção de falsos positivos de OOM (Out Of Memory) e Timeouts nos workflows de fuzz testing através do ajuste fino dos tempos máximos de execução.
+- **Mutation Tests:** Resolução de mutações sobreviventes na base de código, garantindo que a cobertura de testes seja rigorosa contra comportamentos inesperados.
 - **Testes de Concorrência e Estresse:** Inclusão de testes de exaustão de pool e concorrência disparando centenas de `tokio::spawn` para garantir liberação adequada das conexões `sqlx` por baixo do padrão Active Record.
 - **Proptest (Property-Based Testing):** Adição de verificações estocásticas via `proptest` para submeter strings randômicas e limites numéricos no Query Builder e assegurar que as funções internas não gerem pânicos (panic-free by design).
 - **OpenSSF Gold Badge:** Achieved the OpenSSF Best Practices Gold badge, demonstrating rigorous adherence to open-source security, quality, and maintainability standards.

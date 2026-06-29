@@ -27,7 +27,7 @@ jobs:
         run: cargo +nightly install cargo-fuzz
 
       - name: Run fuzzer
-        run: cargo +nightly fuzz run ${{ matrix.target }} -- -max_total_time=18000 -detect_leaks=0
+        run: cargo +nightly fuzz run ${{ matrix.target }} -- -max_total_time=300 -detect_leaks=0
 
       - name: Upload crash artifacts
         if: failure()

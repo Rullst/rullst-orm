@@ -1,16 +1,40 @@
-use std::str::FromStr;
+use std::fs;
+use rullst_orm::Orm;
 
-#[path = "../rullst-orm-macros/src/parser.rs"]
-mod internal_parser;
+#[derive(Debug, Clone, Orm)]
+pub struct FuzzUser {
+    pub id: i32,
+    pub name: String,
+    pub email: String,
+}
 
-fn main() {
-    let bytes: &[u8] = &[35, 91, 122, 119, 61, 123, 91, 122, 119, 61, 123, 79, 79, 79, 79, 79, 114, 101, 85, 79, 59, 59, 59, 59, 59, 48, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 59, 121, 105, 101, 108, 100, 58, 103, 120, 125, 10, 93, 124, 124, 120, 125, 10, 93];
-    let s = std::str::from_utf8(bytes).unwrap();
-    println!("String: {:?}", s);
-    let ts = proc_macro2::TokenStream::from_str(s).unwrap();
-    println!("Tokens parsed");
-    let ast = syn::parse2::<syn::DeriveInput>(ts).unwrap();
-    println!("AST parsed");
-    let _ = internal_parser::parse(&ast);
-    println!("Parser finished");
+#[derive(Debug, Clone, Orm)]
+#[orm(searchable)]
+pub struct ScoutUser {
+    pub id: i32,
+    pub name: String,
+    pub email: String,
+}
+
+#[tokio::main]
+async fn main() {
+    let _ = rullst_orm::Orm::init("sqlite::memory:").await;
+    let path = r"C:\Users\venelouis\Desktop\ARTEFATOS\oom-95b38d36f8f594e0cfc2ba01e29dadc9fbe0c624";
+    let data = fs::read(path).expect("Failed to read OOM artifact");
+    
+    if let Ok(s) = std::str::from_utf8(&data) {
+        println!("Testing Scout...");
+        let _ = ScoutUser::search(s);
+        println!("Scout finished");
+        
+        println!("Testing Builder...");
+        let builder = FuzzUser::query()
+            .where_like("name", s)
+            .where_eq("email", s)
+            .order_by_desc(s)
+            .limit(10);
+            
+        let _sql = builder.to_sql();
+        println!("Builder finished");
+    }
 }
