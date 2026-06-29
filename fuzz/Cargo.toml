@@ -15,6 +15,7 @@ libfuzzer-sys = "0.4"
 syn = { version = "2", features = ["full"] }
 proc-macro2 = "1"
 tokio = { version = "1.23.1", features = ["full"] }
+sqlx = { version = "0.9", features = ["any", "runtime-tokio"] }
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(feature, values("redis"))', 'cfg(kani)'] }
