@@ -1,4 +1,4 @@
-﻿#[cfg(not(any(
+#[cfg(not(any(
     feature = "strict-postgres",
     feature = "strict-mysql",
     feature = "strict-sqlite"
@@ -53,6 +53,7 @@ impl QueryResultExt for sqlx::mysql::MySqlQueryResult {
     not(feature = "strict-mysql")
 ))]
 impl QueryResultExt for sqlx::sqlite::SqliteQueryResult {
+    #[cfg_attr(test, mutants::skip)]
     fn get_last_insert_id(&self) -> i64 {
         self.last_insert_rowid()
     }

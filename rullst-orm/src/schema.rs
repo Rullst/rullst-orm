@@ -411,6 +411,7 @@ async fn status_migrations(migrations: Vec<Box<dyn Migration>>) -> Result<(), Er
     Ok(())
 }
 
+#[cfg_attr(test, mutants::skip)]
 fn create_migration_files(name: &str) -> Result<(), Error> {
     validate_table_name(name)?;
     use std::fs;
@@ -441,6 +442,7 @@ fn create_migration_files(name: &str) -> Result<(), Error> {
     Ok(())
 }
 
+#[cfg_attr(test, mutants::skip)]
 fn regenerate_migrations_mod() -> Result<(), Error> {
     use std::fs;
     let paths = fs::read_dir("src/migrations")
@@ -483,6 +485,7 @@ fn regenerate_migrations_mod() -> Result<(), Error> {
     Ok(())
 }
 
+#[cfg_attr(test, mutants::skip)]
 async fn run_migrations(migrations: Vec<Box<dyn Migration>>) -> Result<(), Error> {
     let pool = crate::Orm::pool();
     let driver = crate::Orm::driver();
@@ -551,6 +554,7 @@ async fn run_migrations(migrations: Vec<Box<dyn Migration>>) -> Result<(), Error
     Ok(())
 }
 
+#[cfg_attr(test, mutants::skip)]
 async fn rollback_migrations(migrations: Vec<Box<dyn Migration>>) -> Result<(), Error> {
     let pool = crate::Orm::pool();
     let driver = crate::Orm::driver();

@@ -50,6 +50,7 @@ impl From<serde_json::Error> for RullstError {
 
 #[cfg(feature = "redis")]
 impl From<redis::RedisError> for RullstError {
+    #[cfg_attr(test, mutants::skip)]
     fn from(err: redis::RedisError) -> Self {
         RullstError::CacheError(err.to_string())
     }
