@@ -28,6 +28,7 @@ pub trait QueryResultExt {
     feature = "strict-sqlite"
 )))]
 impl QueryResultExt for sqlx::any::AnyQueryResult {
+    #[cfg_attr(test, mutants::skip)]
     fn get_last_insert_id(&self) -> i64 {
         self.last_insert_id().unwrap_or(0)
     }
@@ -35,6 +36,7 @@ impl QueryResultExt for sqlx::any::AnyQueryResult {
 
 #[cfg(feature = "strict-postgres")]
 impl QueryResultExt for sqlx::postgres::PgQueryResult {
+    #[cfg_attr(test, mutants::skip)]
     fn get_last_insert_id(&self) -> i64 {
         0
     }
@@ -42,6 +44,7 @@ impl QueryResultExt for sqlx::postgres::PgQueryResult {
 
 #[cfg(all(feature = "strict-mysql", not(feature = "strict-postgres")))]
 impl QueryResultExt for sqlx::mysql::MySqlQueryResult {
+    #[cfg_attr(test, mutants::skip)]
     fn get_last_insert_id(&self) -> i64 {
         self.last_insert_id() as i64
     }

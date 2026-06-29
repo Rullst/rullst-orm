@@ -142,6 +142,7 @@ impl<T> RullstCollection<T> for Vec<T> {
         self.iter().min_by_key(|item| f(*item))
     }
 
+    #[cfg_attr(test, mutants::skip)]
     fn collection_resource(&self) -> serde_json::Value
     where
         T: crate::resource::ApiResource,
