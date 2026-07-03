@@ -22,5 +22,5 @@ quote = "1"
 proc-macro2 = "1"
 
 [dev-dependencies]
-mutants = "0.0.3"
+mutants = "0.0.4"
 rullst-orm = { path = "../rullst-orm" }
