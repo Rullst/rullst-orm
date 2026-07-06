@@ -86,17 +86,25 @@ impl<T> RullstCollection<T> for Vec<T> {
             return vec![self];
         }
 
-        let mut chunks = Vec::with_capacity(self.len().div_ceil(size));
-        let mut vec = self;
+        let mut remaining = self.len();
+        let mut chunks = Vec::with_capacity(remaining.div_ceil(size));
+        let mut iter = self.into_iter();
 
-        while !vec.is_empty() {
-            let rem = vec.len() % size;
-            let take = if rem == 0 { size } else { rem };
-            let start = vec.len() - take;
-            let chunk = vec.split_off(start);
+        while let Some(first) = iter.next() {
+            let chunk_cap = std::cmp::min(size, remaining);
+            let mut chunk = Vec::with_capacity(chunk_cap);
+            chunk.push(first);
+            remaining -= 1;
+            for _ in 1..size {
+                if let Some(item) = iter.next() {
+                    chunk.push(item);
+                    remaining -= 1;
+                } else {
+                    break;
+                }
+            }
             chunks.push(chunk);
         }
-        chunks.reverse();
 
         chunks
     }

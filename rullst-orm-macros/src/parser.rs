@@ -36,10 +36,12 @@ fn split_top_level(input: &str) -> Vec<String> {
 /// (with surrounding whitespace trimmed). Returns `None` otherwise.
 fn strip_outer_call(input: &str, name: &str) -> Option<String> {
     let trimmed = input.trim();
-    let prefix = format!("{name}(");
-    if trimmed.starts_with(&prefix) && trimmed.ends_with(')') {
-        let inner = &trimmed[prefix.len()..trimmed.len() - 1];
-        return Some(inner.trim().to_string());
+    if let Some(rest) = trimmed.strip_prefix(name) {
+        let rest = rest.trim_start();
+        if rest.starts_with('(') && rest.ends_with(')') {
+            let inner = &rest[1..rest.len() - 1];
+            return Some(inner.trim().to_string());
+        }
     }
     None
 }

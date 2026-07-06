@@ -72,7 +72,7 @@ mod tests {
     fn test_basic_model() {
         let input: DeriveInput = parse_quote! {
             #[derive(Orm)]
-            #[orm(table = "users")]
+            #[orm(table = "users", searchable)]
             pub struct User {
                 pub id: i32,
                 pub name: String,

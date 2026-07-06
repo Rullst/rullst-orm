@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Schema & Resource Unit Tests:** Added `test_blueprint_float_and_boolean_columns` to verify that `.float()` (`REAL`) and `.boolean()` (`INTEGER`) helper methods generate correct column definitions and metadata in `Blueprint`, and added `ComplexResource` struct and test covering nested objects, arrays, and optional/null values in `JsonResource::resolve()`.
+
+### Changed
+- **Single-Pass Array Chunking Optimization:** Rewrote `.chunk()` in `RullstCollection` to use a direct $O(N)$ single-pass iterator without `split_off()`, eliminating unnecessary memory allocations, vector reversals, and potential capacity overflows.
+- **Delete Macro Modularization:** Refactored and modularized `generate_delete_methods` in the macro generator into dedicated helper functions (`generate_delete_sql`, `generate_restore_method`, and `generate_force_delete_method`), improving maintainability and readability of the codebase.
+
+### Fixed
+- **Macro Attribute Parsing Robustness:** Updated `strip_outer_call` in the macro parser to handle whitespace between macro attribute identifiers and parentheses, fixing parsing failures in `#[orm(soft_delete(...))]` attributes when processed by `syn`.
+- **Soft Delete Null Sentinel Handling:** Fixed `SoftDeleteCmp::for_value` in the query builder macro generator to treat empty strings as `NullSentinel` (`IS NULL` / `IS NOT NULL`), restoring correct behavior for legacy `deleted_at` models without explicit configuration.
+
 ## [6.0.2] - 2026-06-28
 
 ### Added

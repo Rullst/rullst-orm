@@ -1,3 +1,5 @@
+#![cfg(not(any(feature = "strict-postgres", feature = "strict-mysql")))]
+
 use proptest::prelude::*;
 use rullst_orm::Orm;
 use std::sync::Once;

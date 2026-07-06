@@ -14,7 +14,7 @@ enum SoftDeleteCmp {
 
 impl SoftDeleteCmp {
     fn for_value(value: &str) -> Self {
-        if value.trim().eq_ignore_ascii_case("null") {
+        if value.trim().eq_ignore_ascii_case("null") || value.trim().is_empty() {
             SoftDeleteCmp::NullSentinel
         } else {
             SoftDeleteCmp::LiteralSentinel

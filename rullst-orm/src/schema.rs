@@ -916,6 +916,20 @@ mod tests {
         assert_eq!(col.default_value, Some(ColumnDefault::Integer(18)));
     }
 
+    #[test]
+    fn test_blueprint_float_and_boolean_columns() {
+        let mut bp = Blueprint::new();
+        let col_float = bp.float("price");
+        assert_eq!(col_float.name, "price");
+        assert_eq!(col_float.col_type, "REAL");
+        assert!(col_float.is_nullable);
+
+        let col_bool = bp.boolean("is_active");
+        assert_eq!(col_bool.name, "is_active");
+        assert_eq!(col_bool.col_type, "INTEGER");
+        assert!(col_bool.is_nullable);
+    }
+
     #[tokio::test]
     async fn test_db_migration_error_state_invalid_blueprint() {
         let result = Schema::create("invalid; DROP TABLE users", |bp| {

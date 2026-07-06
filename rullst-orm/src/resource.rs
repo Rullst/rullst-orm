@@ -63,6 +63,54 @@ mod tests {
         assert_eq!(v["value"], 7);
     }
 
+    struct ComplexResource {
+        id: u64,
+        name: String,
+        tags: Vec<String>,
+        metadata: Option<Value>,
+    }
+
+    impl ApiResource for ComplexResource {
+        fn to_array(&self) -> Value {
+            json!({
+                "id": self.id,
+                "name": self.name,
+                "tags": self.tags,
+                "metadata": self.metadata,
+                "is_active": true,
+            })
+        }
+    }
+
+    #[test]
+    fn test_json_resource_resolve_complex() {
+        let r = ComplexResource {
+            id: 101,
+            name: "Alice".to_string(),
+            tags: vec!["admin".to_string(), "user".to_string()],
+            metadata: Some(json!({ "login_count": 5 })),
+        };
+        let jr = JsonResource::new(&r);
+        let v = jr.resolve();
+        assert_eq!(v["id"], 101);
+        assert_eq!(v["name"], "Alice");
+        assert_eq!(v["tags"].as_array().unwrap().len(), 2);
+        assert_eq!(v["tags"][0], "admin");
+        assert_eq!(v["metadata"]["login_count"], 5);
+        assert_eq!(v["is_active"], true);
+
+        let r_null = ComplexResource {
+            id: 102,
+            name: "Bob".to_string(),
+            tags: vec![],
+            metadata: None,
+        };
+        let jr_null = JsonResource::new(&r_null);
+        let v_null = jr_null.resolve();
+        assert!(v_null["metadata"].is_null());
+        assert_eq!(v_null["tags"].as_array().unwrap().len(), 0);
+    }
+
     #[test]
     fn test_resource_collection_new_stores_slice() {
         let items = vec![DummyResource { value: 1 }, DummyResource { value: 2 }];
