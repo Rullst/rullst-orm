@@ -37,7 +37,7 @@ jobs:
         run: cargo bench --workspace --bench orm_bench -- --output-format bencher | tee output.txt
 
       - name: Store Benchmark Result & Check Regressions
-        uses: benchmark-action/github-action-benchmark@v1
+        uses: benchmark-action/github-action-benchmark@52576c92bccf6ac60c8223ec7eb2565637cae9ba # v1.22.1
         with:
           name: Rullst ORM Performance Dashboard
           tool: 'cargo'
