@@ -10,6 +10,36 @@ pub struct GeneratedRelationships {
     pub eager_loads: TokenStream,
 }
 
+fn generate_eager_load_assignment(
+    is_many: bool,
+    map_key_ident: &syn::Ident,
+    model_key_ident: &syn::Ident,
+    method_name: &syn::Ident,
+) -> TokenStream {
+    if is_many {
+        quote! {
+            let mut map = std::collections::HashMap::with_capacity(all_related.len());
+            for rel in all_related {
+                map.entry(rel.#map_key_ident.clone()).or_insert_with(Vec::new).push(rel);
+            }
+            for model in &mut results {
+                let matching = map.remove(&model.#model_key_ident).unwrap_or_default();
+                model.#method_name = Some(matching);
+            }
+        }
+    } else {
+        quote! {
+            let mut map = std::collections::HashMap::with_capacity(all_related.len());
+            for rel in all_related {
+                map.entry(rel.#map_key_ident.clone()).or_insert(rel);
+            }
+            for model in &mut results {
+                model.#method_name = map.remove(&model.#model_key_ident);
+            }
+        }
+    }
+}
+
 pub fn generate(parsed: &ParsedModel) -> GeneratedRelationships {
     let mut flags = vec![];
     let mut inits = vec![];
@@ -222,8 +252,18 @@ pub fn generate(parsed: &ParsedModel) -> GeneratedRelationships {
         let fk_ident = quote::format_ident!("{}", if foreign_key.is_empty() { format!("{}_id", name.to_string().to_lowercase()) } else { foreign_key.clone() });
         let lk_ident = quote::format_ident!("{}", if local_key.is_empty() { "id".to_string() } else { local_key.clone() });
         let pk_ident = quote::format_ident!("{}", if related_key.is_empty() { "id".to_string() } else { related_key.clone() });
+        let morph_id_ident = quote::format_ident!("{}_id", morph_name);
 
-        if rel_type == "has_many" {
+        let eager_load_assignment = match rel_type.as_str() {
+            "has_many" => generate_eager_load_assignment(true, &fk_ident, &lk_ident, &method_name),
+            "has_one" => generate_eager_load_assignment(false, &fk_ident, &lk_ident, &method_name),
+            "belongs_to" => generate_eager_load_assignment(false, &pk_ident, &fk_ident, &method_name),
+            "morph_many" => generate_eager_load_assignment(true, &morph_id_ident, &lk_ident, &method_name),
+            "morph_one" => generate_eager_load_assignment(false, &morph_id_ident, &lk_ident, &method_name),
+            _ => proc_macro2::TokenStream::new(),
+        };
+
+        if rel_type == "has_many" || rel_type == "has_one" {
             quote! {
                 if self.#load_flag {
                     let parent_ids: Vec<_> = results.iter().map(|m| m.#lk_ident.clone()).collect();
@@ -233,36 +273,7 @@ pub fn generate(parsed: &ParsedModel) -> GeneratedRelationships {
                             query = filter(query);
                         }
                         let all_related = Box::pin(query.get()).await?;
-                        let mut map = std::collections::HashMap::with_capacity(all_related.len());
-                        for rel in all_related {
-                            map.entry(rel.#fk_ident.clone()).or_insert_with(Vec::new).push(rel);
-                        }
-
-                        for model in &mut results {
-                            let matching = map.remove(&model.#lk_ident).unwrap_or_default();
-                            model.#method_name = Some(matching);
-                        }
-                    }
-                }
-            }
-        } else if rel_type == "has_one" {
-            quote! {
-                if self.#load_flag {
-                    let parent_ids: Vec<_> = results.iter().map(|m| m.#lk_ident.clone()).collect();
-                    if !parent_ids.is_empty() {
-                        let mut query = #rel_model_ident::query().where_in(stringify!(#fk_ident), parent_ids);
-                        if let Some(ref filter) = self.#filter_flag {
-                            query = filter(query);
-                        }
-                        let all_related = Box::pin(query.get()).await?;
-                        let mut map = std::collections::HashMap::with_capacity(all_related.len());
-                        for rel in all_related {
-                            map.entry(rel.#fk_ident.clone()).or_insert(rel);
-                        }
-
-                        for model in &mut results {
-                            model.#method_name = map.remove(&model.#lk_ident);
-                        }
+                        #eager_load_assignment
                     }
                 }
             }
@@ -276,14 +287,7 @@ pub fn generate(parsed: &ParsedModel) -> GeneratedRelationships {
                             query = filter(query);
                         }
                         let all_related = Box::pin(query.get()).await?;
-                        let mut map = std::collections::HashMap::with_capacity(all_related.len());
-                        for rel in all_related {
-                            map.entry(rel.#pk_ident.clone()).or_insert(rel);
-                        }
-
-                        for model in &mut results {
-                            model.#method_name = map.remove(&model.#fk_ident);
-                        }
+                        #eager_load_assignment
                     }
                 }
             }
@@ -291,7 +295,7 @@ pub fn generate(parsed: &ParsedModel) -> GeneratedRelationships {
             let morph_type_ident = quote::format_ident!("{}_type", morph_name);
             let morph_id_ident = quote::format_ident!("{}_id", morph_name);
 
-            if rel_type == "morph_many" {
+            if rel_type == "morph_many" || rel_type == "morph_one" {
                 // Batch load: one query with WHERE morph_id IN (...) AND morph_type = 'Name'
                 // eliminates the previous N+1 pattern (one query per parent model).
                 quote! {
@@ -305,37 +309,7 @@ pub fn generate(parsed: &ParsedModel) -> GeneratedRelationships {
                                 query = filter(query);
                             }
                             let all_related = Box::pin(query.get()).await?;
-                            let mut map = std::collections::HashMap::with_capacity(all_related.len());
-                            for rel in all_related {
-                                map.entry(rel.#morph_id_ident.clone()).or_insert_with(Vec::new).push(rel);
-                            }
-                            for model in &mut results {
-                                let matching = map.remove(&model.#lk_ident).unwrap_or_default();
-                                model.#method_name = Some(matching);
-                            }
-                        }
-                    }
-                }
-            } else if rel_type == "morph_one" {
-                // Batch load: one query for all parents, then distribute.
-                quote! {
-                    if self.#load_flag {
-                        let parent_ids: Vec<_> = results.iter().map(|m| m.#lk_ident.clone()).collect();
-                        if !parent_ids.is_empty() {
-                            let mut query = #rel_model_ident::query()
-                                .where_in(stringify!(#morph_id_ident), parent_ids)
-                                .where_eq(stringify!(#morph_type_ident), stringify!(#name));
-                            if let Some(ref filter) = self.#filter_flag {
-                                query = filter(query);
-                            }
-                            let all_related = Box::pin(query.get()).await?;
-                            let mut map = std::collections::HashMap::with_capacity(all_related.len());
-                            for rel in all_related {
-                                map.entry(rel.#morph_id_ident.clone()).or_insert(rel);
-                            }
-                            for model in &mut results {
-                                model.#method_name = map.remove(&model.#lk_ident);
-                            }
+                            #eager_load_assignment
                         }
                     }
                 }
@@ -385,7 +359,6 @@ pub fn generate(parsed: &ParsedModel) -> GeneratedRelationships {
                                 let mut related_ids: Vec<i32> = pivot_pairs.iter().map(|(_, rid)| *rid).collect();
                                 related_ids.sort_unstable();
                                 related_ids.dedup();
-                                let related_ids_len = related_ids.len();
 
                                 let mut query = #rel_model_ident::query().where_in("id", related_ids);
                                 if let Some(ref filter) = self.#filter_flag {
@@ -400,29 +373,13 @@ pub fn generate(parsed: &ParsedModel) -> GeneratedRelationships {
                                 // Build parent_id -> Vec<model> from pivot pairs
                                 let mut parent_to_related: std::collections::HashMap<i32, Vec<#rel_model_ident>> =
                                     std::collections::HashMap::with_capacity(results.len());
-                                let mut related_counts = std::collections::HashMap::with_capacity(related_ids_len);
-                                for (_, related_id) in &pivot_pairs {
-                                    *related_counts.entry(*related_id).or_insert(0) += 1;
-                                }
 
                                 for (parent_id, related_id) in &pivot_pairs {
-                                    if let Some(count) = related_counts.get_mut(related_id) {
-                                        if *count == 1 {
-                                            if let Some(m) = related_map.remove(related_id) {
-                                                parent_to_related
-                                                    .entry(*parent_id)
-                                                    .or_insert_with(Vec::new)
-                                                    .push(m);
-                                            }
-                                        } else {
-                                            if let Some(m) = related_map.get(related_id) {
-                                                parent_to_related
-                                                    .entry(*parent_id)
-                                                    .or_insert_with(Vec::new)
-                                                    .push(m.clone());
-                                            }
-                                            *count -= 1;
-                                        }
+                                    if let Some(m) = related_map.get(related_id) {
+                                        parent_to_related
+                                            .entry(*parent_id)
+                                            .or_insert_with(Vec::new)
+                                            .push(m.clone());
                                     }
                                 }
 

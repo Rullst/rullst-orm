@@ -200,6 +200,9 @@ mod tests {
         let chunks = v.chunk(2);
         assert_eq!(chunks.len(), 3);
         assert_eq!(chunks[2], vec![5]);
+        assert_eq!(chunks[0].capacity(), 2);
+        assert_eq!(chunks[1].capacity(), 2);
+        assert_eq!(chunks[2].capacity(), 1);
     }
 
     #[test]
@@ -275,5 +278,22 @@ mod tests {
         let chunks = v.chunk(usize::MAX);
         assert_eq!(chunks.len(), 1);
         assert_eq!(chunks[0], vec![1, 2, 3]);
+    }
+
+    struct DummyResource {
+        id: i32,
+    }
+
+    impl crate::resource::ApiResource for DummyResource {
+        fn to_array(&self) -> serde_json::Value {
+            crate::_serde_json::json!({ "id": self.id })
+        }
+    }
+
+    #[test]
+    fn test_collection_resource() {
+        let vec = vec![DummyResource { id: 1 }, DummyResource { id: 2 }];
+        let res = vec.collection_resource();
+        assert_eq!(res, crate::_serde_json::json!([{"id": 1}, {"id": 2}]));
     }
 }

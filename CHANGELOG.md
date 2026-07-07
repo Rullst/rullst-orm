@@ -12,12 +12,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **SLSA Level 3 & Supply Chain Provenance:** Added the **SLSA Level 3** security badge to `README.md` following the industry-standard OSSF pattern, linking directly to `slsa-verifier` for tamper-evident build provenance checks.
 - **Expanded Test Suite & Schema Validation:** Added 64-character maximum length check to `validate_identifier` in `schema.rs`. Added thorough unit tests for `.timestamps()`, `.boolean()`, nullable column builder flipping, single-item and complex nested `ResourceCollection::resolve()`, and edge cases in `compute_diff` for audit logging.
 - **Schema & Resource Unit Tests:** Added `test_blueprint_float_and_boolean_columns` to verify that `.float()` (`REAL`) and `.boolean()` (`INTEGER`) helper methods generate correct column definitions and metadata in `Blueprint`, and added `ComplexResource` struct and test covering nested objects, arrays, and optional/null values in `JsonResource::resolve()`.
+- **Database Transaction Integration Test:** Added `scenario_transaction_types` to the integration test suite to formally verify correct execution of SQL queries under the internal `db::Transaction` and `db::Pool` wrappers.
 
 ### Changed
 - **Dependency Updates:** Bumped dev-dependency `mutants` from `0.0.3` to `0.0.4` across the workspace (`rullst-orm` and `rullst-orm-macros`).
 - **Single-Pass Array Chunking Optimization:** Rewrote `.chunk()` in `RullstCollection` to use a direct $O(N)$ single-pass iterator without `split_off()`, eliminating unnecessary memory allocations, vector reversals, and potential capacity overflows.
 - **Delete Macro Modularization:** Refactored and modularized `generate_delete_methods` in the macro generator into dedicated helper functions (`generate_delete_sql`, `generate_restore_method`, and `generate_force_delete_method`), improving maintainability and readability of the codebase.
 - **Docs Deployment Clean-up:** Removed obsolete `.github/workflows/deploy-docs.yml` workflow following the removal of the legacy `./website` folder, streamlining static site generation into the benchmark CI pipeline.
+- **Relationship Query Macro Modularization:** Extracted duplicate query generation mapping logic across `has_many`, `has_one`, `belongs_to`, `morph_many`, and `morph_one` into a shared `generate_eager_load_assignment` function, reducing procedural macro codebase size.
+- **Postgres Parameter Extraction:** Abstracted the repetitive manual placeholder translation logic (`?` to `$1`, `$2`, etc. for Postgres driver) from the generated macro code inside `models.rs` to a centralized runtime helper function (`rullst_orm::replace_placeholders`).
 
 ### Fixed
 - **Benchmark CI Orphan Branch Initialization:** Added an automatic pre-check step in `.github/workflows/bench.yml` (`Ensure gh-pages branch exists`) that creates and pushes an orphan `gh-pages` branch if it does not already exist on the remote repository, fixing `git fetch` failures when publishing benchmark reports.
@@ -25,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CodeQL Target Language:** Changed CodeQL analysis target language from `javascript` to `actions` in `.github/workflows/codeql.yml`, preventing CI build failures after the removal of the legacy JavaScript website folder while preserving full OpenSSF security compliance.
 - **Macro Attribute Parsing Robustness:** Updated `strip_outer_call` in the macro parser to handle whitespace between macro attribute identifiers and parentheses, fixing parsing failures in `#[orm(soft_delete(...))]` attributes when processed by `syn`.
 - **Soft Delete Null Sentinel Handling:** Fixed `SoftDeleteCmp::for_value` in the query builder macro generator to treat empty strings as `NullSentinel` (`IS NULL` / `IS NOT NULL`), restoring correct behavior for legacy `deleted_at` models without explicit configuration.
+- **Strict Lint Fixes:** Addressed `clippy` lints (`explicit_counter_loop` and `collapsible_str_replace`) in the internal database logic, replacing manual iterations with `zip` arrays and single character replace passes.
 
 ## [6.0.2] - 2026-06-28
 

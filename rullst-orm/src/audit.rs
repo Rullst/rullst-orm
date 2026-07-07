@@ -118,28 +118,30 @@ pub fn compute_diff(old_json: &str, new_json: &str) -> (Option<String>, Option<S
     let mut diff_old = serde_json::Map::new();
     let mut diff_new = serde_json::Map::new();
 
-    if let (serde_json::Value::Object(old_obj), serde_json::Value::Object(mut new_obj)) =
+    if let (serde_json::Value::Object(old_obj), serde_json::Value::Object(new_obj)) =
         (old_val, new_val)
     {
-        for (k, v) in old_obj {
-            if let Some(new_v) = new_obj.remove(&k) {
+        for (k, v) in &old_obj {
+            if let Some(new_v) = new_obj.get(k) {
                 #[allow(clippy::collapsible_if)]
                 if v != new_v {
-                    let masked_v = mask_if_sensitive(&k, v);
-                    let masked_new_v = mask_if_sensitive(&k, new_v);
+                    let masked_v = mask_if_sensitive(k, v.clone());
+                    let masked_new_v = mask_if_sensitive(k, new_v.clone());
                     diff_new.insert(k.clone(), masked_new_v);
-                    diff_old.insert(k, masked_v);
+                    diff_old.insert(k.clone(), masked_v);
                 }
             } else {
-                let masked_v = mask_if_sensitive(&k, v);
+                let masked_v = mask_if_sensitive(k, v.clone());
                 diff_new.insert(k.clone(), serde_json::Value::Null);
-                diff_old.insert(k, masked_v);
+                diff_old.insert(k.clone(), masked_v);
             }
         }
-        for (k, new_v) in new_obj {
-            let masked_new_v = mask_if_sensitive(&k, new_v);
-            diff_old.insert(k.clone(), serde_json::Value::Null);
-            diff_new.insert(k, masked_new_v);
+        for (k, new_v) in &new_obj {
+            if !old_obj.contains_key(k) {
+                let masked_new_v = mask_if_sensitive(k, new_v.clone());
+                diff_old.insert(k.clone(), serde_json::Value::Null);
+                diff_new.insert(k.clone(), masked_new_v);
+            }
         }
     }
 

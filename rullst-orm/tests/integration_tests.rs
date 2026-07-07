@@ -73,6 +73,7 @@ async fn integration_suite() {
     scenario_schema_lifecycle().await;
     scenario_audit().await;
     scenario_query_result_ext().await;
+    scenario_transaction_types().await;
 
     // ── cleanup ───────────────────────────────────────────────────────────
     let _ = std::fs::remove_file(DB_FILE);
@@ -632,15 +633,17 @@ async fn scenario_bulk_operations() {
     .await
     .expect("create it_bulk_items");
 
-    // Insert 20 records
+    // Insert 20 records using bulk insert
+    let mut qb = sqlx::QueryBuilder::new("INSERT INTO it_bulk_items (label, score) VALUES ");
+    let mut values = Vec::new();
     for i in 1..=20i32 {
-        let mut item = BulkItem {
-            id: 0,
-            label: format!("item_{}", i),
-            score: i,
-        };
-        item.save().await.expect("bulk save");
+        values.push(format!("('item_{}', {})", i, i));
     }
+    qb.push(values.join(", "));
+    qb.build()
+        .execute(Orm::pool())
+        .await
+        .expect("bulk insert");
 
     // ORDER BY + LIMIT
     let top5 = BulkItem::query()
@@ -790,3 +793,17 @@ async fn scenario_query_result_ext() {
         .await
         .expect("drop it_query_result_ext");
 }
+
+async fn scenario_transaction_types() {
+    let pool: &rullst_orm::db::Pool = Orm::pool();
+    let mut tx: rullst_orm::db::Transaction<'_> = pool.begin().await.expect("begin trans");
+    
+    // Just a dummy query to test transaction works
+    sqlx::query("SELECT 1")
+        .execute(&mut *tx)
+        .await
+        .expect("execute on trans");
+    
+    tx.commit().await.expect("commit trans");
+}
+

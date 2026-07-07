@@ -428,7 +428,8 @@ fn create_migration_files(name: &str) -> Result<(), Error> {
         .expect("System time went backwards")
         .as_secs()
         .to_string();
-    let snake_name = name.to_lowercase().replace("-", "_");
+    let sanitized_name = name.replace(['/', '\\'], "");
+    let snake_name = sanitized_name.to_lowercase().replace("-", "_");
     let file_name = format!("m{}_{}", now, snake_name);
 
     fs::create_dir_all("src/migrations")
@@ -747,6 +748,30 @@ pub fn get_query_timeout() -> Option<std::time::Duration> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    struct MockSubquery {
+        sql: String,
+        bindings: Vec<crate::RullstValue>,
+    }
+
+    impl SubqueryBuilder for MockSubquery {
+        fn to_sql(&self) -> String {
+            self.sql.clone()
+        }
+        fn bindings(&self) -> &Vec<crate::RullstValue> {
+            &self.bindings
+        }
+    }
+
+    #[test]
+    fn test_subquery_builder_trait() {
+        let sq = MockSubquery {
+            sql: "SELECT * FROM users WHERE id = ?".to_string(),
+            bindings: vec![42.into()],
+        };
+        assert_eq!(sq.to_sql(), "SELECT * FROM users WHERE id = ?");
+        assert_eq!(sq.bindings().len(), 1);
+    }
 
     #[test]
     fn test_enable_disable_query_log() {

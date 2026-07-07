@@ -61,6 +61,22 @@ pub use sqlx as _sqlx;
 #[cfg(feature = "redis")]
 #[doc(hidden)]
 pub use redis as _redis;
+
+/// Helper to convert `?` placeholders to `$1`, `$2` etc. for Postgres.
+#[doc(hidden)]
+pub fn replace_placeholders(sql: &str) -> String {
+    let mut replaced = String::with_capacity(sql.len() + 10);
+    let mut last_idx = 0;
+    for (counter, (idx, _)) in (1..).zip(sql.match_indices('?')) {
+        replaced.push_str(&sql[last_idx..idx]);
+        use std::fmt::Write;
+        write!(replaced, "${}", counter).unwrap();
+        last_idx = idx + 1;
+    }
+    replaced.push_str(&sql[last_idx..]);
+    replaced
+}
+
 pub mod admin;
 pub mod audit;
 pub mod collection;

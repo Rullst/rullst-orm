@@ -455,3 +455,5 @@ pub fn parse(input: &DeriveInput) -> Result<ParsedModel, syn::Error> {
         has_soft_deletes,
     })
 }
+
+include!("parser_tests.rs");
