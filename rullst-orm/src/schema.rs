@@ -7,20 +7,21 @@ const ALLOWED_OPERATORS: &[&str] = &["=", "!=", "<>", "<", ">", "<=", ">="];
 /// Allows alphanumeric characters, underscores, hyphens and a single dot
 /// for qualified names like `table.column`.
 pub fn validate_identifier(name: &str) -> Result<(), Error> {
-    if name.is_empty() {
+    let bytes = name.as_bytes();
+    if bytes.is_empty() {
         return Err(Error::Internal(
             "SQL identifier cannot be empty".to_string(),
         ));
     }
 
-    if name.len() > 64 {
+    // Check maximum length
+    if bytes.len() > 64 {
         return Err(Error::Internal(format!(
             "Invalid SQL identifier '{}': exceeds maximum length of 64 characters",
             name
         )));
     }
 
-    let bytes = name.as_bytes();
     if bytes[0] == b'.' || bytes[bytes.len() - 1] == b'.' {
         return Err(Error::Internal(format!(
             "Invalid SQL identifier '{}': must not start or end with a dot",
@@ -30,19 +31,21 @@ pub fn validate_identifier(name: &str) -> Result<(), Error> {
 
     let mut dot_count = 0;
     for &b in bytes {
-        if b == b'.' {
-            dot_count += 1;
-            if dot_count > 1 {
+        if !b.is_ascii_alphanumeric() && b != b'_' && b != b'-' {
+            if b == b'.' {
+                dot_count += 1;
+                if dot_count > 1 {
+                    return Err(Error::Internal(format!(
+                        "Invalid SQL identifier '{}': at most one dot is allowed",
+                        name
+                    )));
+                }
+            } else {
                 return Err(Error::Internal(format!(
-                    "Invalid SQL identifier '{}': at most one dot is allowed",
+                    "Invalid SQL identifier '{}': only alphanumeric characters, underscores, hyphens and dots are allowed",
                     name
                 )));
             }
-        } else if !b.is_ascii_alphanumeric() && b != b'_' && b != b'-' {
-            return Err(Error::Internal(format!(
-                "Invalid SQL identifier '{}': only alphanumeric characters, underscores, hyphens and dots are allowed",
-                name
-            )));
         }
     }
 

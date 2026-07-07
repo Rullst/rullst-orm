@@ -9,7 +9,6 @@ struct MutantModel {
     deleted_at: Option<String>,
 }
 
-
 #[tokio::test]
 async fn test_mutant_macro_generation() {
     // 1. generate_column_enum
