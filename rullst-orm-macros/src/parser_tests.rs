@@ -113,7 +113,7 @@ mod tests {
         assert_eq!(r[5].foreign_key, "f_id");
         assert_eq!(r[5].related_key, "r_id");
 
-        assert!(parsed.skipped_fields.iter().any(|i| i.to_string() == "skipped"));
-        assert!(parsed.hidden_fields.iter().any(|i| i.to_string() == "hidden"));
+        assert!(parsed.skipped_fields.iter().any(|i| i == "skipped"));
+        assert!(parsed.hidden_fields.iter().any(|i| i == "hidden"));
     }
 }

@@ -31,21 +31,19 @@ pub fn validate_identifier(name: &str) -> Result<(), Error> {
 
     let mut dot_count = 0;
     for &b in bytes {
-        if !b.is_ascii_alphanumeric() && b != b'_' && b != b'-' {
-            if b == b'.' {
-                dot_count += 1;
-                if dot_count > 1 {
-                    return Err(Error::Internal(format!(
-                        "Invalid SQL identifier '{}': at most one dot is allowed",
-                        name
-                    )));
-                }
-            } else {
+        if b == b'.' {
+            dot_count += 1;
+            if dot_count > 1 {
                 return Err(Error::Internal(format!(
-                    "Invalid SQL identifier '{}': only alphanumeric characters, underscores, hyphens and dots are allowed",
+                    "Invalid SQL identifier '{}': at most one dot is allowed",
                     name
                 )));
             }
+        } else if !b.is_ascii_alphanumeric() && b != b'_' && b != b'-' {
+            return Err(Error::Internal(format!(
+                "Invalid SQL identifier '{}': only alphanumeric characters, underscores, hyphens and dots are allowed",
+                name
+            )));
         }
     }
 
