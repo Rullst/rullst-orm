@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Docs Deployment Clean-up:** Removed obsolete `.github/workflows/deploy-docs.yml` workflow following the removal of the legacy `./website` folder, streamlining static site generation into the benchmark CI pipeline.
 
 ### Fixed
+- **Benchmark CI Orphan Branch Initialization:** Added an automatic pre-check step in `.github/workflows/bench.yml` (`Ensure gh-pages branch exists`) that creates and pushes an orphan `gh-pages` branch if it does not already exist on the remote repository, fixing `git fetch` failures when publishing benchmark reports.
 - **OSSF Scorecard Action Pinning:** Pinned `benchmark-action/github-action-benchmark` to exact commit SHA (`52576c92bccf6ac60c8223ec7eb2565637cae9ba`) in `.github/workflows/bench.yml`, resolving OpenSSF Scorecard pinned-dependencies security alert.
 - **CodeQL Target Language:** Changed CodeQL analysis target language from `javascript` to `actions` in `.github/workflows/codeql.yml`, preventing CI build failures after the removal of the legacy JavaScript website folder while preserving full OpenSSF security compliance.
 - **Macro Attribute Parsing Robustness:** Updated `strip_outer_call` in the macro parser to handle whitespace between macro attribute identifiers and parentheses, fixing parsing failures in `#[orm(soft_delete(...))]` attributes when processed by `syn`.

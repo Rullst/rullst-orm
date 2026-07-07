@@ -36,6 +36,21 @@ jobs:
       - name: Run Benchmarks with Criterion
         run: cargo bench --workspace --bench orm_bench -- --output-format bencher | tee output.txt
 
+      - name: Ensure gh-pages branch exists
+        if: github.event_name == 'push'
+        run: |
+          git fetch origin gh-pages:gh-pages || (
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git checkout --orphan gh-pages
+            git rm -rf . || true
+            echo "# Benchmark Results" > index.html
+            git add index.html
+            git commit -m "Initialize gh-pages"
+            git push origin gh-pages
+            git checkout -
+          )
+
       - name: Store Benchmark Result & Check Regressions
         uses: benchmark-action/github-action-benchmark@52576c92bccf6ac60c8223ec7eb2565637cae9ba # v1.22.1
         with:
