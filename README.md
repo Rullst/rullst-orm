@@ -22,6 +22,7 @@ Built on top of `sqlx` and procedural macros, **Rullst ORM** brings the delightf
 | Security Audit | Status | Description |
 | :--- | :---: | :--- |
 | **OSSF Scorecard** | <a href="https://securityscorecards.dev/viewer/?uri=github.com/Rullst/rullst-orm"><img src="https://img.shields.io/ossf-scorecard/github.com/Rullst/rullst-orm?style=flat-square&label=" alt="OSSF Scorecard" /></a> | Supply-chain security & best practices |
+| **SLSA Level 3** | <a href="https://github.com/slsa-framework/slsa-verifier"><img src="https://img.shields.io/badge/SLSA-Level%203-8A2BE2?style=flat-square&label=" alt="SLSA Level 3" /></a> | Tamper-evident build provenance & supply-chain security |
 | **Codecov** | <a href="https://codecov.io/gh/Rullst/rullst-orm"><img src="https://img.shields.io/codecov/c/github/Rullst/rullst-orm?style=flat-square&label=" alt="Codecov" /></a> | Strict code coverage enforcement |
 | **Matrix DB Tests** | <a href="https://github.com/Rullst/rullst-orm/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/ci.yml?style=flat-square&label=" alt="Testcontainers" /></a> | Dockerized PostgreSQL & MySQL integration tests |
 | **OpenSSF** | <a href="https://www.bestpractices.dev/projects/13359"><img src="https://img.shields.io/cii/level/13359?style=flat-square&label=" alt="OpenSSF Best Practices" /></a> | Open source security standards |
@@ -35,6 +36,7 @@ Built on top of `sqlx` and procedural macros, **Rullst ORM** brings the delightf
 | **Cargo Machete** | <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/cargo-machete.yml?style=flat-square&label=" alt="Cargo Machete" /></a> | Detecting unused and bloated dependencies |
 | **Continuous Fuzzing** | <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/fuzz.yml?style=flat-square&label=" alt="Fuzzing" /></a> | Fuzzing against edge cases & panics |
 | **Mutation Testing** | <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/mutants.yml?style=flat-square&label=" alt="Mutants" /></a> | Mutation testing for test suite robustness |
+| **Continuous Benchmarks** | <a href="https://rullst.github.io/rullst-orm/"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/bench.yml?style=flat-square&label=" alt="Benchmarks CI" /></a> | Continuous performance regression testing & live dashboard |
 | **Unsafe Policy** | <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/unsafe-policy.yml?style=flat-square&label=" alt="Unsafe Policy" /></a> | 100% memory safe. No unsafe code blocks |
 | **Panic Policy** | <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/panic-policy.yml?style=flat-square&label=" alt="Panic Policy" /></a> | Graceful error handling across the framework |
 

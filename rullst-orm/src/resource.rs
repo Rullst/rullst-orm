@@ -139,6 +139,42 @@ mod tests {
     }
 
     #[test]
+    fn test_resource_collection_single_item() {
+        let items = vec![DummyResource { value: 99 }];
+        let rc = ResourceCollection::new(&items);
+        let v = rc.resolve();
+        assert!(v.is_array());
+        let arr = v.as_array().unwrap();
+        assert_eq!(arr.len(), 1);
+        assert_eq!(arr[0]["value"], 99);
+    }
+
+    #[test]
+    fn test_resource_collection_complex_items() {
+        let items = vec![
+            ComplexResource {
+                id: 1,
+                name: "Alpha".to_string(),
+                tags: vec!["a".to_string()],
+                metadata: None,
+            },
+            ComplexResource {
+                id: 2,
+                name: "Beta".to_string(),
+                tags: vec!["b".to_string(), "c".to_string()],
+                metadata: Some(json!({"role": "admin"})),
+            },
+        ];
+        let rc = ResourceCollection::new(&items);
+        let v = rc.resolve();
+        let arr = v.as_array().unwrap();
+        assert_eq!(arr.len(), 2);
+        assert_eq!(arr[0]["name"], "Alpha");
+        assert_eq!(arr[1]["metadata"]["role"], "admin");
+        assert_eq!(arr[1]["tags"].as_array().unwrap().len(), 2);
+    }
+
+    #[test]
     fn test_resource_collection_resolve_large() {
         let items: Vec<DummyResource> = (0..10_000).map(|i| DummyResource { value: i }).collect();
         let rc = ResourceCollection::new(&items);

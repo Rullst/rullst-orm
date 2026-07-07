@@ -13,6 +13,13 @@ pub fn validate_identifier(name: &str) -> Result<(), Error> {
         ));
     }
 
+    if name.len() > 64 {
+        return Err(Error::Internal(format!(
+            "Invalid SQL identifier '{}': exceeds maximum length of 64 characters",
+            name
+        )));
+    }
+
     let bytes = name.as_bytes();
     if bytes[0] == b'.' || bytes[bytes.len() - 1] == b'.' {
         return Err(Error::Internal(format!(
@@ -778,6 +785,9 @@ mod tests {
         assert!(validate_identifier("users.posts.id").is_err()); // two dots
         assert!(validate_identifier("DROP TABLE users").is_err());
         assert!(validate_identifier("id; DROP TABLE users--").is_err());
+        // Length check
+        assert!(validate_identifier(&"a".repeat(64)).is_ok());
+        assert!(validate_identifier(&"a".repeat(65)).is_err());
         // Leading/trailing dot edge cases — all now rejected
         assert!(validate_identifier(".").is_err()); // bare dot: starts AND ends with dot
         assert!(validate_identifier(".users").is_err()); // leading dot
@@ -816,11 +826,16 @@ mod tests {
         bp.timestamps();
         assert_eq!(bp.columns.len(), 2);
         assert_eq!(bp.columns[0].name, "created_at");
-        assert_eq!(bp.columns[1].name, "updated_at");
+        assert_eq!(bp.columns[0].col_type, "TEXT");
+        assert!(bp.columns[0].is_nullable);
         assert_eq!(
             bp.columns[0].default_value,
             Some(ColumnDefault::CurrentTimestamp)
         );
+
+        assert_eq!(bp.columns[1].name, "updated_at");
+        assert_eq!(bp.columns[1].col_type, "TEXT");
+        assert!(bp.columns[1].is_nullable);
         assert_eq!(
             bp.columns[1].default_value,
             Some(ColumnDefault::CurrentTimestamp)
@@ -917,6 +932,16 @@ mod tests {
     }
 
     #[test]
+    fn test_column_nullable_and_not_null_flips() {
+        let mut col = Column::new("status", "TEXT");
+        assert!(col.is_nullable);
+        col.not_null();
+        assert!(!col.is_nullable);
+        col.nullable();
+        assert!(col.is_nullable);
+    }
+
+    #[test]
     fn test_blueprint_float_and_boolean_columns() {
         let mut bp = Blueprint::new();
         let col_float = bp.float("price");
@@ -928,6 +953,18 @@ mod tests {
         assert_eq!(col_bool.name, "is_active");
         assert_eq!(col_bool.col_type, "INTEGER");
         assert!(col_bool.is_nullable);
+    }
+
+    #[test]
+    fn test_blueprint_boolean_column() {
+        let mut bp = Blueprint::new();
+        let col = bp.boolean("verified");
+        assert_eq!(col.name, "verified");
+        assert_eq!(col.col_type, "INTEGER");
+        assert!(col.is_nullable);
+        assert!(!col.is_primary_key);
+        assert!(!col.is_auto_increment);
+        assert_eq!(col.default_value, None);
     }
 
     #[tokio::test]

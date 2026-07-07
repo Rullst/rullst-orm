@@ -8,11 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Continuous Performance Regression CI:** Created a dedicated `.github/workflows/bench.yml` workflow using Criterion and `benchmark-action/github-action-benchmark` to run continuous performance regression tests and automatically publish historical interactive dashboards to the official website on GitHub Pages. Added a new **Continuous Benchmarks** badge to the security/quality table in `README.md`.
+- **SLSA Level 3 & Supply Chain Provenance:** Added the **SLSA Level 3** security badge to `README.md` following the industry-standard OSSF pattern, linking directly to `slsa-verifier` for tamper-evident build provenance checks.
+- **Expanded Test Suite & Schema Validation:** Added 64-character maximum length check to `validate_identifier` in `schema.rs`. Added thorough unit tests for `.timestamps()`, `.boolean()`, nullable column builder flipping, single-item and complex nested `ResourceCollection::resolve()`, and edge cases in `compute_diff` for audit logging.
 - **Schema & Resource Unit Tests:** Added `test_blueprint_float_and_boolean_columns` to verify that `.float()` (`REAL`) and `.boolean()` (`INTEGER`) helper methods generate correct column definitions and metadata in `Blueprint`, and added `ComplexResource` struct and test covering nested objects, arrays, and optional/null values in `JsonResource::resolve()`.
 
 ### Changed
+- **Dependency Updates:** Bumped dev-dependency `mutants` from `0.0.3` to `0.0.4` across the workspace (`rullst-orm` and `rullst-orm-macros`).
 - **Single-Pass Array Chunking Optimization:** Rewrote `.chunk()` in `RullstCollection` to use a direct $O(N)$ single-pass iterator without `split_off()`, eliminating unnecessary memory allocations, vector reversals, and potential capacity overflows.
 - **Delete Macro Modularization:** Refactored and modularized `generate_delete_methods` in the macro generator into dedicated helper functions (`generate_delete_sql`, `generate_restore_method`, and `generate_force_delete_method`), improving maintainability and readability of the codebase.
+- **Docs Deployment Clean-up:** Removed obsolete `.github/workflows/deploy-docs.yml` workflow following the removal of the legacy `./website` folder, streamlining static site generation into the benchmark CI pipeline.
 
 ### Fixed
 - **Macro Attribute Parsing Robustness:** Updated `strip_outer_call` in the macro parser to handle whitespace between macro attribute identifiers and parentheses, fixing parsing failures in `#[orm(soft_delete(...))]` attributes when processed by `syn`.

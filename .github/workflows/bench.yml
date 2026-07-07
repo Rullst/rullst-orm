@@ -1,0 +1,50 @@
+name: Performance Benchmarks CI
+
+on:
+  push:
+    branches: [ "main", "dev" ]
+  pull_request:
+    branches: [ "main", "dev" ]
+  workflow_dispatch:
+
+permissions: read-all
+
+jobs:
+  benchmark:
+    name: Run ORM Performance Benchmarks
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      deployments: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@2c8a9bd7457de244a408f35966fab2fb45fda9c8 # v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-bench-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Run Benchmarks with Criterion
+        run: cargo bench --workspace --bench orm_bench -- --output-format bencher | tee output.txt
+
+      - name: Store Benchmark Result & Check Regressions
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: Rullst ORM Performance Dashboard
+          tool: 'cargo'
+          output-file-path: output.txt
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: ${{ github.event_name == 'push' }}
+          alert-threshold: '130%'
+          comment-on-alert: true
+          fail-on-alert: true
+          comment-always: false

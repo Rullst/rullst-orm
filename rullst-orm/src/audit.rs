@@ -294,6 +294,21 @@ mod tests {
         let (old_diff, new_diff) = super::compute_diff("not json", "{invalid}");
         assert!(old_diff.is_none());
         assert!(new_diff.is_none());
+
+        // One valid, one invalid
+        let (old_diff2, new_diff2) = super::compute_diff(r#"{"a":1}"#, "invalid");
+        assert!(old_diff2.is_none());
+        assert!(new_diff2.is_none());
+
+        // Arrays or primitive values instead of JSON Objects
+        let (old_diff3, new_diff3) = super::compute_diff("[1, 2]", "[1, 2, 3]");
+        assert!(old_diff3.is_none());
+        assert!(new_diff3.is_none());
+
+        // Empty objects
+        let (old_diff4, new_diff4) = super::compute_diff("{}", "{}");
+        assert!(old_diff4.is_none());
+        assert!(new_diff4.is_none());
     }
 
     #[tokio::test]
