@@ -48,7 +48,7 @@ jobs:
             git add index.html
             git commit -m "Initialize gh-pages"
             git push origin gh-pages
-            git checkout -
+            git checkout -f "${{ github.sha }}"
           )
 
       - name: Store Benchmark Result & Check Regressions
