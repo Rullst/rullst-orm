@@ -26,10 +26,7 @@ jobs:
     - name: Initialize CodeQL
       uses: github/codeql-action/init@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4
       with:
-        languages: 'javascript' # CodeQL will scan the website/ JS. Rust is supported but requires build steps, JS is easier for the dashboard.
-        # Wait, Rust is supported by CodeQL but since we only care about satisfying OSSF Scorecard, we can just run it. Let's just put rust.
-        # Actually Rust isn't natively supported by CodeQL out of the box without special extractors sometimes, but it does work.
-        # Wait, if we use Rust we have to build it. Let's just omit languages and let it auto-detect or use JS if website is present.
+        languages: 'actions' # Scan GitHub Actions workflows for security vulnerabilities
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4
