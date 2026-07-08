@@ -44,8 +44,8 @@ jobs:
             git config user.email "github-actions[bot]@users.noreply.github.com"
             git checkout --orphan gh-pages
             git rm -rf . || true
-            echo "# Benchmark Results" > index.html
-            git add index.html
+            echo "# Benchmark Results" > README.md
+            git add README.md
             git commit -m "Initialize gh-pages"
             git push origin gh-pages
             git checkout -f "${{ github.sha }}"
