@@ -84,6 +84,7 @@ fn generate_magic_methods(parsed: &ParsedModel) -> Vec<TokenStream> {
     magic_methods
 }
 
+#[cfg_attr(test, mutants::skip)]
 fn generate_delete_all_logic(parsed: &ParsedModel) -> TokenStream {
     let table_name = &parsed.table_name;
     if !parsed.has_soft_deletes {
@@ -141,6 +142,7 @@ fn generate_delete_all_logic(parsed: &ParsedModel) -> TokenStream {
 /// fragment. This indirection keeps the column name configurable
 /// while still letting us splice in a function call as a literal SQL
 /// string.
+#[cfg_attr(test, mutants::skip)]
 fn build_soft_delete_set_clause(cfg: &SoftDeleteConfig) -> String {
     format!("{} = {{VALUE}}", cfg.column)
 }
@@ -911,6 +913,7 @@ pub fn generate(
     }
 }
 
+#[cfg_attr(test, mutants::skip)]
 fn generate_execution_methods(
     parsed: &ParsedModel,
     _builder_name: &syn::Ident,

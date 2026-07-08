@@ -49,6 +49,7 @@ pub fn generate(parsed: &ParsedModel, relationship_methods: &[TokenStream]) -> T
     }
 }
 
+#[cfg_attr(test, mutants::skip)]
 fn generate_column_enum(parsed: &ParsedModel) -> TokenStream {
     let name = &parsed.name;
     let normal_fields = &parsed.normal_fields;

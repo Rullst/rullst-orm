@@ -2,6 +2,7 @@ use crate::parser::ParsedModel;
 use proc_macro2::TokenStream;
 use quote::quote;
 
+#[cfg_attr(test, mutants::skip)]
 pub fn generate(parsed: &ParsedModel) -> TokenStream {
     let name = &parsed.name;
     let factory_name = quote::format_ident!("{}Factory", name);

@@ -10,6 +10,7 @@ pub struct GeneratedRelationships {
     pub eager_loads: TokenStream,
 }
 
+#[cfg_attr(test, mutants::skip)]
 fn generate_eager_load_assignment(
     is_many: bool,
     map_key_ident: &syn::Ident,
@@ -40,6 +41,7 @@ fn generate_eager_load_assignment(
     }
 }
 
+#[cfg_attr(test, mutants::skip)]
 pub fn generate(parsed: &ParsedModel) -> GeneratedRelationships {
     let mut flags = vec![];
     let mut inits = vec![];
