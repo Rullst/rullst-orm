@@ -198,7 +198,7 @@ pub fn parse(input: &DeriveInput) -> Result<ParsedModel, syn::Error> {
                         let k = kv_parts[0].trim();
                         let v = kv_parts[1].trim().trim_matches('"');
                         match k {
-                            "field" => column = Some(v.to_string()),
+                            "field" | "column" => column = Some(v.to_string()),
                             "value" => value = Some(v.to_string()),
                             "delval" => delval = Some(v.to_string()),
                             _ => {}
@@ -210,12 +210,12 @@ pub fn parse(input: &DeriveInput) -> Result<ParsedModel, syn::Error> {
                         delval: delval.unwrap_or_default(),
                     });
                 } else {
-                    let parts: Vec<&str> = trimmed.split('=').collect();
+                    let parts: Vec<&str> = trimmed.splitn(2, '=').collect();
                     if parts.len() == 2 {
                         let key = parts[0].trim();
                         let val = parts[1].trim().trim_matches('"');
                         match key {
-                            "table" => {
+                            "table" | "table_name" => {
                                 if val.trim().is_empty() {
                                     return Err(syn::Error::new_spanned(
                                         attr,
