@@ -465,6 +465,23 @@ mod tests {
     }
 
     #[test]
+    fn test_replace_placeholders() {
+        assert_eq!(
+            super::replace_placeholders("SELECT * FROM users WHERE id = ? AND name = ?"),
+            "SELECT * FROM users WHERE id = $1 AND name = $2"
+        );
+        assert_eq!(
+            super::replace_placeholders("INSERT INTO users (name) VALUES (?)"),
+            "INSERT INTO users (name) VALUES ($1)"
+        );
+        assert_eq!(
+            super::replace_placeholders("SELECT * FROM users"),
+            "SELECT * FROM users"
+        );
+        assert_eq!(super::replace_placeholders("? ? ?"), "$1 $2 $3");
+    }
+
+    #[test]
     fn test_rullst_value_conversions() {
         // From
         let v: RullstValue = "test".into();

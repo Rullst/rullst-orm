@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Expanded Test Suite & Schema Validation:** Added 64-character maximum length check to `validate_identifier` in `schema.rs`. Added thorough unit tests for `.timestamps()`, `.boolean()`, nullable column builder flipping, single-item and complex nested `ResourceCollection::resolve()`, and edge cases in `compute_diff` for audit logging.
 - **Schema & Resource Unit Tests:** Added `test_blueprint_float_and_boolean_columns` to verify that `.float()` (`REAL`) and `.boolean()` (`INTEGER`) helper methods generate correct column definitions and metadata in `Blueprint`, and added `ComplexResource` struct and test covering nested objects, arrays, and optional/null values in `JsonResource::resolve()`.
 - **Database Transaction Integration Test:** Added `scenario_transaction_types` to the integration test suite to formally verify correct execution of SQL queries under the internal `db::Transaction` and `db::Pool` wrappers.
+- **Replace Placeholders Test:** Added unit tests for `replace_placeholders` in `lib.rs` to ensure correct translation of `?` into Postgres positional parameters `$1`, `$2`.
+
 
 ### Changed
 - **Dependency Updates:** Bumped dev-dependency `mutants` from `0.0.3` to `0.0.4` across the workspace (`rullst-orm` and `rullst-orm-macros`).
@@ -21,8 +23,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Docs Deployment Clean-up:** Removed obsolete `.github/workflows/deploy-docs.yml` workflow following the removal of the legacy `./website` folder, streamlining static site generation into the benchmark CI pipeline.
 - **Relationship Query Macro Modularization:** Extracted duplicate query generation mapping logic across `has_many`, `has_one`, `belongs_to`, `morph_many`, and `morph_one` into a shared `generate_eager_load_assignment` function, reducing procedural macro codebase size.
 - **Postgres Parameter Extraction:** Abstracted the repetitive manual placeholder translation logic (`?` to `$1`, `$2`, etc. for Postgres driver) from the generated macro code inside `models.rs` to a centralized runtime helper function (`rullst_orm::replace_placeholders`).
+- **Migration Table Check Deduplication:** Extracted the duplicate existence check for the migrations table in `status_migrations` and `rollback_migrations` into a helper function.
+- **Removed Dead Code:** Removed the unused `soft_delete_restore_clause` and its tests from the query builder macro generation.
+- **String Allocation Optimization:** Optimized the `vec!["?"; n].join(", ")` allocation loop in `belongs_to_many` queries with a pre-allocated String capacity builder, avoiding unnecessary Vec allocations.
+
 
 ### Fixed
+- **Table Name Escaping:** Fixed a potential syntax error where `drop_if_exists` and `create` methods formatted table names directly into raw SQL. The schema builder now escapes table identifiers based on the database driver (e.g. backticks for MySQL and double-quotes for Postgres/SQLite).
 - **Benchmark CI Orphan Branch Initialization:** Added an automatic pre-check step in `.github/workflows/bench.yml` (`Ensure gh-pages branch exists`) that creates and pushes an orphan `gh-pages` branch if it does not already exist on the remote repository, fixing `git fetch` failures when publishing benchmark reports.
 - **OSSF Scorecard Action Pinning:** Pinned `benchmark-action/github-action-benchmark` to exact commit SHA (`52576c92bccf6ac60c8223ec7eb2565637cae9ba`) in `.github/workflows/bench.yml`, resolving OpenSSF Scorecard pinned-dependencies security alert.
 - **CodeQL Target Language:** Changed CodeQL analysis target language from `javascript` to `actions` in `.github/workflows/codeql.yml`, preventing CI build failures after the removal of the legacy JavaScript website folder while preserving full OpenSSF security compliance.

@@ -35,17 +35,7 @@ fn soft_delete_where_clause(cfg: &SoftDeleteConfig, is_trashed: bool) -> String 
     }
 }
 
-/// Renders the `<column> = <value>` fragment used in `restore` queries
-/// to bring a soft-deleted row back to the "not deleted" state.
-#[allow(dead_code)]
-#[cfg_attr(test, mutants::skip)]
-fn soft_delete_restore_clause(cfg: &SoftDeleteConfig) -> String {
-    if SoftDeleteCmp::for_value(&cfg.value) == SoftDeleteCmp::NullSentinel {
-        format!("{} = NULL", cfg.column)
-    } else {
-        format!("{} = {}", cfg.column, cfg.value)
-    }
-}
+
 
 /// Generates the magic methods for each field (where_field, order_by_field, etc)
 #[cfg_attr(test, mutants::skip)]
@@ -1315,20 +1305,5 @@ mod tests {
         assert_eq!(soft_delete_where_clause(&cfg_lit, true), "is_deleted != 0");
     }
 
-    #[test]
-    fn test_soft_delete_restore_clause() {
-        let cfg_null = SoftDeleteConfig {
-            column: "deleted_at".into(),
-            value: "null".into(),
-            delval: "1".into(),
-        };
-        assert_eq!(soft_delete_restore_clause(&cfg_null), "deleted_at = NULL");
 
-        let cfg_lit = SoftDeleteConfig {
-            column: "is_deleted".into(),
-            value: "0".into(),
-            delval: "1".into(),
-        };
-        assert_eq!(soft_delete_restore_clause(&cfg_lit), "is_deleted = 0");
-    }
 }

@@ -281,9 +281,16 @@ impl Schema {
         // build() now returns Result so any column-name or default issues
         // surface as errors rather than producing malformed SQL.
         let columns_sql = blueprint.build()?;
+        
+        let driver = crate::Orm::driver();
+        let escaped_table = match driver {
+            "mysql" => format!("`{}`", table_name),
+            _ => format!("\"{}\"", table_name),
+        };
+
         let sql = format!(
             "CREATE TABLE IF NOT EXISTS {} (\n    {}\n);",
-            table_name, columns_sql
+            escaped_table, columns_sql
         );
 
         let pool = crate::Orm::pool();
@@ -296,8 +303,13 @@ impl Schema {
 
     pub async fn drop_if_exists(table_name: &str) -> Result<(), Error> {
         validate_table_name(table_name)?;
+        let driver = crate::Orm::driver();
+        let escaped_table = match driver {
+            "mysql" => format!("`{}`", table_name),
+            _ => format!("\"{}\"", table_name),
+        };
 
-        let sql = format!("DROP TABLE IF EXISTS {};", table_name);
+        let sql = format!("DROP TABLE IF EXISTS {};", escaped_table);
         let pool = crate::Orm::pool();
         let mut query_builder = sqlx::query_builder::QueryBuilder::new("");
         query_builder.push(&sql);
@@ -370,25 +382,32 @@ pub async fn run_artisan(
     run_artisan_with_args(&args, migrations, seeders).await
 }
 
-#[cfg_attr(test, mutants::skip)]
-async fn status_migrations(migrations: Vec<Box<dyn Migration>>) -> Result<(), Error> {
-    let pool = crate::Orm::pool();
-    let driver = crate::Orm::driver();
-
-    let table_exists = match driver {
+async fn migrations_table_exists(
+    pool: &crate::RullstPool,
+    driver: &str,
+) -> Result<bool, Error> {
+    match driver {
         "postgres" | "mysql" => {
             let query_str =
                 "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'migrations'";
             let row: (i64,) = sqlx::query_as(query_str).fetch_one(pool).await?;
-            row.0 > 0
+            Ok(row.0 > 0)
         }
         _ => {
             let query_str =
                 "SELECT COUNT(*) FROM sqlite_schema WHERE type='table' AND name='migrations'";
             let row: (i64,) = sqlx::query_as(query_str).fetch_one(pool).await?;
-            row.0 > 0
+            Ok(row.0 > 0)
         }
-    };
+    }
+}
+
+#[cfg_attr(test, mutants::skip)]
+async fn status_migrations(migrations: Vec<Box<dyn Migration>>) -> Result<(), Error> {
+    let pool = crate::Orm::pool();
+    let driver = crate::Orm::driver();
+
+    let table_exists = migrations_table_exists(pool, driver).await?;
 
     let executed_set = if table_exists {
         let executed: Vec<(String,)> = sqlx::query_as("SELECT migration FROM migrations")
@@ -568,20 +587,7 @@ async fn rollback_migrations(migrations: Vec<Box<dyn Migration>>) -> Result<(), 
     let pool = crate::Orm::pool();
     let driver = crate::Orm::driver();
 
-    let table_exists = match driver {
-        "postgres" | "mysql" => {
-            let query_str =
-                "SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'migrations'";
-            let row: (i64,) = sqlx::query_as(query_str).fetch_one(pool).await?;
-            row.0 > 0
-        }
-        _ => {
-            let query_str =
-                "SELECT COUNT(*) FROM sqlite_schema WHERE type='table' AND name='migrations'";
-            let row: (i64,) = sqlx::query_as(query_str).fetch_one(pool).await?;
-            row.0 > 0
-        }
-    };
+    let table_exists = migrations_table_exists(pool, driver).await?;
 
     if !table_exists {
         println!("Nothing to rollback.");

@@ -339,7 +339,12 @@ pub fn generate(parsed: &ParsedModel) -> GeneratedRelationships {
                                 }
                                 ph
                             } else {
-                                vec!["?"; parent_ids.len()].join(", ")
+                                let mut ph = String::with_capacity(parent_ids.len() * 3);
+                                for i in 0..parent_ids.len() {
+                                    if i > 0 { ph.push_str(", "); }
+                                    ph.push('?');
+                                }
+                                ph
                             };
                             let pivot_sql = format!(
                                 "SELECT {fk}, {rk} FROM {pt} WHERE {fk} IN ({ph})",
