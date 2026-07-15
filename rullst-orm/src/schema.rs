@@ -281,7 +281,7 @@ impl Schema {
         // build() now returns Result so any column-name or default issues
         // surface as errors rather than producing malformed SQL.
         let columns_sql = blueprint.build()?;
-        
+
         let driver = crate::Orm::driver();
         let escaped_table = match driver {
             "mysql" => format!("`{}`", table_name),
@@ -382,10 +382,7 @@ pub async fn run_artisan(
     run_artisan_with_args(&args, migrations, seeders).await
 }
 
-async fn migrations_table_exists(
-    pool: &crate::RullstPool,
-    driver: &str,
-) -> Result<bool, Error> {
+async fn migrations_table_exists(pool: &crate::RullstPool, driver: &str) -> Result<bool, Error> {
     match driver {
         "postgres" | "mysql" => {
             let query_str =

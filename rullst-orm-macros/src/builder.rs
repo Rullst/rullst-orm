@@ -35,8 +35,6 @@ fn soft_delete_where_clause(cfg: &SoftDeleteConfig, is_trashed: bool) -> String 
     }
 }
 
-
-
 /// Generates the magic methods for each field (where_field, order_by_field, etc)
 #[cfg_attr(test, mutants::skip)]
 fn generate_magic_methods(parsed: &ParsedModel) -> Vec<TokenStream> {
@@ -1304,6 +1302,4 @@ mod tests {
         assert_eq!(soft_delete_where_clause(&cfg_lit, false), "is_deleted = 0");
         assert_eq!(soft_delete_where_clause(&cfg_lit, true), "is_deleted != 0");
     }
-
-
 }
