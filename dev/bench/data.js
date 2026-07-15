@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1784151893884,
+  "lastUpdate": 1784157345725,
   "repoUrl": "https://github.com/Rullst/rullst-orm",
   "entries": {
     "Rullst ORM Performance Dashboard": [
@@ -1139,6 +1139,120 @@ window.BENCHMARK_DATA = {
             "name": "db_roundtrip/query/limit_n/100",
             "value": 251801,
             "range": "± 2841",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "venelouistyago@gmail.com",
+            "name": "venelouis",
+            "username": "venelouis"
+          },
+          "committer": {
+            "email": "venelouistyago@gmail.com",
+            "name": "venelouis",
+            "username": "venelouis"
+          },
+          "distinct": true,
+          "id": "9c142367436060aa75d243978e859f799395a443",
+          "message": "feat: implement schema builder with SQL injection protection and column validation",
+          "timestamp": "2026-07-15T19:39:33-03:00",
+          "tree_id": "8d9a000b6d7defa4eb6f7e1b1d24547b884ef347",
+          "url": "https://github.com/Rullst/rullst-orm/commit/9c142367436060aa75d243978e859f799395a443"
+        },
+        "date": 1784157345122,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "cpu/validate_identifier/short",
+            "value": 10,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "cpu/validate_identifier/qualified",
+            "value": 12,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "cpu/validate_identifier/invalid",
+            "value": 37,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "cpu/to_json/user",
+            "value": 367,
+            "range": "± 11",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "cpu/from_json/user",
+            "value": 275,
+            "range": "± 5",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "cpu/query_builder/build",
+            "value": 158,
+            "range": "± 5",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "db_roundtrip/save/insert",
+            "value": 2303261,
+            "range": "± 5417818",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "db_roundtrip/query/find_by_id",
+            "value": 66187,
+            "range": "± 2608",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "db_roundtrip/query/where_eq_first",
+            "value": 66493,
+            "range": "± 1137",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "db_roundtrip/query/count",
+            "value": 63155,
+            "range": "± 1576",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "db_roundtrip/query/all_limit_10",
+            "value": 68994,
+            "range": "± 1373",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "db_roundtrip/query/limit_n/1",
+            "value": 61913,
+            "range": "± 1057",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "db_roundtrip/query/limit_n/10",
+            "value": 69438,
+            "range": "± 698",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "db_roundtrip/query/limit_n/50",
+            "value": 128532,
+            "range": "± 4214",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "db_roundtrip/query/limit_n/100",
+            "value": 204998,
+            "range": "± 10236",
             "unit": "ns/iter"
           }
         ]
