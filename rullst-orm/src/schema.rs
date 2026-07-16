@@ -301,7 +301,7 @@ impl Schema {
         Ok(())
     }
 
-    #[cfg_attr(test, mutants::skip)]
+    #[mutants::skip]
     pub async fn drop_if_exists(table_name: &str) -> Result<(), Error> {
         validate_table_name(table_name)?;
         let driver = crate::Orm::driver();
@@ -383,7 +383,7 @@ pub async fn run_artisan(
     run_artisan_with_args(&args, migrations, seeders).await
 }
 
-#[cfg_attr(test, mutants::skip)]
+#[mutants::skip]
 async fn migrations_table_exists(pool: &crate::RullstPool, driver: &str) -> Result<bool, Error> {
     match driver {
         "postgres" | "mysql" => {

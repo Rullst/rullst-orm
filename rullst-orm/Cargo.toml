@@ -11,6 +11,7 @@ categories = ["database"]
 readme = "../README.md"
 
 [dependencies]
+mutants = "0.0.4"
 rullst-orm-macros = { path = "../rullst-orm-macros", version = "6.0.2" }
 sqlx = { version = "0.9", features = ["sqlite", "postgres", "mysql", "any", "runtime-tokio", "macros", "json"] }
 tokio = { version = "1.23.1", features = ["full"] }
@@ -34,7 +35,6 @@ criterion = { version = "0.8.2", features = ["async_tokio"] }
 testcontainers = "0.27.3"
 testcontainers-modules = { version = "0.15.0", features = ["postgres", "mysql"] }
 proptest = "1.11.0"
-mutants = "0.0.4"
 
 [[bench]]
 name = "orm_bench"
