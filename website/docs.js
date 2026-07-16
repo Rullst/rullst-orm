@@ -25,12 +25,15 @@ document.addEventListener('DOMContentLoaded', () => {
     return html;
   };
 
-  renderer.code = function(code, language) {
-    let highlighted = code;
-    if (language === 'rust' || language === 'bash') {
-       highlighted = applyHighlighting(code);
+  renderer.code = function(tokenOrCode, maybeLang) {
+    const text = typeof tokenOrCode === 'string' ? tokenOrCode : tokenOrCode.text;
+    const lang = typeof tokenOrCode === 'string' ? maybeLang : tokenOrCode.lang;
+    
+    let highlighted = text;
+    if (lang === 'rust' || lang === 'bash') {
+       highlighted = applyHighlighting(text);
     }
-    return `<pre><code class="language-${language}">${highlighted}</code></pre>`;
+    return `<pre><code class="language-${lang}">${highlighted}</code></pre>`;
   };
 
   marked.setOptions({ renderer });
