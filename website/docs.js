@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
     contentBody.innerHTML = '<div class="loading">Loading documentation...</div>';
     
     try {
-      const response = await fetch(`/docs/${filename}`);
+      const response = await fetch(`./docs/${filename}`);
       if (!response.ok) throw new Error('Network response was not ok');
       const text = await response.text();
       contentBody.innerHTML = marked.parse(text);
