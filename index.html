@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Rullst ORM - A beautiful, type-safe, Active Record ORM for Rust." />
+    <title>Rullst ORM</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <script type="module" crossorigin src="./assets/index-DA4HIBhw.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-C4zWNNCo.css">
+  </head>
+  <body>
+    <div id="app">
+      <nav class="navbar">
+        <div class="logo">Rullst <span>ORM</span></div>
+        <div class="nav-links">
+          <a href="/docs.html">Docs</a>
+          <a href="https://github.com/Rullst/rullst-orm" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href="https://rullst.github.io/rullst-orm/bench/" class="btn neon-blue" target="_blank" rel="noopener noreferrer">Benchmarks</a>
+        </div>
+      </nav>
+
+      <main>
+        <section class="hero">
+          <div class="hero-content">
+            <h1 class="animate-fade-in">A beautiful, <span class="gradient-text">type-safe</span>, Active Record ORM for Rust.</h1>
+            <p class="subtitle animate-fade-in delay-1">Built on top of SQLx, Rullst brings the delightful, fluent syntax of Active Record frameworks directly to the high-performance Rust ecosystem.</p>
+            <div class="cta-buttons animate-fade-in delay-2">
+              <a href="https://github.com/Rullst/rullst-orm#installation" class="btn primary-btn neon-orange" target="_blank" rel="noopener noreferrer">Get Started</a>
+              <a href="https://rullst.github.io/rullst-orm/bench/" class="btn outline-btn neon-blue" target="_blank" rel="noopener noreferrer">View Benchmarks</a>
+            </div>
+          </div>
+        </section>
+
+        <section class="features">
+          <div class="feature-card glassmorphism">
+            <div class="icon">🚀</div>
+            <h3>Zero-Boilerplate CRUD</h3>
+            <p>Insert, update, delete, and find records instantly. No more repetitive raw SQL for basic operations.</p>
+          </div>
+          <div class="feature-card glassmorphism">
+            <div class="icon">🔗</div>
+            <h3>Fluent Builder</h3>
+            <p>Chain `.where_eq()`, `.limit()`, and `.order_by()` effortlessly. Solve N+1 problems with robust eager loading.</p>
+          </div>
+          <div class="feature-card glassmorphism">
+            <div class="icon">🛡️</div>
+            <h3>Zero-Panic Policy</h3>
+            <p>Tested against rigorous standards. 100% memory safe, SQL Injection defenses built-in, and full audit logs.</p>
+          </div>
+        </section>
+
+        <section class="how-it-works">
+          <div class="section-header">
+            <h2>How it Works</h2>
+            <p>Built with Rust's powerful procedural macros, Rullst-ORM does the heavy lifting at compile time.</p>
+          </div>
+          <div class="steps-grid">
+            <div class="step-card glassmorphism">
+              <div class="step-number">1</div>
+              <h4>Define your Model</h4>
+              <p>Just add <code>#[derive(Orm)]</code> to your standard Rust structs. No external DSLs or massive configuration files required.</p>
+            </div>
+            <div class="step-card glassmorphism">
+              <div class="step-number">2</div>
+              <h4>Compile-Time Magic</h4>
+              <p>The macro parses your struct fields, relationships, and metadata, generating hundreds of safe, optimized, and chainable Active Record methods instantaneously.</p>
+            </div>
+            <div class="step-card glassmorphism">
+              <div class="step-number">3</div>
+              <h4>Type-Safe Queries</h4>
+              <p>Query your database using fluent syntax (e.g., <code>.where_eq()</code>, <code>.limit()</code>). All parameters are bound securely via `sqlx` to completely eliminate SQL Injection risks.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="showcase">
+          <div class="code-window glassmorphism">
+            <div class="window-header">
+              <span class="dot red"></span>
+              <span class="dot yellow"></span>
+              <span class="dot green"></span>
+              <span class="filename">main.rs</span>
+            </div>
+            <pre><code class="language-rust">use rullst_orm::{Orm, FromRow};
+
+#[derive(Debug, Clone, FromRow, Orm)]
+pub struct User {
+    pub id: i32,
+    pub name: String,
+    pub email: String,
+}
+
+#[tokio::main]
+async fn main() -&gt; Result&lt;(), rullst_orm::Error&gt; {
+    Orm::init("sqlite::memory:").await?;
+
+    // Fluent Queries
+    let active_users = User::query()
+        .where_like("email", "%@example.com")
+        .order_by_desc("id")
+        .limit(10)
+        .get()
+        .await?;
+
+    Ok(())
+}</code></pre>
+          </div>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <p>&copy; 2026 Rullst ORM. Licensed under MIT.</p>
+        <p>Built with ❤️ for the Rust Community.</p>
+      </footer>
+    </div>
+  </body>
+</html>
