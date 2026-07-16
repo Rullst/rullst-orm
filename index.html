@@ -7,17 +7,17 @@
     <meta name="description" content="Rullst ORM - A beautiful, type-safe, Active Record ORM for Rust." />
     <title>Rullst ORM</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-    <script type="module" crossorigin src="./assets/index-DA4HIBhw.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-C4zWNNCo.css">
+    <script type="module" crossorigin src="./assets/index-DkmmUGnY.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-BafkQfwX.css">
   </head>
   <body>
     <div id="app">
       <nav class="navbar">
         <div class="logo">Rullst <span>ORM</span></div>
         <div class="nav-links">
-          <a href="/docs.html">Docs</a>
+          <a href="./docs.html">Docs</a>
           <a href="https://github.com/Rullst/rullst-orm" target="_blank" rel="noopener noreferrer">GitHub</a>
-          <a href="https://rullst.github.io/rullst-orm/bench/" class="btn neon-blue" target="_blank" rel="noopener noreferrer">Benchmarks</a>
+          <a href="./benchmarks.html" class="btn neon-blue">Benchmarks</a>
         </div>
       </nav>
 
@@ -51,7 +51,33 @@
           </div>
         </section>
 
-        <section class="how-it-works">
+      <section class="deep-dive">
+        <div class="section-header">
+          <h2>Uncompromising Architecture</h2>
+          <p>Built to handle mission-critical workloads.</p>
+        </div>
+        <div class="features-grid">
+          <div class="feature-card glassmorphism hover-lift">
+            <div class="icon">🛡️</div>
+            <h3>Compile-Time Safety</h3>
+            <p>Procedural macros generate static SQL at compile-time. If your database schema doesn't match your code, your program won't compile. Zero runtime panics.</p>
+          </div>
+          
+          <div class="feature-card glassmorphism hover-lift">
+            <div class="icon">🔍</div>
+            <h3>Miri & Kani Verified</h3>
+            <p>Our core logic is continuously tested against the Rust Mid-level IR (MIR) and mathematically proven via Symbolic Execution to eliminate Undefined Behavior.</p>
+          </div>
+          
+          <div class="feature-card glassmorphism hover-lift">
+            <div class="icon">🏗️</div>
+            <h3>Agnostic Schema Builder</h3>
+            <p>Write your migrations once using our fluent Blueprint API, and translate them seamlessly into Postgres, MySQL, or SQLite dialects on the fly.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="how-it-works">
           <div class="section-header">
             <h2>How it Works</h2>
             <p>Built with Rust's powerful procedural macros, Rullst-ORM does the heavy lifting at compile time.</p>
