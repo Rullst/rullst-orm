@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="./vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Performance Dashboard - Rullst ORM</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div id="app">
+      <nav class="navbar">
+        <a href="./index.html" class="logo">Rullst <span>ORM</span></a>
+        <div class="nav-links">
+          <a href="./index.html">Home</a>
+          <a href="./docs.html">Docs</a>
+          <a href="https://github.com/Rullst/rullst-orm" target="_blank" rel="noopener noreferrer">GitHub</a>
+        </div>
+      </nav>
+
+      <div class="container bench-container">
+        <div class="section-header">
+          <h1 class="glow-text">Performance Dashboard</h1>
+          <p>Real-time continuous benchmarking. Every commit is measured against historical data to prevent performance regressions.</p>
+        </div>
+
+        <div class="bench-grid" id="bench-charts-container">
+          <!-- Charts will be dynamically injected here -->
+          <div class="loading">Loading benchmark data from CI...</div>
+        </div>
+        
+        <div class="bench-explanation glassmorphism">
+          <h3>How to read this?</h3>
+          <p>
+            The charts above represent execution time in <strong>nanoseconds (ns)</strong> per iteration. 
+            Lower is better. 
+          </p>
+          <ul>
+            <li><strong>cpu/validate_identifier/short:</strong> Measures the overhead of our internal SQL injection defense when validating small column names.</li>
+            <li><strong>orm_bench:</strong> Measures the raw throughput of the schema builder and eager-loading engines.</li>
+          </ul>
+        </div>
+      </div>
+
+      <footer class="footer">
+        <p>&copy; 2026 Rullst ORM. Licensed under MIT.</p>
+      </footer>
+    </div>
+    <script type="module" src="./benchmarks.js"></script>
+  </body>
+</html>
