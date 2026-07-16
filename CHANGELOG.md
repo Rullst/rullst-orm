@@ -37,6 +37,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Soft Delete Null Sentinel Handling:** Fixed `SoftDeleteCmp::for_value` in the query builder macro generator to treat empty strings as `NullSentinel` (`IS NULL` / `IS NOT NULL`), restoring correct behavior for legacy `deleted_at` models without explicit configuration.
 - **Strict Lint Fixes:** Addressed `clippy` lints (`explicit_counter_loop` and `collapsible_str_replace`) in the internal database logic, replacing manual iterations with `zip` arrays and single character replace passes.
 
+## [6.0.3] - 2026-07-16
+
+### Added
+- **Official Documentation Website:** Launched the new beautifully styled project website featuring a dynamic `marked.js` Markdown parser for the `/docs.html` page, native syntax highlighting for Rust code, and a dark-mode Glassmorphism aesthetic.
+- **Custom Benchmark Dashboard:** Introduced a native continuous benchmarking dashboard (`/benchmarks.html`) powered by `Chart.js`, visualizing execution times dynamically from GitHub Actions telemetry (`data.js`).
+
+### Security
+- **OSSF Scorecard Hardening:** Fixed GitHub Code Scanning alerts by pinning all GitHub Actions dependencies to exact SHAs (e.g., `actions/checkout@34e114876...`) and enforcing deterministic package installations (`npm ci`) within the CD pipeline.
+
 ## [6.0.2] - 2026-06-28
 
 ### Added

@@ -1,6 +1,6 @@
 [package]
 name = "rullst-orm"
-version = "6.0.2"
+version = "6.0.3"
 edition = "2024"
 rust-version = "1.96.0"
 description = "An Active Record ORM for Rust."
@@ -12,7 +12,7 @@ readme = "../README.md"
 
 [dependencies]
 mutants = "0.0.4"
-rullst-orm-macros = { path = "../rullst-orm-macros", version = "6.0.2" }
+rullst-orm-macros = { path = "../rullst-orm-macros", version = "6.0.3" }
 sqlx = { version = "0.9", features = ["sqlite", "postgres", "mysql", "any", "runtime-tokio", "macros", "json"] }
 tokio = { version = "1.23.1", features = ["full"] }
 async-trait = "0.1"
