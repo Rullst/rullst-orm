@@ -8,6 +8,13 @@ mod factory_observer;
 mod models;
 mod parser;
 mod relationships;
+mod privacy;
+
+#[cfg_attr(test, mutants::skip)]
+#[proc_macro_derive(PersonalData, attributes(privacy))]
+pub fn derive_personal_data(input: TokenStream) -> TokenStream {
+    privacy::derive_personal_data_impl(input)
+}
 
 #[cfg_attr(test, mutants::skip)]
 #[proc_macro_derive(Orm, attributes(orm, sqlx))]

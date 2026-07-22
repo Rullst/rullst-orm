@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Automated Compliance & Data Governance (GDPR/LGPD):** Added `#[derive(PersonalData)]` macro to generate out-of-the-box privacy reports for models containing sensitive data. Added `SecretString` to transparently encrypt fields at rest in the database using AES-256-GCM (with the `RULLST_ENCRYPTION_KEY` environment variable), preventing accidental data leakage in standard logs and SQL debugging.
 - **Continuous Performance Regression CI:** Created a dedicated `.github/workflows/bench.yml` workflow using Criterion and `benchmark-action/github-action-benchmark` to run continuous performance regression tests and automatically publish historical interactive dashboards to the official website on GitHub Pages. Added a new **Continuous Benchmarks** badge to the security/quality table in `README.md`.
 - **SLSA Level 3 & Supply Chain Provenance:** Added the **SLSA Level 3** security badge to `README.md` following the industry-standard OSSF pattern, linking directly to `slsa-verifier` for tamper-evident build provenance checks.
 - **Expanded Test Suite & Schema Validation:** Added 64-character maximum length check to `validate_identifier` in `schema.rs`. Added thorough unit tests for `.timestamps()`, `.boolean()`, nullable column builder flipping, single-item and complex nested `ResourceCollection::resolve()`, and edge cases in `compute_diff` for audit logging.

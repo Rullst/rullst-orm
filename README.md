@@ -55,6 +55,7 @@ In traditional Rust database handling, you have to write raw SQL queries, manage
 - **Eager Loading**: Solve N+1 problems with robust `has_many`, `belongs_to`, and `morph_many` relations.
 - **Built-in Multi-Tenancy**: Automatically scope all queries by tenant ID.
 - **Automated Audit Logs**: Track `old_values` and `new_values` history natively.
+- **Data Governance & Privacy**: Compile-time GDPR/LGPD compliance with at-rest encryption and log masking.
 - **Scout Search**: Seamlessly sync models to full-text search engines.
 - **Enterprise Ready**: Read/write replica splitting, query chunking, and Redis caching built-in.
 
