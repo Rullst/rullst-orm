@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, Data, DeriveInput, Fields};
+use syn::{Data, DeriveInput, Fields, parse_macro_input};
 
 pub fn derive_personal_data_impl(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -17,7 +17,10 @@ pub fn derive_personal_data_impl(input: TokenStream) -> TokenStream {
                 let field_name = field.ident.unwrap();
 
                 // Check if the field has the `#[privacy]` attribute
-                let has_privacy = field.attrs.iter().any(|attr| attr.path().is_ident("privacy"));
+                let has_privacy = field
+                    .attrs
+                    .iter()
+                    .any(|attr| attr.path().is_ident("privacy"));
 
                 if has_privacy {
                     has_encrypted_data = true;

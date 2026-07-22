@@ -1,8 +1,8 @@
 use aes_gcm::{
-    aead::{Aead, KeyInit},
     Aes256Gcm, Nonce,
+    aead::{Aead, KeyInit},
 };
-use base64::{engine::general_purpose::STANDARD, Engine as _};
+use base64::{Engine as _, engine::general_purpose::STANDARD};
 use rand::RngExt;
 use serde::{Deserialize, Serialize};
 
@@ -94,7 +94,7 @@ impl<'r> sqlx::Decode<'r, sqlx::Any> for SecretString {
         let text = <String as sqlx::Decode<sqlx::Any>>::decode(value)?;
         let encryption_key = std::env::var("RULLST_ENCRYPTION_KEY")
             .map_err(|_| "RULLST_ENCRYPTION_KEY is not set in environment")?;
-        
+
         let decrypted = decrypt_aes_gcm(&text, &encryption_key)?;
         Ok(SecretString(decrypted))
     }
@@ -112,7 +112,7 @@ impl<'q> sqlx::Encode<'q, sqlx::Any> for SecretString {
     ) -> Result<sqlx::encode::IsNull, Box<dyn std::error::Error + Send + Sync>> {
         let encryption_key = std::env::var("RULLST_ENCRYPTION_KEY")
             .map_err(|_| "RULLST_ENCRYPTION_KEY is not set in environment")?;
-            
+
         let encrypted = encrypt_aes_gcm(&self.0, &encryption_key)?;
         <String as sqlx::Encode<sqlx::Any>>::encode(encrypted, buf)
     }
@@ -143,7 +143,7 @@ impl<'r> sqlx::Decode<'r, crate::database::RullstDatabase> for SecretString {
         let text = <String as sqlx::Decode<crate::database::RullstDatabase>>::decode(value)?;
         let encryption_key = std::env::var("RULLST_ENCRYPTION_KEY")
             .map_err(|_| "RULLST_ENCRYPTION_KEY is not set in environment")?;
-            
+
         let decrypted = decrypt_aes_gcm(&text, &encryption_key)?;
         Ok(SecretString(decrypted))
     }
@@ -162,7 +162,7 @@ impl<'q> sqlx::Encode<'q, crate::database::RullstDatabase> for SecretString {
     ) -> Result<sqlx::encode::IsNull, Box<dyn std::error::Error + Send + Sync>> {
         let encryption_key = std::env::var("RULLST_ENCRYPTION_KEY")
             .map_err(|_| "RULLST_ENCRYPTION_KEY is not set in environment")?;
-            
+
         let encrypted = encrypt_aes_gcm(&self.0, &encryption_key)?;
         <String as sqlx::Encode<crate::database::RullstDatabase>>::encode(encrypted, buf)
     }

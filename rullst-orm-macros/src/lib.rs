@@ -7,8 +7,8 @@ mod builder;
 mod factory_observer;
 mod models;
 mod parser;
-mod relationships;
 mod privacy;
+mod relationships;
 
 #[cfg_attr(test, mutants::skip)]
 #[proc_macro_derive(PersonalData, attributes(privacy))]
