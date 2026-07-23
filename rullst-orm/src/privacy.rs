@@ -202,4 +202,25 @@ mod tests {
         let debug_str = format!("{:?}", secret);
         assert_eq!(debug_str, "[ENCRYPTED_SECRET]");
     }
+
+    #[test]
+    fn test_decrypt_aes_gcm_invalid_length() {
+        let key = "01234567890123456789012345678901";
+        
+        let short_payload = STANDARD.encode(&[0u8; 11]);
+        let result = decrypt_aes_gcm(&short_payload, key);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "Invalid encrypted payload (too short)");
+
+        let exactly_12_payload = STANDARD.encode(&[0u8; 12]);
+        let result = decrypt_aes_gcm(&exactly_12_payload, key);
+        assert!(result.is_err());
+        assert_ne!(result.unwrap_err(), "Invalid encrypted payload (too short)");
+    }
+
+    #[test]
+    fn test_secret_string_reveal_audited() {
+        let secret = SecretString::new("my-secret-data");
+        assert_eq!(secret.reveal_audited(), "my-secret-data");
+    }
 }
