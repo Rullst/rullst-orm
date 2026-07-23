@@ -67,7 +67,7 @@ mod tests {
         use syn::parse_quote;
 
         let input: DeriveInput = parse_quote! {
-            #[orm(table_name = "test_table", global_scope = "active = 1", tenant_column = "tenant_id")]
+            #[orm(table_name = "test_table", global_scope = "active = 1", tenant_column = "tenant_id", policy = "TestPolicy")]
             #[orm(auditable, searchable)]
             #[orm(before_save = "before_s", after_save = "after_s")]
             #[orm(before_delete = "before_d", after_delete = "after_d")]
@@ -92,6 +92,7 @@ mod tests {
         assert_eq!(parsed.table_name, "test_table");
         assert_eq!(parsed.global_scope, "active = 1");
         assert_eq!(parsed.tenant_column, "tenant_id");
+        assert_eq!(parsed.policy, "TestPolicy");
         assert!(parsed.auditable);
         assert!(parsed.searchable);
         assert_eq!(parsed.before_save, "before_s");
