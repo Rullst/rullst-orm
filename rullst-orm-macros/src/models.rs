@@ -813,7 +813,7 @@ fn generate_update_builder(parsed: &ParsedModel) -> (TokenStream, TokenStream) {
     let mut builder_inits = vec![];
 
     for (field, ty) in normal_fields.iter().zip(normal_fields_types.iter()) {
-        if field.to_string() == "id" {
+        if field == "id" {
             continue;
         }
 
