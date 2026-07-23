@@ -206,7 +206,7 @@ mod tests {
     #[test]
     fn test_decrypt_aes_gcm_invalid_length() {
         let key = "01234567890123456789012345678901";
-        
+
         let short_payload = STANDARD.encode(&[0u8; 11]);
         let result = decrypt_aes_gcm(&short_payload, key);
         assert!(result.is_err());
