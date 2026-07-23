@@ -35,3 +35,36 @@ When preparing for a major release (e.g., `v7.0`) or after rewriting a core comp
 2. On the left sidebar, select the desired workflow (e.g., "Mutation Testing").
 3. Click the blue **Run workflow** dropdown on the right side.
 4. Select the `main` branch and execute.
+
+---
+
+## Data Privacy & Compliance (GDPR/LGPD)
+
+Rullst-ORM is the first Rust ORM to offer **Compile-Time Privacy & Compliance**. 
+This is achieved via the `#[derive(PersonalData)]` macro and the `SecretString` type.
+
+### How it works
+
+When a struct derives `PersonalData` and tags fields with `#[privacy]`:
+1. **At-Rest Encryption:** Using `SecretString` automatically applies AES-256-GCM encryption before saving data into the database and decrypts it when retrieving.
+2. **Log Masking:** It injects a custom `std::fmt::Debug` implementation. If an object is accidentally logged (e.g. `println!("{:?}", user)`), sensitive data is masked as `[REDACTED_BY_RULLST_SHIELD]`.
+3. **Automated Reports:** The model implements the `ComplianceModel` trait, allowing you to extract a `PrivacyReport` mapping which tables and fields contain encrypted personal data for GDPR/LGPD audits.
+
+**Example usage:**
+```rust
+use rullst_orm::{Orm, PersonalData};
+use rullst_orm::privacy::SecretString;
+
+#[derive(Orm, PersonalData)]
+#[orm(table = "users")]
+pub struct User {
+    pub id: i64,
+    pub name: String,
+    
+    // Encrypted in the DB, masked in logs
+    #[privacy(encrypt = "aes-256-gcm", mask = "cpf")]
+    pub cpf: SecretString,
+}
+```
+
+*Note: You must set the `RULLST_ENCRYPTION_KEY` (32 bytes) environment variable.*
