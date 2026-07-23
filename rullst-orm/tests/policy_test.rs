@@ -30,7 +30,8 @@ impl Policy<Document> for DocumentPolicy {
 
 #[tokio::test]
 async fn test_policy_enforcement() {
-    let _ = rullst_orm::Orm::init("sqlite::memory:").await;
+    let _ = std::fs::remove_file("policy.db");
+    let _ = rullst_orm::Orm::init("sqlite://policy.db?mode=rwc").await;
 
     // Create a table manually
     let pool = rullst_orm::Orm::pool();

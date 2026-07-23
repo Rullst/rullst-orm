@@ -24,7 +24,8 @@ pub struct Post {
     expected = "StrictLazyLoading: Attempted to lazily load relation 'posts' on 'User' without eager loading."
 )]
 async fn test_strict_lazy_loading_panics() {
-    let _ = rullst_orm::Orm::init("sqlite::memory:").await;
+    let _ = std::fs::remove_file("lazy_load.db");
+    let _ = rullst_orm::Orm::init("sqlite://lazy_load.db?mode=rwc").await;
     // Enable the strict lazy loading feature
     rullst_orm::prevent_lazy_loading(true);
 

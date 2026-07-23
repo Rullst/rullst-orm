@@ -11,7 +11,8 @@ pub struct Product {
 
 #[tokio::test]
 async fn test_partial_updates() {
-    let _ = rullst_orm::Orm::init("sqlite::memory:").await;
+    let _ = std::fs::remove_file("partial_update.db");
+    let _ = rullst_orm::Orm::init("sqlite://partial_update.db?mode=rwc").await;
 
     // Create a table manually
     let pool = rullst_orm::Orm::pool();
