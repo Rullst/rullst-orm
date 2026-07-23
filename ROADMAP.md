@@ -45,9 +45,12 @@ All core features of Laravel Orm have been successfully ported to Rust.
 ## 🏭 Phase 4: Enterprise Scale (v1.0.0)
 - [x] **Read/Write Connections Split**: Automatic routing of `SELECT` queries to database replicas and `INSERT/UPDATE/DELETE` to the primary node.
 - [x] **Query Chunking & Cursors**: Methods like `.chunk(1000, |batch| ...)` to process millions of records safely without high memory usage.
+- [ ] **Async Streams**: Support for `futures::Stream` (`impl Stream<Item = Model>`) to asynchronously iterate over millions of records with minimal memory footprint.
 - [x] **Integrated Caching Layer**: Add `.remember(seconds)` using an optional Redis feature flag to automatically cache repetitive queries.
 - [x] **Background Event Hooks**: Optional pub/sub event broadcasting when models change, allowing seamless integration with external worker queues.
 - [x] **Security & Performance Static Audit**: All critical and medium-priority findings from the Jules/Antigravity architecture audit resolved in v1.1.13 (QueryBuilder binding fix, error propagation, clippy compliance).
+- [ ] **Native OpenTelemetry (Tracing)**: Deep integration with the `tracing` crate to automatically emit spans for queries, transactions, and connection checkout for observability.
+- [ ] **Type-Safe Raw SQL Fallback**: A seamless method like `Orm::raw("SELECT * FROM users").map_to::<User>()` for complex edge cases without losing ORM mapping capabilities.
 
 ## 🔮 Phase 5: Version 3.0.0 Architecture (Completed)
 
@@ -68,6 +71,7 @@ We introduced the `strict-postgres`, `strict-mysql`, and `strict-sqlite` feature
 Our goal is to provide tools that normally cost thousands of dollars, completely free and open-source, ensuring `rullst-orm` stands unrivaled in the Rust ecosystem.
 
 - [x] **Native Multi-Tenancy**: Built-in support for SaaS applications. Automatic isolation of tenant data via magic `tenant_id` columns or separate database schemas.
+- [x] **Automated Compliance & Data Governance (GDPR/LGPD)**: `#[derive(PersonalData)]` macro for out-of-the-box privacy reports, and `SecretString` for transparent AES-256-GCM encryption at rest, preventing accidental data leakage.
 - [x] **Audit Trails (Revision History)**: A `#[orm(auditable)]` macro that automatically tracks "who changed what" in a separate history table for compliance and rollbacks.
 - [x] **Built-in Full-Text Search (Scout)**: `.search("query")` method that automatically syncs your models with Meilisearch, Algolia, or Elasticsearch upon saving.
 - [x] **Rullst ORM Admin Panel**: A drop-in function that generates a beautiful web dashboard to manage your data without writing frontend code.
@@ -77,6 +81,7 @@ Our goal is to provide tools that normally cost thousands of dollars, completely
 
 Pushing the boundaries of what an ORM can do in the modern era of computing.
 
+- [ ] **Database-First Introspection**: An Artisan CLI tool (`rullst-cli generate models`) to connect to legacy databases and automatically generate Rust structs mapped to existing tables.
 - [ ] **Native Vector DB & RAG Support (`pgvector`)**: Methods like `.where_similar("embedding", vector)` to natively support AI applications and Retrieval-Augmented Generation directly in standard SQL databases.
 - [ ] **AI-Powered Auto Migrations**: An opt-in tool that analyzes your Rust structs and uses a local or remote LLM to automatically generate the perfect SQL migration diffs, eliminating manual SQL typing.
 - [ ] **Wasm & Edge Computing**: Running the ORM directly on Cloudflare Workers or Vercel Edge with Serverless DB drivers (PlanetScale, Neon).
