@@ -14,9 +14,11 @@ pub fn generate(parsed: &ParsedModel, relationship_methods: &[TokenStream]) -> T
     let save_method = generate_save_method(parsed);
     let delete_methods = generate_delete_methods(parsed);
     let query_methods = generate_query_methods(parsed, &builder_name);
+    let (update_builder_struct, update_builder_method) = generate_update_builder(parsed);
 
     quote! {
         #enum_def
+        #update_builder_struct
 
         #[rullst_orm::async_trait]
         impl rullst_orm::RullstModel for #name {
@@ -43,6 +45,9 @@ pub fn generate(parsed: &ParsedModel, relationship_methods: &[TokenStream]) -> T
 
             #search_method
             #query_methods
+
+            #update_builder_method
+
             #save_method
             #delete_methods
         }
@@ -327,17 +332,15 @@ fn generate_save_method(parsed: &ParsedModel) -> TokenStream {
     let audit_before_update = if parsed.auditable {
         quote! {
             let old_model_for_audit = if !is_new {
-                let pool = rullst_orm::Orm::read_pool();
                 let driver = rullst_orm::Orm::driver();
                 let query = if driver == "postgres" {
                     format!("SELECT * FROM {} WHERE id = $1", #table_name)
                 } else {
                     format!("SELECT * FROM {} WHERE id = ?", #table_name)
                 };
-                rullst_orm::_sqlx::query_as::<_, Self>(rullst_orm::_sqlx::AssertSqlSafe(query.as_str()))
-                    .bind(self.id)
-                    .fetch_optional(pool)
-                    .await?
+                let mut q = rullst_orm::_sqlx::query_as::<_, Self>(rullst_orm::_sqlx::AssertSqlSafe(query.as_str()))
+                    .bind(self.id);
+                rullst_orm::execute_query!(q, fetch_optional, read_pool)?
             } else {
                 None
             };
@@ -410,10 +413,32 @@ fn generate_save_method(parsed: &ParsedModel) -> TokenStream {
     let insert_placeholders_str = insert_placeholders.join(", ");
     let update_sets_str = update_sets.join(", ");
 
+    let policy_check_create = if !parsed.policy.is_empty() {
+        let policy_type = syn::Ident::new(&parsed.policy, parsed.name.span());
+        quote! {
+            if !<#policy_type as rullst_orm::Policy<Self>>::can_create(self).await? {
+                return Err(rullst_orm::Error::Validation("Policy prevents creation of this record".to_string()));
+            }
+        }
+    } else {
+        quote! {}
+    };
+
+    let policy_check_update = if !parsed.policy.is_empty() {
+        let policy_type = syn::Ident::new(&parsed.policy, parsed.name.span());
+        quote! {
+            if !<#policy_type as rullst_orm::Policy<Self>>::can_update(self).await? {
+                return Err(rullst_orm::Error::Validation("Policy prevents updating this record".to_string()));
+            }
+        }
+    } else {
+        quote! {}
+    };
+
     quote! {
+        #[rullst_orm::_tracing::instrument(name = "rullst_query", skip(self))]
         pub async fn save(&mut self) -> Result<(), rullst_orm::Error> {
-            let pool = rullst_orm::Orm::pool();
-            self.save_with_tx_internal(pool).await
+            rullst_orm::dispatch_executor!(pool, |pool| self.save_with_tx_internal(pool).await)
         }
 
         pub async fn save_with_tx(&mut self, tx: &mut rullst_orm::db::Transaction<'static>) -> Result<(), rullst_orm::Error> {
@@ -425,7 +450,10 @@ fn generate_save_method(parsed: &ParsedModel) -> TokenStream {
         {
             let is_new = self.id == 0;
             if is_new {
+                #policy_check_create
                 #tenant_set_logic
+            } else {
+                #policy_check_update
             }
             #audit_before_update
             #hook_before_save
@@ -651,14 +679,40 @@ fn generate_delete_methods(parsed: &ParsedModel) -> TokenStream {
                 query_builder.push(format!(" SET {} WHERE id = ?", #set_clause_lit));
             }
             let query = query_builder.build();
-            let exec = query.bind(self.id);
-            let timeout = rullst_orm::schema::get_query_timeout();
-            if let Some(t) = timeout {
-                tokio::time::timeout(t, exec.execute(pool))
-                    .await
-                    .map_err(|_| rullst_orm::Error::DatabaseError("Query execution timed out".to_string()))??;
-            } else {
-                exec.execute(pool).await?;
+            let mut exec = query.bind(self.id);
+            rullst_orm::execute_query!(exec, execute, pool)?;
+        }
+    } else {
+        quote! {}
+    };
+
+    let policy_check_delete = if !parsed.policy.is_empty() {
+        let policy_type = syn::Ident::new(&parsed.policy, parsed.name.span());
+        quote! {
+            if !<#policy_type as rullst_orm::Policy<Self>>::can_delete(self).await? {
+                return Err(rullst_orm::Error::Validation("Policy prevents deleting this record".to_string()));
+            }
+        }
+    } else {
+        quote! {}
+    };
+
+    let policy_check_restore = if !parsed.policy.is_empty() {
+        let policy_type = syn::Ident::new(&parsed.policy, parsed.name.span());
+        quote! {
+            if !<#policy_type as rullst_orm::Policy<Self>>::can_restore(self).await? {
+                return Err(rullst_orm::Error::Validation("Policy prevents restoring this record".to_string()));
+            }
+        }
+    } else {
+        quote! {}
+    };
+
+    let policy_check_force_delete = if !parsed.policy.is_empty() {
+        let policy_type = syn::Ident::new(&parsed.policy, parsed.name.span());
+        quote! {
+            if !<#policy_type as rullst_orm::Policy<Self>>::can_force_delete(self).await? {
+                return Err(rullst_orm::Error::Validation("Policy prevents force deleting this record".to_string()));
             }
         }
     } else {
@@ -666,9 +720,9 @@ fn generate_delete_methods(parsed: &ParsedModel) -> TokenStream {
     };
 
     quote! {
+        #[rullst_orm::_tracing::instrument(name = "rullst_query", skip(self))]
         pub async fn delete(&self) -> Result<(), rullst_orm::Error> {
-            let pool = rullst_orm::Orm::pool();
-            self.delete_with_tx_internal(pool).await
+            rullst_orm::dispatch_executor!(pool, |pool| self.delete_with_tx_internal(pool).await)
         }
 
         pub async fn delete_with_tx(&self, tx: &mut rullst_orm::db::Transaction<'static>) -> Result<(), rullst_orm::Error> {
@@ -678,6 +732,7 @@ fn generate_delete_methods(parsed: &ParsedModel) -> TokenStream {
         async fn delete_with_tx_internal<'e, E>(&self, executor: E) -> Result<(), rullst_orm::Error>
         where E: rullst_orm::_sqlx::Executor<'e, Database = rullst_orm::RullstDatabase>
         {
+            #policy_check_delete
             #hook_before_delete
             let observers = {
                 let list = Self::observers().read().unwrap_or_else(|poisoned| poisoned.into_inner());
@@ -715,12 +770,16 @@ fn generate_delete_methods(parsed: &ParsedModel) -> TokenStream {
             Ok(())
         }
 
+        #[rullst_orm::_tracing::instrument(name = "rullst_query", skip(self))]
         pub async fn restore(&self) -> Result<(), rullst_orm::Error> {
+            #policy_check_restore
             #restore_logic
             Ok(())
         }
 
+        #[rullst_orm::_tracing::instrument(name = "rullst_query", skip(self))]
         pub async fn force_delete(&self) -> Result<(), rullst_orm::Error> {
+            #policy_check_force_delete
             let pool = rullst_orm::Orm::pool();
             use rullst_orm::_sqlx::query_builder::QueryBuilder;
             let mut query_builder = QueryBuilder::new("DELETE FROM ");
@@ -731,16 +790,119 @@ fn generate_delete_methods(parsed: &ParsedModel) -> TokenStream {
                 query_builder.push(" WHERE id = ?");
             }
             let query = query_builder.build();
-            let exec = query.bind(self.id);
-            let timeout = rullst_orm::schema::get_query_timeout();
-            if let Some(t) = timeout {
-                tokio::time::timeout(t, exec.execute(pool))
-                    .await
-                    .map_err(|_| rullst_orm::Error::DatabaseError("Query execution timed out".to_string()))??;
-            } else {
-                exec.execute(pool).await?;
-            }
+            let mut exec = query.bind(self.id);
+            rullst_orm::execute_query!(exec, execute, pool)?;
             Ok(())
         }
     }
+}
+
+#[cfg_attr(test, mutants::skip)]
+fn generate_update_builder(parsed: &ParsedModel) -> (TokenStream, TokenStream) {
+    let name = &parsed.name;
+    let table_name = &parsed.table_name;
+    let update_builder_name = quote::format_ident!("{}UpdateBuilder", name);
+    let normal_fields = &parsed.normal_fields;
+    let normal_fields_types = &parsed.normal_fields_types;
+
+    let mut builder_fields = vec![];
+    let mut builder_methods = vec![];
+    let mut set_clauses = vec![];
+    let mut update_bindings = vec![];
+    let mut apply_to_model = vec![];
+    let mut builder_inits = vec![];
+
+    for (field, ty) in normal_fields.iter().zip(normal_fields_types.iter()) {
+        if field.to_string() == "id" {
+            continue;
+        }
+
+        builder_fields.push(quote! {
+            #field: Option<#ty>
+        });
+
+        builder_inits.push(quote! {
+            #field: None
+        });
+
+        builder_methods.push(quote! {
+            pub fn #field(mut self, value: #ty) -> Self {
+                self.#field = Some(value);
+                self
+            }
+        });
+
+        let field_str = field.to_string();
+        set_clauses.push(quote! {
+            if self.#field.is_some() {
+                sets.push(format!("{} = ?", #field_str));
+            }
+        });
+
+        update_bindings.push(quote! {
+            if let Some(ref val) = self.#field {
+                exec = exec.bind(val.clone());
+            }
+        });
+
+        apply_to_model.push(quote! {
+            if let Some(ref val) = self.#field {
+                self.model.#field = val.clone();
+            }
+        });
+    }
+
+    let struct_def = quote! {
+        pub struct #update_builder_name<'a> {
+            model: &'a mut #name,
+            #(#builder_fields),*
+        }
+
+        impl<'a> #update_builder_name<'a> {
+            #(#builder_methods)*
+
+            pub async fn save(mut self) -> Result<(), rullst_orm::Error> {
+                let mut sets = vec![];
+                #(#set_clauses)*
+
+                if sets.is_empty() {
+                    return Ok(()); // Nothing to update
+                }
+
+                #(#apply_to_model)*
+
+                let driver = rullst_orm::Orm::driver();
+                let mut sql = format!("UPDATE {} SET {} WHERE id = ?", #table_name, sets.join(", "));
+                if driver == "postgres" {
+                    sql = rullst_orm::replace_placeholders(&sql);
+                }
+
+                if rullst_orm::schema::is_query_log_enabled() {
+                    println!("[SQL Debug Partial Update] {:?} | ID: {}", sql, self.model.id);
+                }
+
+                let pool = rullst_orm::Orm::pool();
+                let query = rullst_orm::_sqlx::query(rullst_orm::_sqlx::AssertSqlSafe(sql.as_str()));
+                let mut exec = query;
+
+                #(#update_bindings)*
+
+                exec = exec.bind(self.model.id);
+                rullst_orm::execute_query!(exec, execute, pool)?;
+
+                Ok(())
+            }
+        }
+    };
+
+    let method_def = quote! {
+        pub fn update_partial(&mut self) -> #update_builder_name<'_> {
+            #update_builder_name {
+                model: self,
+                #(#builder_inits),*
+            }
+        }
+    };
+
+    (struct_def, method_def)
 }

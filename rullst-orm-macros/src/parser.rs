@@ -93,6 +93,7 @@ pub struct ParsedModel {
     pub tenant_column: String,
     pub auditable: bool,
     pub searchable: bool,
+    pub policy: String,
     pub before_save: String,
     pub after_save: String,
     pub before_delete: String,
@@ -108,6 +109,7 @@ pub struct ParsedModel {
     pub soft_delete: Option<SoftDeleteConfig>,
 
     pub normal_fields: Vec<syn::Ident>,
+    pub normal_fields_types: Vec<syn::Type>,
     pub hidden_fields: Vec<syn::Ident>,
     /// Fields tagged with `#[orm(skip)]` or `#[sqlx(skip)]`. They are
     /// still part of the struct but excluded from generated INSERT /
@@ -155,6 +157,7 @@ pub fn parse(input: &DeriveInput) -> Result<ParsedModel, syn::Error> {
     let mut tenant_column = String::new();
     let mut auditable = false;
     let mut searchable = false;
+    let mut policy = String::new();
     let mut before_save = String::new();
     let mut after_save = String::new();
     let mut before_delete = String::new();
@@ -226,6 +229,7 @@ pub fn parse(input: &DeriveInput) -> Result<ParsedModel, syn::Error> {
                             }
                             "global_scope" => global_scope = val.to_string(),
                             "tenant_column" => tenant_column = val.to_string(),
+                            "policy" => policy = val.to_string(),
                             "before_save" => before_save = val.to_string(),
                             "after_save" => after_save = val.to_string(),
                             "before_delete" => before_delete = val.to_string(),
@@ -258,6 +262,7 @@ pub fn parse(input: &DeriveInput) -> Result<ParsedModel, syn::Error> {
     };
 
     let mut normal_fields = vec![];
+    let mut normal_fields_types = vec![];
     let mut hidden_fields = vec![];
     let mut skipped_fields = vec![];
     let mut relations = vec![];
@@ -409,6 +414,7 @@ pub fn parse(input: &DeriveInput) -> Result<ParsedModel, syn::Error> {
             }
         } else {
             normal_fields.push(field_name.clone());
+            normal_fields_types.push(field.ty.clone());
             if is_hidden {
                 hidden_fields.push(field_name);
             }
@@ -436,6 +442,7 @@ pub fn parse(input: &DeriveInput) -> Result<ParsedModel, syn::Error> {
         tenant_column,
         auditable,
         searchable,
+        policy,
         before_save,
         after_save,
         before_delete,
@@ -443,6 +450,7 @@ pub fn parse(input: &DeriveInput) -> Result<ParsedModel, syn::Error> {
         after_fetch,
         soft_delete,
         normal_fields,
+        normal_fields_types,
         hidden_fields,
         skipped_fields,
         relations,

@@ -918,13 +918,19 @@ fn generate_execution_methods(
     } else {
         quote! {}
     };
+    let hook_after_fetch_single = if !parsed.after_fetch.is_empty() {
+        let method = syn::Ident::new(&parsed.after_fetch, name.span());
+        quote! { row.#method().await?; }
+    } else {
+        quote! {}
+    };
     let delete_all_logic = generate_delete_all_logic(parsed);
 
     vec![quote! {
+    #[rullst_orm::_tracing::instrument(name = "rullst_query", skip(self))]
     pub async fn get(&self) -> Result<Vec<#name>, rullst_orm::Error> {
-                    let pool = rullst_orm::Orm::read_pool();
-                    self.get_with_tx_internal(pool).await
-                }
+        rullst_orm::dispatch_executor!(read_pool, |pool| self.get_with_tx_internal(pool).await)
+    }
 
                 pub async fn get_with_tx(&self, tx: &mut rullst_orm::db::Transaction<'static>) -> Result<Vec<#name>, rullst_orm::Error> {
                     self.get_with_tx_internal(&mut **tx).await
@@ -1017,6 +1023,7 @@ fn generate_execution_methods(
                     Ok(results)
                 }
 
+                #[rullst_orm::_tracing::instrument(name = "rullst_query", skip(self))]
                 pub async fn first(&self) -> Result<Option<#name>, rullst_orm::Error> {
                     let mut builder = self.clone();
                     builder.limit = Some(1);
@@ -1031,6 +1038,7 @@ fn generate_execution_methods(
                     Ok(results.into_iter().next())
                 }
 
+                #[rullst_orm::_tracing::instrument(name = "rullst_query", skip(self))]
                 pub async fn paginate(&self, page: usize, per_page: usize) -> Result<rullst_orm::PaginationResult<#name>, rullst_orm::Error> {
                     if !self.errors.is_empty() {
                         return Err(self.errors[0].clone());
@@ -1045,8 +1053,7 @@ fn generate_execution_methods(
                     if rullst_orm::schema::is_query_log_enabled() {
                         println!("[SQL Debug] {:?} | Bindings: [{} parameter(s) redacted for security]", query_str, total_builder.bindings.len());
                     }
-                    let pool = rullst_orm::Orm::read_pool();
-                    let total_row: (i64,) = {
+                    let total_row: (i64,) = rullst_orm::dispatch_executor!(read_pool, |pool| {
                         let mut query = rullst_orm::_sqlx::query_as::<_, (i64,)>(rullst_orm::_sqlx::AssertSqlSafe(query_str.as_str()));
                         for binding in &total_builder.bindings {
                             match binding {
@@ -1064,7 +1071,7 @@ fn generate_execution_methods(
                         } else {
                             query.fetch_one(pool).await?
                         }
-                    };
+                    });
                     let total = total_row.0;
                     let last_page = (total as f64 / per_page as f64).ceil() as usize;
 
@@ -1084,17 +1091,16 @@ fn generate_execution_methods(
                     })
                 }
 
+                #[rullst_orm::_tracing::instrument(name = "rullst_query", skip(self))]
                 pub async fn count(&self) -> Result<i64, rullst_orm::Error> {
                     if !self.errors.is_empty() {
                         return Err(self.errors[0].clone());
                     }
-                    let pool = rullst_orm::Orm::read_pool();
                     let query_str = self.to_count_sql();
                     if rullst_orm::schema::is_query_log_enabled() {
                         println!("[SQL Debug] {:?} | Bindings: [{} parameter(s) redacted for security]", query_str, self.bindings.len());
                     }
-
-                    let row: (i64,) = {
+                    let row: (i64,) = rullst_orm::dispatch_executor!(read_pool, |pool| {
                         let mut query = rullst_orm::_sqlx::query_as::<_, (i64,)>(rullst_orm::_sqlx::AssertSqlSafe(query_str.as_str()));
                         for binding in &self.bindings {
                             match binding {
@@ -1112,10 +1118,11 @@ fn generate_execution_methods(
                         } else {
                             query.fetch_one(pool).await?
                         }
-                    };
+                    });
                     Ok(row.0)
                 }
 
+                #[rullst_orm::_tracing::instrument(name = "rullst_query", skip(self, handler))]
                 pub async fn chunk<F, Fut>(&self, size: usize, mut handler: F) -> Result<(), rullst_orm::Error>
                 where
                     F: FnMut(Vec<#name>) -> Fut + Send,
@@ -1156,9 +1163,68 @@ fn generate_execution_methods(
                     Ok(())
                 }
 
+                pub fn stream<'a>(&'a self) -> impl rullst_orm::_futures::Stream<Item = Result<#name, rullst_orm::Error>> + 'a {
+                    rullst_orm::_async_stream::try_stream! {
+                        if !self.errors.is_empty() {
+                            Err(self.errors[0].clone())?;
+                        }
+                        let query_str = self.to_sql();
+                        if rullst_orm::schema::is_query_log_enabled() {
+                            println!("[SQL Debug] {:?} | Bindings: [{} parameter(s) redacted for security]", query_str, self.bindings.len());
+                        }
+
+                        let pool = rullst_orm::Orm::read_pool();
+                        let mut query = rullst_orm::_sqlx::query_as::<_, #name>(rullst_orm::_sqlx::AssertSqlSafe(query_str.as_str()));
+                        for binding in &self.bindings {
+                            match binding {
+                                rullst_orm::RullstValue::String(s) => { query = query.bind(s.clone()); }
+                                rullst_orm::RullstValue::Int(i) => { query = query.bind(*i); }
+                                rullst_orm::RullstValue::Float(f) => { query = query.bind(*f); }
+                                rullst_orm::RullstValue::Bool(b) => { query = query.bind(*b); }
+                            }
+                        }
+
+                        let mut db_stream = query.fetch(pool);
+                        while let Some(row_res) = rullst_orm::_futures::StreamExt::next(&mut db_stream).await {
+                            let mut row = row_res.map_err(|e| rullst_orm::Error::DatabaseError(e.to_string()))?;
+                            #hook_after_fetch_single
+                            yield row;
+                        }
+                    }
+                }
+
+                pub fn stream_with_tx<'a>(&'a self, tx: &'a mut rullst_orm::db::Transaction<'static>) -> impl rullst_orm::_futures::Stream<Item = Result<#name, rullst_orm::Error>> + 'a {
+                    rullst_orm::_async_stream::try_stream! {
+                        if !self.errors.is_empty() {
+                            Err(self.errors[0].clone())?;
+                        }
+                        let query_str = self.to_sql();
+                        if rullst_orm::schema::is_query_log_enabled() {
+                            println!("[SQL Debug] {:?} | Bindings: [{} parameter(s) redacted for security]", query_str, self.bindings.len());
+                        }
+
+                        let mut query = rullst_orm::_sqlx::query_as::<_, #name>(rullst_orm::_sqlx::AssertSqlSafe(query_str.as_str()));
+                        for binding in &self.bindings {
+                            match binding {
+                                rullst_orm::RullstValue::String(s) => { query = query.bind(s.clone()); }
+                                rullst_orm::RullstValue::Int(i) => { query = query.bind(*i); }
+                                rullst_orm::RullstValue::Float(f) => { query = query.bind(*f); }
+                                rullst_orm::RullstValue::Bool(b) => { query = query.bind(*b); }
+                            }
+                        }
+
+                        let mut db_stream = query.fetch(&mut **tx);
+                        while let Some(row_res) = rullst_orm::_futures::StreamExt::next(&mut db_stream).await {
+                            let mut row = row_res.map_err(|e| rullst_orm::Error::DatabaseError(e.to_string()))?;
+                            #hook_after_fetch_single
+                            yield row;
+                        }
+                    }
+                }
+
+                #[rullst_orm::_tracing::instrument(name = "rullst_query", skip(self))]
                 pub async fn delete_all(&self) -> Result<u64, rullst_orm::Error> {
-                    let pool = rullst_orm::Orm::pool();
-                    self.delete_all_with_tx_internal(pool).await
+                    rullst_orm::dispatch_executor!(pool, |pool| self.delete_all_with_tx_internal(pool).await)
                 }
 
                 pub async fn delete_all_with_tx(&self, tx: &mut rullst_orm::db::Transaction<'static>) -> Result<u64, rullst_orm::Error> {

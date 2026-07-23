@@ -293,10 +293,10 @@ impl Schema {
             escaped_table, columns_sql
         );
 
-        let pool = crate::Orm::pool();
         let mut query_builder = sqlx::query_builder::QueryBuilder::new("");
         query_builder.push(&sql);
-        query_builder.build().execute(pool).await?;
+        let query = query_builder.build();
+        crate::execute_query!(query, execute, pool)?;
 
         Ok(())
     }
@@ -311,10 +311,10 @@ impl Schema {
         };
 
         let sql = format!("DROP TABLE IF EXISTS {};", escaped_table);
-        let pool = crate::Orm::pool();
         let mut query_builder = sqlx::query_builder::QueryBuilder::new("");
         query_builder.push(&sql);
-        query_builder.build().execute(pool).await?;
+        let query = query_builder.build();
+        crate::execute_query!(query, execute, pool)?;
         Ok(())
     }
 }
@@ -340,6 +340,9 @@ pub async fn run_artisan_with_args(
         println!("  migrate:rollback         Rollback the last batch of migrations");
         println!("  status                   Show migrations status");
         println!("  db:seed                  Populate the database with seeders");
+        println!(
+            "  sail:install             Generate a default docker-compose.yml (Laravel Sail style)"
+        );
         return Ok(());
     }
 
@@ -366,6 +369,57 @@ pub async fn run_artisan_with_args(
             println!("Seeding database...");
             crate::Orm::seed(seeders).await?;
             println!("Database seeded successfully!");
+        }
+        "sail:install" => {
+            println!("Generating docker-compose.yml...");
+            let content = r#"version: '3'
+services:
+  postgres:
+    image: postgres:15
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: rullst
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: password
+    volumes:
+      - sail-postgres:/var/lib/postgresql/data
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - sail-redis:/data
+  meilisearch:
+    image: getmeili/meilisearch:latest
+    ports:
+      - "7700:7700"
+    environment:
+      MEILI_MASTER_KEY: sail
+    volumes:
+      - sail-meilisearch:/meili_data
+  pgadmin:
+    image: dpage/pgadmin4
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@rullst.com
+      PGADMIN_DEFAULT_PASSWORD: password
+
+volumes:
+  sail-postgres:
+    driver: local
+  sail-redis:
+    driver: local
+  sail-meilisearch:
+    driver: local
+"#;
+            std::fs::write("docker-compose.yml", content).map_err(|e| {
+                crate::Error::Internal(format!("Failed to write docker-compose.yml: {}", e))
+            })?;
+            println!(
+                "docker-compose.yml created successfully! Run `docker compose up -d` to start."
+            );
         }
         _ => {
             println!("Unknown command: {}", command);
@@ -1036,8 +1090,22 @@ mod tests {
     #[tokio::test]
     async fn test_run_artisan_entrypoint() {
         // Calling run_artisan with empty lists. It parses std::env::args() and prints help
-        // because the arguments of cargo test won't match any of the commands.
+        // Note: we can't easily mock std::env::args here, so we just run it and let it fall through.
         let result = run_artisan(vec![], vec![]).await;
         assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_sail_install() {
+        let args = vec!["artisan".to_string(), "sail:install".to_string()];
+        let result = run_artisan_with_args(&args, vec![], vec![]).await;
+        assert!(result.is_ok());
+
+        let content = std::fs::read_to_string("docker-compose.yml").unwrap();
+        assert!(content.contains("postgres:15"));
+        assert!(content.contains("redis:alpine"));
+
+        // Cleanup
+        std::fs::remove_file("docker-compose.yml").unwrap();
     }
 }

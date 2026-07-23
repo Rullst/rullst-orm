@@ -50,6 +50,8 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 // Hide underlying libraries for macro usage while keeping the public API clean
 #[doc(hidden)]
+pub use async_stream as _async_stream;
+#[doc(hidden)]
 pub use futures as _futures;
 #[doc(hidden)]
 pub use serde as _serde;
@@ -57,6 +59,8 @@ pub use serde as _serde;
 pub use serde_json as _serde_json;
 #[doc(hidden)]
 pub use sqlx as _sqlx;
+#[doc(hidden)]
+pub use tracing as _tracing;
 
 #[cfg(feature = "redis")]
 #[doc(hidden)]
@@ -77,13 +81,71 @@ pub fn replace_placeholders(sql: &str) -> String {
     replaced
 }
 
+static PREVENT_LAZY_LOADING: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
+
+/// Prevents relationships from being lazily loaded when accessed without being eager loaded.
+/// When enabled, attempting to lazily load a relation will throw a panic in development.
+pub fn prevent_lazy_loading(prevent: bool) {
+    PREVENT_LAZY_LOADING.store(prevent, std::sync::atomic::Ordering::Relaxed);
+}
+
+#[doc(hidden)]
+pub fn is_lazy_loading_prevented() -> bool {
+    PREVENT_LAZY_LOADING.load(std::sync::atomic::Ordering::Relaxed)
+}
+
 pub mod admin;
 pub mod audit;
 pub mod collection;
 pub mod database;
 pub mod db;
+pub mod policy;
+
+tokio::task_local! {
+    pub static CURRENT_TX: std::sync::Arc<tokio::sync::Mutex<Option<crate::db::Transaction<'static>>>>;
+}
+
+#[macro_export]
+macro_rules! execute_query {
+    ($query:expr, $method:ident, $pool_fn:ident) => {
+        if let Ok(tx_arc) = $crate::CURRENT_TX.try_with(|tx| tx.clone()) {
+            let mut tx_guard = tx_arc.lock().await;
+            if let Some(tx) = tx_guard.as_mut() {
+                $query.$method(&mut **tx).await
+            } else {
+                let pool = $crate::Orm::$pool_fn();
+                $query.$method(pool).await
+            }
+        } else {
+            let pool = $crate::Orm::$pool_fn();
+            $query.$method(pool).await
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! dispatch_executor {
+    ($pool_fn:ident, |$executor:ident| $e:expr) => {
+        if let Ok(tx_arc) = $crate::CURRENT_TX.try_with(|tx| tx.clone()) {
+            let mut tx_guard = tx_arc.lock().await;
+            if let Some(tx) = tx_guard.as_mut() {
+                let $executor = &mut **tx;
+                $e
+            } else {
+                let $executor = $crate::Orm::$pool_fn();
+                $e
+            }
+        } else {
+            let $executor = $crate::Orm::$pool_fn();
+            $e
+        }
+    };
+}
+
 pub mod error;
 pub mod privacy;
+pub mod raw;
 pub mod resource;
 pub mod schema;
 pub mod scout;
@@ -98,9 +160,10 @@ pub use _sqlx::FromRow;
 pub use admin::dashboard_html;
 pub use collection::RullstCollection;
 pub use database::RullstDatabase;
+pub use policy::Policy;
 pub use privacy::{ComplianceModel, PrivacyReport, SecretString};
 pub use resource::{ApiResource, JsonResource, ResourceCollection};
-pub use rullst_orm_macros::{Orm, PersonalData};
+pub use rullst_orm_macros::{Orm, PersonalData, test};
 pub use scout::{SearchEngine, get_search_engine, set_search_engine};
 pub use tenant::{get_tenant_id, with_tenant};
 pub use types::Json;
@@ -357,6 +420,11 @@ impl Orm {
             .as_str()
     }
 
+    /// Create a raw SQL query builder.
+    pub fn raw(sql: &str) -> raw::RawQueryBuilder {
+        raw::RawQueryBuilder::new(sql)
+    }
+
     pub async fn begin_transaction() -> Result<crate::db::Transaction<'static>, crate::Error> {
         let pool = Self::pool();
         pool.begin().await.map_err(Into::into)
@@ -450,6 +518,7 @@ pub struct PaginationResult<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ::core::prelude::v1::test;
 
     #[test]
     fn test_pagination_result() {

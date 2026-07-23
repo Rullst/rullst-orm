@@ -11,6 +11,44 @@ mod privacy;
 mod relationships;
 
 #[cfg_attr(test, mutants::skip)]
+#[proc_macro_attribute]
+pub fn test(_args: TokenStream, input: TokenStream) -> TokenStream {
+    let input_fn = parse_macro_input!(input as syn::ItemFn);
+    let fn_name = &input_fn.sig.ident;
+    let vis = &input_fn.vis;
+    let block = &input_fn.block;
+    let attrs = &input_fn.attrs;
+
+    let expanded = quote::quote! {
+        #(#attrs)*
+        #[::tokio::test]
+        #vis async fn #fn_name() {
+            // Ensure DB is initialized (if already initialized in parallel, it ignores the error)
+            let _ = ::rullst_orm::Orm::init(&::std::env::var("DATABASE_URL").unwrap_or_else(|_| "sqlite::memory:".to_string())).await;
+
+            // Start transaction for Sandbox isolation
+            let tx = ::rullst_orm::Orm::begin_transaction().await.expect("Failed to begin sandbox transaction");
+            let tx_arc = ::std::sync::Arc::new(::tokio::sync::Mutex::new(Some(tx)));
+
+            // Scope the transaction globally for this tokio task
+            ::rullst_orm::CURRENT_TX.scope(tx_arc.clone(), async move {
+                // Execute user's test
+                let __test_closure = async move {
+                    #block
+                };
+                __test_closure.await;
+            }).await;
+
+            // Automatic Rollback
+            if let Some(tx) = tx_arc.lock().await.take() {
+                let _ = tx.rollback().await;
+            }
+        }
+    };
+    TokenStream::from(expanded)
+}
+
+#[cfg_attr(test, mutants::skip)]
 #[proc_macro_derive(PersonalData, attributes(privacy))]
 pub fn derive_personal_data(input: TokenStream) -> TokenStream {
     privacy::derive_personal_data_impl(input)
@@ -58,6 +96,7 @@ pub fn rullst_macro(input: TokenStream) -> TokenStream {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ::core::prelude::v1::test;
     use syn::parse_quote;
 
     fn run_macro_generator(input: &DeriveInput) -> (parser::ParsedModel, String, String) {

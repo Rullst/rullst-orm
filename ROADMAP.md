@@ -1,7 +1,12 @@
 # Rullst ORM Roadmap
 
-Our goal is to bring the best of the **Laravel Orm** experience to the Rust ecosystem.
-Here we track the key features that differentiate Orm from other query builders and our implementation status.
+**The Emotional Productivity ORM**
+To beat competitors like Diesel (focused on complex mathematical safety) and SeaORM (focused on traditional Active Record inheritance), Rullst-ORM positions itself as the "Emotional Productivity ORM":
+- **Zero black boxes**: All SQL generated under the hood should be easily inspectable via structured development logs.
+- **AI-Friendly**: Clean structures that facilitate LLM reading, generating routines without syntax hallucinations.
+
+Our goal is to bring the best of the *Every ORM* experience to the Rust ecosystem.
+Here we track the key features that differentiate Rullst ORM from other query builders and our implementation status.
 
 ## ✅ Implemented
 - **Active Record/Models**: Structs directly connected to the database (`#[derive(Orm)]`).
@@ -43,14 +48,15 @@ All core features of Laravel Orm have been successfully ported to Rust.
 - [x] **Model Serialization (Hiding Fields)**: Attribute `#[orm(hidden)]` to automatically skip sensitive columns during JSON serialization.
 
 ## 🏭 Phase 4: Enterprise Scale (v1.0.0)
-- [x] **Read/Write Connections Split**: Automatic routing of `SELECT` queries to database replicas and `INSERT/UPDATE/DELETE` to the primary node.
+- [x] **Edge Native & Read Replicas**: Automatic connection splitting. The ORM intelligently identifies read operations and routes `SELECT` to the local edge replica (e.g., Turso, 1ms latency), while transparently sending `INSERT/UPDATE` via transaction to the global primary database.
 - [x] **Query Chunking & Cursors**: Methods like `.chunk(1000, |batch| ...)` to process millions of records safely without high memory usage.
-- [ ] **Async Streams**: Support for `futures::Stream` (`impl Stream<Item = Model>`) to asynchronously iterate over millions of records with minimal memory footprint.
+- [x] **Async Streams**: Support for `futures::Stream` (`impl Stream<Item = Model>`) to asynchronously iterate over millions of records with minimal memory footprint.
 - [x] **Integrated Caching Layer**: Add `.remember(seconds)` using an optional Redis feature flag to automatically cache repetitive queries.
-- [x] **Background Event Hooks**: Optional pub/sub event broadcasting when models change, allowing seamless integration with external worker queues.
+- [x] **Asynchronous Reactive Event Hooks (Data Middlewares)**: Optional pub/sub event broadcasting and lifecycle hooks (like `after_commit`) based on Tokio's async/await. External events (webhooks, clearing Redis cache) trigger strictly only if the database transaction is confirmed with absolute success.
 - [x] **Security & Performance Static Audit**: All critical and medium-priority findings from the Jules/Antigravity architecture audit resolved in v1.1.13 (QueryBuilder binding fix, error propagation, clippy compliance).
-- [ ] **Native OpenTelemetry (Tracing)**: Deep integration with the `tracing` crate to automatically emit spans for queries, transactions, and connection checkout for observability.
-- [ ] **Type-Safe Raw SQL Fallback**: A seamless method like `Orm::raw("SELECT * FROM users").map_to::<User>()` for complex edge cases without losing ORM mapping capabilities.
+- [x] **Continuous Performance Benchmarks**: Automated CI regression tests using Criterion to prove that the ergonomic heap-allocations (abandoning Zero-Copy) have negligible impact compared to Diesel and SeaORM.
+- [x] **Native OpenTelemetry (Tracing)**: Deep integration with the `tracing` crate to automatically emit spans for queries, transactions, and connection checkout for observability.
+- [x] **Type-Safe Raw SQL Fallback**: A seamless method like `Orm::raw("SELECT * FROM users").map_to::<User>()` for complex edge cases without losing ORM mapping capabilities.
 
 ## 🔮 Phase 5: Version 3.0.0 Architecture (Completed)
 
@@ -70,10 +76,15 @@ We introduced the `strict-postgres`, `strict-mysql`, and `strict-sqlite` feature
 
 Our goal is to provide tools that normally cost thousands of dollars, completely free and open-source, ensuring `rullst-orm` stands unrivaled in the Rust ecosystem.
 
-- [x] **Native Multi-Tenancy**: Built-in support for SaaS applications. Automatic isolation of tenant data via magic `tenant_id` columns or separate database schemas.
+- [x] **Native Core Multi-tenancy (Global Scopes)**: Automatic Global Scopes isolate tenant data in SaaS. With `#[orm(global_scope = "tenant")]`, the ORM injects `WHERE tenant_id = X` and prevents leaks; requiring global access demands explicit and noisy calls like `.unscoped()`.
+- [ ] **Declarative Struct-Based Migrations (AST-Driven)**: Automatic bidirectional synchronization reading Rust structs to generate corresponding SQL migrations, supporting codemods to apply perfectly formatted `ALTER TABLE` via the `cargo rullst upgrade` command.
+- [x] **Strict Lazy Loading Prevention**: A Laravel-inspired feature (`Orm::prevent_lazy_loading(true)`) that throws a loud runtime error during development/testing if a relationship is accessed without being eager-loaded, completely preventing N+1 issues without polluting the codebase with strict typestates.
+- [x] **Type-Safe Partial Updates (Virtual Dirty Checking)**: A macro-driven mechanism that tracks changed properties in memory, generating an `UPDATE` only for modified columns without overhead, using typing to honor database constraints (e.g., not null).
 - [x] **Automated Compliance & Data Governance (GDPR/LGPD)**: `#[derive(PersonalData)]` macro for out-of-the-box privacy reports, and `SecretString` for transparent AES-256-GCM encryption at rest, preventing accidental data leakage.
 - [x] **Audit Trails (Revision History)**: A `#[orm(auditable)]` macro that automatically tracks "who changed what" in a separate history table for compliance and rollbacks.
 - [x] **Built-in Full-Text Search (Scout)**: `.search("query")` method that automatically syncs your models with Meilisearch, Algolia, or Elasticsearch upon saving.
+- [x] **Sandbox Testing (RefreshDatabase)**: A testing macro/utility that wraps each automated test in a database transaction and automatically rolls it back at the end, ensuring isolated and fast test executions just like Laravel.
+- [x] **Model Policies (Authorization)**: A declarative way (via attributes like `#[orm(policy = "PostPolicy")]`) to define fine-grained access control rules directly tied to the models.
 - [x] **Rullst ORM Admin Panel**: A drop-in function that generates a beautiful web dashboard to manage your data without writing frontend code.
 - [x] **API Resources & Transformers**: A declarative way to transform Rullst Models and eager-loaded relationships into clean JSON API responses, handling hidden fields, date formatting, and nested relations effortlessly.
 
@@ -81,10 +92,10 @@ Our goal is to provide tools that normally cost thousands of dollars, completely
 
 Pushing the boundaries of what an ORM can do in the modern era of computing.
 
-- [ ] **Database-First Introspection**: An Artisan CLI tool (`rullst-cli generate models`) to connect to legacy databases and automatically generate Rust structs mapped to existing tables.
+- [x] **Database-First Introspection**: An Artisan CLI tool (`cargo rullst generate:models`) to connect to legacy databases and automatically generate Rust structs mapped to existing tables.
 - [ ] **Native Vector DB & RAG Support (`pgvector`)**: Methods like `.where_similar("embedding", vector)` to natively support AI applications and Retrieval-Augmented Generation directly in standard SQL databases.
 - [ ] **AI-Powered Auto Migrations**: An opt-in tool that analyzes your Rust structs and uses a local or remote LLM to automatically generate the perfect SQL migration diffs, eliminating manual SQL typing.
 - [ ] **Wasm & Edge Computing**: Running the ORM directly on Cloudflare Workers or Vercel Edge with Serverless DB drivers (PlanetScale, Neon).
-- [ ] **Orm Sail (Instant Docker)**: A CLI command that instantly spins up a `docker-compose` environment with Postgres, Redis, Meilisearch, and your Rust app pre-configured. Zero infra setup.
+- [x] **Orm Sail (Instant Docker)**: A CLI command that instantly spins up a `docker-compose` environment with Postgres, Redis, Meilisearch, and your Rust app pre-configured. Zero infra setup.
 - [ ] **Post-Quantum Cryptography**: A `#[orm(encrypt_pq)]` macro to encrypt sensitive columns (like medical records, passwords) at rest using post-quantum algorithms (e.g., CRYSTALS-Kyber) to future-proof against quantum computer attacks.
 - [ ] **Distributed Graph Traversal**: Transforming standard SQL tables into Graph-like queries for deep recursive relationships (e.g., `friends.of.friends`) using advanced CTEs automatically generated by the ORM.
