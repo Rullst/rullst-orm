@@ -93,3 +93,21 @@ async fn test_policy_enforcement() {
     doc_ok.user_id = 1;
     doc_ok.delete().await.unwrap();
 }
+
+pub struct DefaultPolicy;
+#[async_trait::async_trait]
+impl Policy<Document> for DefaultPolicy {}
+
+#[tokio::test]
+async fn test_default_policy() {
+    let doc = Document {
+        id: 0,
+        title: "A".to_string(),
+        user_id: 1,
+    };
+    assert!(DefaultPolicy::can_create(&doc).await.unwrap());
+    assert!(DefaultPolicy::can_update(&doc).await.unwrap());
+    assert!(DefaultPolicy::can_delete(&doc).await.unwrap());
+    assert!(DefaultPolicy::can_restore(&doc).await.unwrap());
+    assert!(DefaultPolicy::can_force_delete(&doc).await.unwrap());
+}
