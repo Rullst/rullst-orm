@@ -1,18 +1,19 @@
 [package]
 name = "rullst-orm"
-version = "6.0.3"
+version = "6.0.4"
 edition = "2024"
 rust-version = "1.96.0"
-description = "An Active Record ORM for Rust."
+authors = ["Venelouis"]
+description = "Fast, un-opinionated, database-agnostic ORM for Rust"
 license = "MIT"
 repository = "https://github.com/Rullst/rullst-orm"
-keywords = ["orm", "database", "sqlx", "orm", "active-record"]
+keywords = ["orm", "database", "sql", "sqlite", "postgres", "mysql"]
 categories = ["database"]
 readme = "../README.md"
 
 [dependencies]
 mutants = "0.0.4"
-rullst-orm-macros = { path = "../rullst-orm-macros", version = "6.0.3" }
+rullst-orm-macros = { path = "../rullst-orm-macros", version = "6.0.4" }
 sqlx = { version = "0.9", features = ["sqlite", "postgres", "mysql", "any", "runtime-tokio", "macros", "json"] }
 tokio = { version = "1.23.1", features = ["full"] }
 async-trait = "0.1"
