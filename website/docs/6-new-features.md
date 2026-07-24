@@ -100,3 +100,42 @@ user.update_partial()
     .await?;
 ```
 The macro dynamically tracks which fields you chain into the builder, guaranteeing that `None` values are simply ignored from the `UPDATE` query.
+
+---
+
+## 🔠 Native Enum Mapping
+
+Rullst ORM supports seamless and type-safe integration of Rust `enum` types with your database tables.
+
+1. Define your Enum and derive `Enum`:
+```rust
+use rullst_orm::Enum;
+use serde::{Serialize, Deserialize};
+
+#[derive(Debug, Clone, PartialEq, Enum, Serialize, Deserialize)]
+pub enum Status {
+    Active,
+    Inactive,
+    Archived,
+}
+```
+
+2. Use it directly in your Models:
+```rust
+#[derive(Debug, Clone, FromRow, Orm)]
+pub struct User {
+    pub id: i32,
+    pub name: String,
+    pub status: Status, // Safely mapped to string in the database
+}
+```
+
+3. In your migrations, use `enum_col` to define the column. This automatically generates cross-database compatible constraints (like `TEXT CHECK` for SQLite or native `ENUM` logic for PostgreSQL/MySQL):
+```rust
+Schema::create("users", |t| {
+    t.id();
+    t.string("name");
+    // Creates a column restricted to these values
+    t.enum_col("status", vec!["Active", "Inactive", "Archived"]);
+}).await?;
+```

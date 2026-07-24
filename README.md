@@ -124,13 +124,20 @@ async fn main() -> Result<(), rullst_orm::Error> {
 
 ## 📚 Documentation
 
-The documentation is kept lean and straight to the point. Dive into the modules below to master Rullst ORM:
+We recently launched a brand-new **Interactive Documentation Hub** powered by VitePress! 
 
-- [1. Basics & Query Builder](docs/1-basics.md): Connecting to the DB, filtering, sorting, and raw bindings.
-- [2. Relationships](docs/2-relationships.md): Has Many, Belongs To, Polymorphic relations, and Eager Loading.
-- [3. Advanced Features](docs/3-advanced-features.md): Multi-Tenancy, Audit Trails, Redis Caching, and Observers.
-- [4. Migrations & Schema](docs/4-migrations-schema.md): Building tables programmatically and using the Artisan CLI.
-- [5. Security & Testing](docs/5-security-and-testing.md): Execution order for Miri, Kani, Fuzzing, and Mutation tools.
+👉 **[Explore the Full Documentation](https://rullst.github.io/rullst-orm/docs/1-basics.html)**
+
+Dive into the modules below to master Rullst ORM:
+
+- **[Basics & Query Builder](https://rullst.github.io/rullst-orm/docs/1-basics.html)**: Connecting to the DB, filtering, sorting, and raw bindings.
+- **[Relationships](https://rullst.github.io/rullst-orm/docs/2-relationships.html)**: Has Many, Belongs To, Polymorphic relations, and Eager Loading.
+- **[Advanced Features](https://rullst.github.io/rullst-orm/docs/3-advanced-features.html)**: Multi-Tenancy, Audit Trails, Redis Caching, and Observers.
+- **[Migrations & Schema](https://rullst.github.io/rullst-orm/docs/4-migrations-schema.html)**: Building tables programmatically and using the Artisan CLI.
+- **[Security & Testing](https://rullst.github.io/rullst-orm/docs/5-security-and-testing.html)**: UB detection, Fuzzing, Mutation testing, and CI pipelines.
+- **[New Features](https://rullst.github.io/rullst-orm/docs/6-new-features.html)**: Native Enum Mapping and Partial Updates.
+
+🎮 **[Try the Interactive Playground](https://rullst.github.io/rullst-orm/playground.html)**: Test our fluent query builder in a simulated environment!
 
 ---
 
