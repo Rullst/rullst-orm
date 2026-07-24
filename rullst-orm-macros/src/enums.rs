@@ -1,17 +1,20 @@
-use proc_macro::TokenStream;
+use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{Data, DeriveInput, parse_macro_input};
+use syn::{Data, DeriveInput};
 
 pub fn derive_enum_impl(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as DeriveInput);
+    let input = match syn::parse2::<DeriveInput>(input) {
+        Ok(input) => input,
+        Err(e) => return e.to_compile_error(),
+    };
+    
     let name = &input.ident;
 
     let variants = match &input.data {
         Data::Enum(data_enum) => &data_enum.variants,
         _ => {
             return syn::Error::new_spanned(name, "Enum macro can only be used on enums")
-                .to_compile_error()
-                .into();
+                .to_compile_error();
         }
     };
 
@@ -31,7 +34,7 @@ pub fn derive_enum_impl(input: TokenStream) -> TokenStream {
         });
     }
 
-    let expanded = quote! {
+    quote! {
         impl std::fmt::Display for #name {
             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                 let s = match self {
@@ -86,7 +89,40 @@ pub fn derive_enum_impl(input: TokenStream) -> TokenStream {
                 s.parse().map_err(rullst_orm::_serde::de::Error::custom)
             }
         }
-    };
+    }
+}
 
-    TokenStream::from(expanded)
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_derive_enum() {
+        let input = quote! {
+            pub enum Status {
+                Active,
+                Inactive,
+            }
+        };
+        let output = derive_enum_impl(input);
+        let output_str = output.to_string();
+        
+        assert!(output_str.contains("impl std :: fmt :: Display for Status"));
+        assert!(output_str.contains("Status :: Active => \"Active\" . to_string ()"));
+        assert!(output_str.contains("impl std :: str :: FromStr for Status"));
+    }
+    
+    #[test]
+    fn test_derive_enum_not_enum() {
+        let input = quote! {
+            pub struct NotEnum {
+                id: i32,
+            }
+        };
+        let output = derive_enum_impl(input);
+        let output_str = output.to_string();
+        
+        assert!(output_str.contains("compile_error !"));
+        assert!(output_str.contains("Enum macro can only be used on enums"));
+    }
 }

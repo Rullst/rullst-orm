@@ -58,7 +58,7 @@ pub fn derive_personal_data(input: TokenStream) -> TokenStream {
 #[cfg_attr(test, mutants::skip)]
 #[proc_macro_derive(Enum)]
 pub fn derive_enum(input: TokenStream) -> TokenStream {
-    enums::derive_enum_impl(input)
+    enums::derive_enum_impl(input.into()).into()
 }
 
 #[cfg_attr(test, mutants::skip)]
