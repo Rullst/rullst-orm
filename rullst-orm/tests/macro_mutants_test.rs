@@ -28,3 +28,22 @@ async fn test_mutant_macro_generation() {
     impl MutantModelObserver for MyObserver {}
     MutantModel::observe(std::sync::Arc::new(MyObserver));
 }
+
+#[derive(rullst_orm::Enum, Debug, Clone, PartialEq)]
+pub enum MutantStatus {
+    Active,
+    Inactive,
+}
+
+#[test]
+fn test_enum_derive_mutants() {
+    let status = MutantStatus::Active;
+    assert_eq!(status.to_string(), "Active");
+    assert_eq!("Inactive".parse::<MutantStatus>().unwrap(), MutantStatus::Inactive);
+    
+    let orm_val: rullst_orm::RullstValue = status.into();
+    assert!(matches!(orm_val, rullst_orm::RullstValue::String(ref s) if s == "Active"));
+    
+    let back: MutantStatus = orm_val.try_into().unwrap();
+    assert_eq!(back, MutantStatus::Active);
+}
