@@ -87,9 +87,9 @@ Our goal is to provide tools that normally cost thousands of dollars, completely
 - [x] **Model Policies (Authorization)**: A declarative way (via attributes like `#[orm(policy = "PostPolicy")]`) to define fine-grained access control rules directly tied to the models.
 - [x] **Rullst ORM Admin Panel**: A drop-in function that generates a beautiful web dashboard to manage your data without writing frontend code.
 - [x] **API Resources & Transformers**: A declarative way to transform Rullst Models and eager-loaded relationships into clean JSON API responses, handling hidden fields, date formatting, and nested relations effortlessly.
-- [ ] **Schema Visualizer (Mermaid ER Diagrams)**: A CLI command (`cargo rullst generate:diagram`) that reads models and outputs a Mermaid markdown file showing database architecture and relationships.
+- [x] **Schema Visualizer (Mermaid ER Diagrams)**: A CLI command (`cargo rullst generate:diagram`) that reads models and outputs a Mermaid markdown file showing database architecture and relationships.
 - [ ] **Cascading Soft Deletes**: Automatic recursive soft deletion. If a parent is soft-deleted, automatically apply soft deletes to dependent children (`ON DELETE CASCADE` equivalent for logical deletes).
-- [ ] **Native Enum Mapping**: Clean, type-safe mapping of Rust `enum` to database `ENUM` types (PostgreSQL/MySQL) or secure string constraints (SQLite).
+- [x] **Native Enum Mapping**: Clean, type-safe mapping of Rust `enum` to database `ENUM` types (PostgreSQL/MySQL) or secure string constraints (SQLite).
 
 ## 🧠 Phase 7: The Future (AI, Quantum & Infrastructure)
 

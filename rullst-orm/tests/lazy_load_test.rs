@@ -1,5 +1,6 @@
-use serde::{Deserialize, Serialize};
+#![cfg(not(any(feature = "strict-postgres", feature = "strict-mysql")))]
 
+use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, Serialize, Deserialize, rullst_orm::Orm, rullst_orm::FromRow)]
 #[orm(table = "users")]
 pub struct User {

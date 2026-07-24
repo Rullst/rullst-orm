@@ -7,7 +7,7 @@ pub fn derive_enum_impl(input: TokenStream) -> TokenStream {
         Ok(input) => input,
         Err(e) => return e.to_compile_error(),
     };
-    
+
     let name = &input.ident;
 
     let variants = match &input.data {
@@ -106,12 +106,12 @@ mod tests {
         };
         let output = derive_enum_impl(input);
         let output_str = output.to_string();
-        
+
         assert!(output_str.contains("impl std :: fmt :: Display for Status"));
         assert!(output_str.contains("Status :: Active => \"Active\" . to_string ()"));
         assert!(output_str.contains("impl std :: str :: FromStr for Status"));
     }
-    
+
     #[test]
     fn test_derive_enum_not_enum() {
         let input = quote! {
@@ -121,7 +121,7 @@ mod tests {
         };
         let output = derive_enum_impl(input);
         let output_str = output.to_string();
-        
+
         assert!(output_str.contains("compile_error !"));
         assert!(output_str.contains("Enum macro can only be used on enums"));
     }
