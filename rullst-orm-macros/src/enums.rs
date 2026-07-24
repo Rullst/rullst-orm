@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, DeriveInput, Data};
+use syn::{Data, DeriveInput, parse_macro_input};
 
 pub fn derive_enum_impl(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -8,7 +8,11 @@ pub fn derive_enum_impl(input: TokenStream) -> TokenStream {
 
     let variants = match &input.data {
         Data::Enum(data_enum) => &data_enum.variants,
-        _ => return syn::Error::new_spanned(name, "Enum macro can only be used on enums").to_compile_error().into(),
+        _ => {
+            return syn::Error::new_spanned(name, "Enum macro can only be used on enums")
+                .to_compile_error()
+                .into();
+        }
     };
 
     let mut to_string_arms = Vec::new();
@@ -17,11 +21,11 @@ pub fn derive_enum_impl(input: TokenStream) -> TokenStream {
     for variant in variants {
         let variant_ident = &variant.ident;
         let variant_str = variant_ident.to_string();
-        
+
         to_string_arms.push(quote! {
             #name::#variant_ident => #variant_str.to_string()
         });
-        
+
         from_str_arms.push(quote! {
             #variant_str => Ok(#name::#variant_ident)
         });
@@ -62,7 +66,7 @@ pub fn derive_enum_impl(input: TokenStream) -> TokenStream {
                 s.parse().map_err(|e: String| rullst_orm::Error::Internal(e))
             }
         }
-        
+
         // Also implement standard Serialize/Deserialize so they work naturally in API responses
         impl rullst_orm::_serde::Serialize for #name {
             fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>

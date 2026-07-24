@@ -204,7 +204,11 @@ impl Blueprint {
 
     pub fn enum_col(&mut self, name: &str, variants: Vec<&str>) -> &mut Column {
         // Enforce enum values using a CHECK constraint for safe cross-DB compatibility
-        let check_clause = variants.iter().map(|v| format!("'{}'", v.replace('\'', "''"))).collect::<Vec<_>>().join(", ");
+        let check_clause = variants
+            .iter()
+            .map(|v| format!("'{}'", v.replace('\'', "''")))
+            .collect::<Vec<_>>()
+            .join(", ");
         let col_type = format!("TEXT CHECK({} IN ({}))", name, check_clause);
         self.add_column(name, &col_type)
     }
@@ -1052,7 +1056,10 @@ mod tests {
         let mut bp = Blueprint::new();
         let col = bp.enum_col("status", vec!["Active", "Pending", "Canceled"]);
         assert_eq!(col.name, "status");
-        assert_eq!(col.col_type, "TEXT CHECK(status IN ('Active', 'Pending', 'Canceled'))");
+        assert_eq!(
+            col.col_type,
+            "TEXT CHECK(status IN ('Active', 'Pending', 'Canceled'))"
+        );
         assert!(col.is_nullable);
     }
 
