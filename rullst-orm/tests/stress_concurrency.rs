@@ -18,10 +18,13 @@ async fn test_pool_exhaustion_and_concurrency() {
     let db_file = "stress_suite.db";
     let _ = std::fs::remove_file(db_file);
 
-    // Conexão com SQLite para o stress test (extremamente rápido e local)
-    Orm::init(&format!("sqlite:{}?mode=rwc", db_file))
+    // Conexão com SQLite para o stress test
+    // Forçamos max_connections = 1 no SQLite para forçar serialização de writes
+    // e evitar 'database is locked' em 200 tarefas simultâneas, enquanto
+    // ainda validamos se a pool prende (deadlock).
+    Orm::init_with_options(&format!("sqlite:{}?mode=rwc", db_file), 1, 30)
         .await
-        .expect("Orm::init");
+        .expect("Orm::init_with_options");
 
     Schema::create("stress_users", |t: &mut Blueprint| {
         t.id();
