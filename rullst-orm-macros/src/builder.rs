@@ -687,6 +687,30 @@ pub fn generate(
                 self
             }
 
+            /// Orders results by L2 distance similarity using pgvector (`<->` operator).
+            /// Safely formats the `vector` values directly into the query.
+            pub fn order_by_similarity(mut self, column: &str, vector: Vec<f64>) -> Self {
+                self.reject_skipped_column(column);
+                if let Err(e) = rullst_orm::schema::validate_identifier(column) {
+                    self.errors.push(rullst_orm::Error::Validation(format!("order_by_similarity() — invalid column identifier: {}", e)));
+                }
+                let vec_str = rullst_orm::_serde_json::to_string(&vector).unwrap_or_else(|_| "[]".to_string());
+                self.order_by = Some(format!("{} <-> '{}'", column, vec_str));
+                self
+            }
+
+            /// Filters results by maximum L2 distance similarity using pgvector.
+            /// Safely formats the `vector` values directly into the query.
+            pub fn where_similar(mut self, column: &str, vector: Vec<f64>, distance: f64) -> Self {
+                self.reject_skipped_column(column);
+                if let Err(e) = rullst_orm::schema::validate_identifier(column) {
+                    self.errors.push(rullst_orm::Error::Validation(format!("where_similar() — invalid column identifier: {}", e)));
+                }
+                let vec_str = rullst_orm::_serde_json::to_string(&vector).unwrap_or_else(|_| "[]".to_string());
+                self.wheres.push(("AND".to_string(), format!("{} <-> '{}' < {}", column, vec_str, distance)));
+                self
+            }
+
             pub fn limit(mut self, value: usize) -> Self {
                 if let Some(max_limit) = rullst_orm::schema::get_max_query_limit() {
                     self.limit = Some(value.min(max_limit));

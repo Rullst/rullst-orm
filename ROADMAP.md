@@ -87,13 +87,16 @@ Our goal is to provide tools that normally cost thousands of dollars, completely
 - [x] **Model Policies (Authorization)**: A declarative way (via attributes like `#[orm(policy = "PostPolicy")]`) to define fine-grained access control rules directly tied to the models.
 - [x] **Rullst ORM Admin Panel**: A drop-in function that generates a beautiful web dashboard to manage your data without writing frontend code.
 - [x] **API Resources & Transformers**: A declarative way to transform Rullst Models and eager-loaded relationships into clean JSON API responses, handling hidden fields, date formatting, and nested relations effortlessly.
+- [ ] **Schema Visualizer (Mermaid ER Diagrams)**: A CLI command (`cargo rullst generate:diagram`) that reads models and outputs a Mermaid markdown file showing database architecture and relationships.
+- [ ] **Cascading Soft Deletes**: Automatic recursive soft deletion. If a parent is soft-deleted, automatically apply soft deletes to dependent children (`ON DELETE CASCADE` equivalent for logical deletes).
+- [ ] **Native Enum Mapping**: Clean, type-safe mapping of Rust `enum` to database `ENUM` types (PostgreSQL/MySQL) or secure string constraints (SQLite).
 
 ## 🧠 Phase 7: The Future (AI, Quantum & Infrastructure)
 
 Pushing the boundaries of what an ORM can do in the modern era of computing.
 
 - [x] **Database-First Introspection**: An Artisan CLI tool (`cargo rullst generate:models`) to connect to legacy databases and automatically generate Rust structs mapped to existing tables.
-- [ ] **Native Vector DB & RAG Support (`pgvector`)**: Methods like `.where_similar("embedding", vector)` to natively support AI applications and Retrieval-Augmented Generation directly in standard SQL databases.
+- [x] **Native Vector DB & RAG Support (`pgvector`)**: Methods like `.where_similar("embedding", vector)` and `.order_by_similarity()` to natively support AI applications and Retrieval-Augmented Generation directly in standard SQL databases.
 - [ ] **AI-Powered Auto Migrations**: An opt-in tool that analyzes your Rust structs and uses a local or remote LLM to automatically generate the perfect SQL migration diffs, eliminating manual SQL typing.
 - [ ] **Wasm & Edge Computing**: Running the ORM directly on Cloudflare Workers or Vercel Edge with Serverless DB drivers (PlanetScale, Neon).
 - [x] **Orm Sail (Instant Docker)**: A CLI command that instantly spins up a `docker-compose` environment with Postgres, Redis, Meilisearch, and your Rust app pre-configured. Zero infra setup.

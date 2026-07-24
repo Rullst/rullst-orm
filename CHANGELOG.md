@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [6.1.0] - 2026-07-23
+## [6.1.0] - 2026-07-24
 
 ### Added
 - **Strict Lazy Loading Prevention:** Added a global `PREVENT_LAZY_LOADING` toggle that instantly panics in development when a relation is accessed without eager loading, effectively eradicating N+1 query problems silently.
@@ -24,8 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Schema & Resource Unit Tests:** Added `test_blueprint_float_and_boolean_columns` to verify that `.float()` (`REAL`) and `.boolean()` (`INTEGER`) helper methods generate correct column definitions and metadata in `Blueprint`, and added `ComplexResource` struct and test covering nested objects, arrays, and optional/null values in `JsonResource::resolve()`.
 - **Database Transaction Integration Test:** Added `scenario_transaction_types` to the integration test suite to formally verify correct execution of SQL queries under the internal `db::Transaction` and `db::Pool` wrappers.
 - **Replace Placeholders Test:** Added unit tests for `replace_placeholders` in `lib.rs` to ensure correct translation of `?` into Postgres positional parameters `$1`, `$2`.
-
-
+- **Schema Visualizer (Mermaid ER):** Implemented regex-based introspection to scan models and generate `diagram.md` containing a Mermaid ER diagram, visually mapping all `HasMany`, `BelongsTo`, `HasOne`, and `BelongsToMany` relationships without runtime compilation overhead.
+- **Native Enum Mapping:** Added the `#[derive(Enum)]` macro for type-safe enum stringification and the `bp.enum_col()` Blueprint schema method to generate cross-database compatible `TEXT CHECK` constraints for Enums.
 ### Changed
 - **Rust Edition and Toolchain:** Upgraded official project toolchain to Rust 1.97.1 to leverage the absolute latest compiler optimizations and language features.
 - **Dependency Updates:** Bumped dev-dependency `mutants` from `0.0.3` to `0.0.4` across the workspace (`rullst-orm` and `rullst-orm-macros`).

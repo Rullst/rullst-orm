@@ -6,6 +6,7 @@ use syn::{DeriveInput, parse_macro_input};
 mod builder;
 mod factory_observer;
 mod models;
+mod enums;
 mod parser;
 mod privacy;
 mod relationships;
@@ -52,6 +53,12 @@ pub fn test(_args: TokenStream, input: TokenStream) -> TokenStream {
 #[proc_macro_derive(PersonalData, attributes(privacy))]
 pub fn derive_personal_data(input: TokenStream) -> TokenStream {
     privacy::derive_personal_data_impl(input)
+}
+
+#[cfg_attr(test, mutants::skip)]
+#[proc_macro_derive(Enum)]
+pub fn derive_enum(input: TokenStream) -> TokenStream {
+    enums::derive_enum_impl(input)
 }
 
 #[cfg_attr(test, mutants::skip)]
