@@ -2,6 +2,7 @@ import { defineConfig } from 'vitepress'
 
 export default defineConfig({
   title: "Rullst ORM",
+  base: '/rullst-orm/',
   description: "A beautiful, type-safe, Active Record ORM for Rust.",
   themeConfig: {
     logo: '/vite.svg',
