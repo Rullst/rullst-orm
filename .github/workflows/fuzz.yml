@@ -22,12 +22,14 @@ jobs:
 
       - name: Install nightly Rust
         uses: dtolnay/rust-toolchain@5b842231ba77f5c045dba54ac5560fed2db780e2 # nightly
+        with:
+          toolchain: nightly-2026-07-20
 
       - name: Install cargo-fuzz
-        run: cargo +nightly install cargo-fuzz
+        run: cargo install cargo-fuzz
 
       - name: Run fuzzer
-        run: cargo +nightly fuzz run ${{ matrix.target }} -- -max_total_time=300 -detect_leaks=0
+        run: cargo fuzz run ${{ matrix.target }} -- -max_total_time=300 -detect_leaks=0
 
       - name: Upload crash artifacts
         if: failure()
