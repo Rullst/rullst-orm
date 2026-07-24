@@ -8,7 +8,7 @@ edition = "2021"
 cargo-fuzz = true
 
 [package.metadata.cargo-machete]
-ignored = ["sqlx", "tracing"]
+ignored = ["sqlx", "tracing", "mutants"]
 
 [dependencies]
 rullst-orm = { path = "../rullst-orm" }
