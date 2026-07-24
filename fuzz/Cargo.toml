@@ -8,17 +8,15 @@ edition = "2021"
 cargo-fuzz = true
 
 [package.metadata.cargo-machete]
-ignored = ["sqlx", "tracing"]
-
-[dependencies.rullst-orm]
-path = "../rullst-orm"
+ignored = ["sqlx"]
 
 [dependencies]
-libfuzzer-sys = "0.4"
+rullst-orm = { path = "../rullst-orm" }
 syn = { version = "2", features = ["full"] }
-proc-macro2 = "1"
+libfuzzer-sys = "0.4"
 tokio = { version = "1.23.1", features = ["full"] }
 sqlx = { version = "0.9", features = ["any", "runtime-tokio"] }
+mutants = "0.0.4"
 tracing = "0.1"
 
 [lints.rust]
