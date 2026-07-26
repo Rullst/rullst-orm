@@ -20,17 +20,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
-      - name: Create Cargo Wrapper to Ignore MSRV
+      - name: Bypass MSRV globally in the Cargo Registry
         run: |
-          mv $HOME/.cargo/bin/cargo $HOME/.cargo/bin/cargo-real
-          echo '#!/bin/bash' > $HOME/.cargo/bin/cargo
-          echo 'CMD="$1"' >> $HOME/.cargo/bin/cargo
-          echo 'if [[ "$CMD" == "build" || "$CMD" == "check" || "$CMD" == "rustc" || "$CMD" == "test" ]]; then' >> $HOME/.cargo/bin/cargo
-          echo '    exec -a cargo $HOME/.cargo/bin/cargo-real "$@" --ignore-rust-version' >> $HOME/.cargo/bin/cargo
-          echo 'else' >> $HOME/.cargo/bin/cargo
-          echo '    exec -a cargo $HOME/.cargo/bin/cargo-real "$@"' >> $HOME/.cargo/bin/cargo
-          echo 'fi' >> $HOME/.cargo/bin/cargo
-          chmod +x $HOME/.cargo/bin/cargo
+          cargo fetch
+          find . -name Cargo.toml -exec sed -i 's/^rust-version.*//g' {} +
+          find $HOME/.cargo/registry/src/ -name Cargo.toml -exec sed -i 's/^rust-version.*//g' {} +
 
       - name: Verify with Kani
         uses: model-checking/kani-github-action@f838096619a707b0f6b2118cf435eaccfa33e51f # v1.1
