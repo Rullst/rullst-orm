@@ -11,7 +11,6 @@ jobs:
       contents: read
     name: Run Kani Model Checking - ${{ matrix.package }}
     runs-on: ubuntu-latest
-    continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
@@ -24,4 +23,4 @@ jobs:
       - name: Verify with Kani
         uses: model-checking/kani-github-action@f838096619a707b0f6b2118cf435eaccfa33e51f # v1.1
         with:
-          args: --package ${{ matrix.package }}
+          args: --package ${{ matrix.package }} -- --ignore-rust-version

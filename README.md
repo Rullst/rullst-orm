@@ -40,8 +40,7 @@ Built on top of `sqlx` and procedural macros, **Rullst ORM** brings the delightf
 | **Unsafe Policy** | <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/unsafe-policy.yml?style=flat-square&label=" alt="Unsafe Policy" /></a> | 100% memory safe. No unsafe code blocks |
 | **Panic Policy** | <a href="https://github.com/Rullst/rullst-orm/actions"><img src="https://img.shields.io/github/actions/workflow/status/Rullst/rullst-orm/panic-policy.yml?style=flat-square&label=" alt="Panic Policy" /></a> | Graceful error handling across the framework |
 
-> [!WARNING]
-> **Kani Verifier** is currently configured to allow failures (`continue-on-error`). It lacks upstream support for Rust 1.94+ (required by `sqlx 0.9.0`), so its badge may show as passing even if the pipeline was skipped or failed due to compiler incompatibility. Once Kani updates its compiler base, it will automatically run and pass again.
+
 
 </div>
 
