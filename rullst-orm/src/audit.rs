@@ -84,7 +84,7 @@ pub async fn log_audit(
 }
 
 fn is_sensitive(key: &str) -> bool {
-    let k = key.to_lowercase();
+    let k = key.to_ascii_lowercase();
     k.contains("password")
         || k.contains("token")
         || k.contains("secret")
