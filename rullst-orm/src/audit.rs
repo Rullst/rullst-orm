@@ -419,7 +419,7 @@ mod kani_proofs {
 
     #[cfg_attr(test, mutants::skip)]
     #[kani::proof]
-    #[kani::unwind(6)] // 4 bytes + 2 for safety
+    #[kani::unwind(13)] // 11 bytes (credit_card) + 2 for safety
     fn proof_is_sensitive_never_panics() {
         // Gera uma string simbólica de até 4 caracteres (suficiente para "cvv", "ssn", etc.)
         // Reduzir para 4 bytes evita o path explosion (explosão de estados) nas buscas do TwoWaySearcher
