@@ -65,6 +65,7 @@ async fn integration_suite() {
 
     scenario_crud().await;
     scenario_soft_delete().await;
+    scenario_cascade_soft_delete().await;
     scenario_configurable_soft_delete().await;
     scenario_skipped_field().await;
     scenario_transactions().await;
@@ -151,6 +152,61 @@ async fn scenario_crud() {
     Schema::drop_if_exists("it_users")
         .await
         .expect("drop it_users");
+}
+
+#[derive(Debug, Clone, FromRow, rullst_orm::Orm)]
+#[orm(table = "it_parent")]
+struct Parent {
+    pub id: i32,
+    #[sqlx(skip)]
+    #[orm(has_many = "Child", cascade_soft_delete)]
+    pub children: Option<Vec<Child>>,
+    pub deleted_at: Option<String>,
+}
+
+#[derive(Debug, Clone, FromRow, rullst_orm::Orm)]
+#[orm(table = "it_child")]
+struct Child {
+    pub id: i32,
+    pub parent_id: i32,
+    pub deleted_at: Option<String>,
+}
+
+async fn scenario_cascade_soft_delete() {
+    Schema::create("it_parent", |t: &mut Blueprint| {
+        t.id();
+        t.soft_deletes();
+    })
+    .await
+    .expect("create it_parent");
+
+    Schema::create("it_child", |t: &mut Blueprint| {
+        t.id();
+        t.integer("parent_id").not_null();
+        t.soft_deletes();
+    })
+    let mut p = Parent { id: 0, children: None, deleted_at: None };
+    p.save().await.unwrap();
+
+    let mut c = Child { id: 0, parent_id: p.id, deleted_at: None };
+    c.save().await.unwrap();
+
+    // delete parent, should cascade to child
+    p.delete().await.unwrap();
+
+    let pool = Orm::pool();
+    let parent_row: Option<(i32, Option<String>)> =
+        sqlx::query_as("SELECT id, deleted_at FROM it_parent WHERE id = ?")
+            .bind(p.id).fetch_optional(pool).await.unwrap();
+    let child_row: Option<(i32, Option<String>)> =
+        sqlx::query_as("SELECT id, deleted_at FROM it_child WHERE id = ?")
+            .bind(c.id).fetch_optional(pool).await.unwrap();
+
+    assert!(parent_row.unwrap().1.is_some());
+    assert!(child_row.unwrap().1.is_some(), "Child must be cascade soft deleted");
+
+    Schema::drop_if_exists("it_child").await.unwrap();
+    Schema::drop_if_exists("it_parent").await.unwrap();
 }
 
 // ── Scenario 2: soft deletes ──────────────────────────────────────────────

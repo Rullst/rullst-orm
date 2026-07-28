@@ -97,9 +97,9 @@ fn generate_delete_all_logic(parsed: &ParsedModel) -> TokenStream {
         // mimic the historical hard-coded behaviour.
         quote! {
             let delval = if rullst_orm::Orm::driver() == "postgres" {
-                "deleted_at = CURRENT_TIMESTAMP"
+                "CURRENT_TIMESTAMP"
             } else {
-                "deleted_at = CURRENT_TIMESTAMP"
+                "CURRENT_TIMESTAMP"
             };
         }
     } else {
@@ -1281,7 +1281,10 @@ fn generate_execution_methods(
                             }
                         }
                     }
-
+                    if rullst_orm::schema::is_query_log_enabled() {
+                        println!("[SQL Debug] {:?} | Bindings: [{} parameter(s) redacted for security]", query_str, self.bindings.len());
+                    }
+                    let query_str = rullst_orm::replace_placeholders(&query_str);
                     let result = {
                         let mut query = rullst_orm::_sqlx::query(rullst_orm::_sqlx::AssertSqlSafe(query_str.as_str()));
                         for binding in &self.bindings {

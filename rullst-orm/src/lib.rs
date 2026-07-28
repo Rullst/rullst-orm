@@ -148,6 +148,7 @@ pub mod privacy;
 pub mod raw;
 pub mod resource;
 pub mod schema;
+pub mod schema_diff;
 pub mod scout;
 pub mod tenant;
 pub mod types;

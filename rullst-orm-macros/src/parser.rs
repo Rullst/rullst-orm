@@ -148,6 +148,7 @@ pub struct ParsedRelation {
     pub related_key: String,
     pub pivot_table: String,
     pub morph_name: String,
+    pub cascade_soft_delete: bool,
 }
 
 pub fn parse(input: &DeriveInput) -> Result<ParsedModel, syn::Error> {
@@ -300,6 +301,7 @@ pub fn parse(input: &DeriveInput) -> Result<ParsedModel, syn::Error> {
         let mut is_hidden = false;
         let mut is_skipped = false;
         let mut is_masked = false;
+        let mut cascade_soft_delete = false;
 
         for attr in &field.attrs {
             // The macro accepts `#[orm(...)]` as well as the more
@@ -325,6 +327,8 @@ pub fn parse(input: &DeriveInput) -> Result<ParsedModel, syn::Error> {
                         is_skipped = true;
                     } else if trimmed == "masked" {
                         is_masked = true;
+                    } else if trimmed == "cascade_soft_delete" {
+                        cascade_soft_delete = true;
                     } else {
                         let parts: Vec<&str> = trimmed.split('=').collect();
                         if parts.len() == 2 {
@@ -403,6 +407,7 @@ pub fn parse(input: &DeriveInput) -> Result<ParsedModel, syn::Error> {
                 related_key,
                 pivot_table,
                 morph_name,
+                cascade_soft_delete,
             });
         } else if is_skipped {
             // Skipped fields are not exposed to the generated SQL or the

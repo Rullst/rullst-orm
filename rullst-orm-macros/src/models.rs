@@ -719,14 +719,49 @@ fn generate_delete_methods(parsed: &ParsedModel) -> TokenStream {
         quote! {}
     };
 
+    let mut cascade_deletes = quote! {};
+    let mut cascade_deletes_with_tx = quote! {};
+    if has_soft_deletes {
+        for rel in &parsed.relations {
+            if rel.cascade_soft_delete && (rel.rel_type == "has_many" || rel.rel_type == "has_one") {
+                let rel_model = syn::Ident::new(&rel.rel_model, name.span());
+                let default_fk = format!("{}_id", name.to_string().to_lowercase());
+                let fk = if rel.foreign_key.is_empty() {
+                    default_fk
+                } else {
+                    rel.foreign_key.clone()
+                };
+                let lk = syn::Ident::new(
+                    if rel.local_key.is_empty() {
+                        "id"
+                    } else {
+                        &rel.local_key
+                    },
+                    name.span(),
+                );
+
+                cascade_deletes.extend(quote! {
+                    #rel_model::query().where_eq(#fk, self.#lk.clone()).delete_all().await?;
+                });
+                cascade_deletes_with_tx.extend(quote! {
+                    #rel_model::query().where_eq(#fk, self.#lk.clone()).delete_all_with_tx(tx).await?;
+                });
+            }
+        }
+    }
+
     quote! {
         #[rullst_orm::_tracing::instrument(name = "rullst_query", skip(self))]
         pub async fn delete(&self) -> Result<(), rullst_orm::Error> {
-            rullst_orm::dispatch_executor!(pool, |pool| self.delete_with_tx_internal(pool).await)
+            rullst_orm::dispatch_executor!(pool, |pool| self.delete_with_tx_internal(pool).await)?;
+            #cascade_deletes
+            Ok(())
         }
 
         pub async fn delete_with_tx(&self, tx: &mut rullst_orm::db::Transaction<'static>) -> Result<(), rullst_orm::Error> {
-            self.delete_with_tx_internal(&mut **tx).await
+            self.delete_with_tx_internal(&mut **tx).await?;
+            #cascade_deletes_with_tx
+            Ok(())
         }
 
         async fn delete_with_tx_internal<'e, E>(&self, executor: E) -> Result<(), rullst_orm::Error>
