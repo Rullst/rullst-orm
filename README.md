@@ -57,6 +57,8 @@ In traditional Rust database handling, you have to write raw SQL queries, manage
 - **Data Governance & Privacy**: Compile-time GDPR/LGPD compliance with at-rest encryption and log masking.
 - **Scout Search**: Seamlessly sync models to full-text search engines.
 - **Database-First Introspection**: The official framework CLI (`cargo rullst generate:models`) connects to legacy databases and generates your `#[derive(Orm)]` Rust structs automatically.
+- **Declarative Struct-Based Migrations**: Safely auto-generate additive SQL migrations (`make:migration:auto`) directly from your Rust struct definitions.
+- **Cascading Soft Deletes**: Configure relationships to automatically soft-delete dependent children records in a single transaction.
 - **Type-Safe Partial Updates**: Virtual dirty checking with `.update_partial()` to intelligently modify only changed columns.
 - **Model Policies (Authorization)**: Laravel-style fine-grained access control securely tied to your structs via `#[orm(policy = "MyPolicy")]`.
 - **Strict Lazy Loading Prevention**: Enable a global toggle to instantly panic on N+1 queries during development.

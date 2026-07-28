@@ -77,7 +77,8 @@ We introduced the `strict-postgres`, `strict-mysql`, and `strict-sqlite` feature
 Our goal is to provide tools that normally cost thousands of dollars, completely free and open-source, ensuring `rullst-orm` stands unrivaled in the Rust ecosystem.
 
 - [x] **Native Core Multi-tenancy (Global Scopes)**: Automatic Global Scopes isolate tenant data in SaaS. With `#[orm(global_scope = "tenant")]`, the ORM injects `WHERE tenant_id = X` and prevents leaks; requiring global access demands explicit and noisy calls like `.unscoped()`.
-- [ ] **Declarative Struct-Based Migrations (AST-Driven)**: Automatic bidirectional synchronization reading Rust structs to generate corresponding SQL migrations, supporting codemods to apply perfectly formatted `ALTER TABLE` via the `cargo rullst upgrade` command.
+- [x] **Declarative Struct-Based Migrations (Safe Additive)**: Automatic synchronization reading Rust structs to generate corresponding SQL migrations (tables and columns) via the `make:migration:auto` command, guaranteeing data safety.
+- [ ] **Declarative Migrations (Destructive Operations)**: Implement full resource synchronization (dropping columns and tables) protected by "Safe by Default" patterns (e.g., `--allow-destructive` flag or commented-out SQL generation) to prevent accidental data loss.
 - [x] **Strict Lazy Loading Prevention**: A Laravel-inspired feature (`Orm::prevent_lazy_loading(true)`) that throws a loud runtime error during development/testing if a relationship is accessed without being eager-loaded, completely preventing N+1 issues without polluting the codebase with strict typestates.
 - [x] **Type-Safe Partial Updates (Virtual Dirty Checking)**: A macro-driven mechanism that tracks changed properties in memory, generating an `UPDATE` only for modified columns without overhead, using typing to honor database constraints (e.g., not null).
 - [x] **Automated Compliance & Data Governance (GDPR/LGPD)**: `#[derive(PersonalData)]` macro for out-of-the-box privacy reports, and `SecretString` for transparent AES-256-GCM encryption at rest, preventing accidental data leakage.
@@ -88,7 +89,7 @@ Our goal is to provide tools that normally cost thousands of dollars, completely
 - [x] **Rullst ORM Admin Panel**: A drop-in function that generates a beautiful web dashboard to manage your data without writing frontend code.
 - [x] **API Resources & Transformers**: A declarative way to transform Rullst Models and eager-loaded relationships into clean JSON API responses, handling hidden fields, date formatting, and nested relations effortlessly.
 - [x] **Schema Visualizer (Mermaid ER Diagrams)**: A CLI command (`cargo rullst generate:diagram`) that reads models and outputs a Mermaid markdown file showing database architecture and relationships.
-- [ ] **Cascading Soft Deletes**: Automatic recursive soft deletion. If a parent is soft-deleted, automatically apply soft deletes to dependent children (`ON DELETE CASCADE` equivalent for logical deletes).
+- [x] **Cascading Soft Deletes**: Automatic recursive soft deletion. If a parent is soft-deleted, automatically apply soft deletes to dependent children (`ON DELETE CASCADE` equivalent for logical deletes).
 - [x] **Native Enum Mapping**: Clean, type-safe mapping of Rust `enum` to database `ENUM` types (PostgreSQL/MySQL) or secure string constraints (SQLite).
 
 ## 🧠 Phase 7: The Future (AI, Quantum & Infrastructure)

@@ -56,6 +56,21 @@ pub struct Post {
 }
 ```
 
+### Cascading Soft Deletes
+
+When using Soft Deletes (`deleted_at`), you can configure relationships to automatically soft-delete dependent children when the parent is soft-deleted.
+
+```rust
+#[derive(Debug, Clone, FromRow, Orm)]
+pub struct User {
+    pub id: i32,
+    
+    // If the User is soft-deleted, all their posts will be soft-deleted automatically!
+    #[orm(has_many(model = "Post", foreign_key = "user_id", local_key = "id", cascade_soft_delete = true))]
+    pub posts: Vec<Post>,
+}
+```
+
 ---
 
 ## Eager Loading (With)

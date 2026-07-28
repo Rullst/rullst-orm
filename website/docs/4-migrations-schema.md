@@ -88,3 +88,9 @@ Reverts the last batch of executed migrations by triggering their `down()` or `d
 cargo run -- make:audit
 ```
 Automatically seeds the `rullst_audits` tracking table into your schema to support the `#[orm(auditable)]` feature.
+
+#### 5. Declarative Migrations (Auto MVP)
+```bash
+cargo run -- make:migration:auto
+```
+An experimental MVP feature that compares your Rust structs (`#[derive(Orm)]`) directly against the live database and automatically generates additive SQL (creating missing tables and columns) without manual intervention. It prioritizes data safety by ignoring destructive operations (like drops).
