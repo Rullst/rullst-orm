@@ -1,3 +1,8 @@
+⚠️ NOTICE: WE HAVE MOVED TO A MONOREPO! ⚠️
+
+All development, issues, and pull requests for this crate have been migrated to the official [Rullst Monorepo](https://github.com/Rullst/Rullst).
+Please visit the main repository for the latest updates, source code, and documentation.
+
 <div align="center">
   <h1>Rullst ORM 🌟</h1>
   <p><strong>A beautiful, type-safe, Active Record ORM for Rust.</strong></p>
